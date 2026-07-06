@@ -1,3 +1,20 @@
+# Flutter
+build/
+.dart_tool/
+.idea/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# Firebase
 google-services.json
 GoogleService-Info.plist
 firebase_options.dart
+
+# Android
+android/.gradle/
+android/app/build/
+
+# Windows
+*.exe
