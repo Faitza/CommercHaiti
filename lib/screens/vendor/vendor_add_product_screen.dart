@@ -1,121 +1,251 @@
 import 'package:flutter/material.dart';
 
-/// Dashboard Vendeur — Faitza COLAS
+/// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
-/// Path : lib/screens/vendor/vendor_dashboard_screen.dart
-class VendorDashboardScreen extends StatelessWidget {
-  const VendorDashboardScreen({super.key});
+/// Path : lib/screens/vendor/vendor_add_product_screen.dart
+class VendorAddProductScreen extends StatefulWidget {
+  const VendorAddProductScreen({super.key});
+
+  @override
+  State<VendorAddProductScreen> createState() =>
+      _VendorAddProductScreenState();
+}
+
+class _VendorAddProductScreenState
+    extends State<VendorAddProductScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nomCtrl = TextEditingController();
+  final _prixCtrl = TextEditingController();
+  final _prixPromoCtrl = TextEditingController();
+  final _stockCtrl = TextEditingController();
+
+  String _categorie = '';
+  String _sousCategorie = '';
+  final List<String> _couleurs = [];
+  final List<String> _tailles = [];
+  bool _disponible = true;
+  bool _isLoading = false;
+
+  // Max 4 photos
+  final List<String> _photos = []; // URLs après upload
+
+  final List<String> _taillesDisponibles = [
+    'XS', 'S', 'M', 'L', 'XL', 'XXL'
+  ];
+
+  String? _validatePrix(String? v) {
+    if (v == null || v.isEmpty) return 'Prix requis';
+    final n = double.tryParse(v);
+    if (n == null || n <= 0) return 'Prix invalide';
+    return null;
+  }
+
+  String? _validatePrixPromo(String? v) {
+    if (v == null || v.isEmpty) return null; // optionnel
+    final promo = double.tryParse(v);
+    final normal = double.tryParse(_prixCtrl.text);
+    if (promo == null || promo <= 0) return 'Prix promo invalide';
+    if (normal != null && promo >= normal)
+      return 'Prix promo doit être < prix normal';
+    return null;
+  }
+
+  Future<void> _sauvegarder() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    // TODO : FirestoreService.createProduct(...)
+    setState(() => _isLoading = false);
+    if (mounted) Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Mon Dashboard',
-                style: TextStyle(color: Colors.white, fontSize: 16,
-                    fontWeight: FontWeight.bold)),
-            Text('Boutique ouverte',
-                style: TextStyle(color: Colors.white70, fontSize: 12)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {}, // TODO : ouvrir hamburger menu
-          ),
-        ],
+        foregroundColor: Colors.white,
+        title: const Text('Ajouter un produit'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── CA Cards ──
-            Row(
-              children: [
-                _caCard('Aujourd\'hui', '0 HTG'),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Photos (max 4)
+              _label('Photos (max 4)'),
+              SizedBox(
+                height: 100,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    ..._photos.map((url) => _photoItem(url)),
+                    if (_photos.length < 4) _addPhotoButton(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              _label('Nom du produit *'),
+              _field(_nomCtrl, 'Ex: Robe fleurie',
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Nom requis' : null),
+              const SizedBox(height: 16),
+
+              Row(children: [
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _label('Prix normal (HTG) *'),
+                    _field(_prixCtrl, '500',
+                        validator: _validatePrix,
+                        keyboardType: TextInputType.number),
+                  ],
+                )),
                 const SizedBox(width: 12),
-                _caCard('Semaine', '0 HTG'),
-                const SizedBox(width: 12),
-                _caCard('Mois', '0 HTG'),
-              ],
-            ),
-            const SizedBox(height: 20),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _label('Prix promo (optionnel)'),
+                    _field(_prixPromoCtrl, '350',
+                        validator: _validatePrixPromo,
+                        keyboardType: TextInputType.number),
+                  ],
+                )),
+              ]),
+              const SizedBox(height: 16),
 
-            // ── Nouvelles commandes (Stream) ──
-            _sectionTitle('En attente du vendeur'),
-            // TODO : StreamBuilder sur FirestoreService.getOrdersForVendor()
-            _emptyState('Aucune commande en attente'),
-            const SizedBox(height: 20),
+              _label('Stock initial *'),
+              _field(_stockCtrl, '10',
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Stock requis' : null,
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 16),
 
-            // ── Alertes stock bas ──
-            _sectionTitle('Alertes stock ≤ 5'),
-            // TODO : StreamBuilder produits avec stock <= 5
-            _emptyState('Tous les stocks sont OK'),
-            const SizedBox(height: 20),
+              // Tailles
+              _label('Tailles (optionnel)'),
+              Wrap(
+                spacing: 8,
+                children: _taillesDisponibles.map((t) {
+                  final sel = _tailles.contains(t);
+                  return FilterChip(
+                    label: Text(t),
+                    selected: sel,
+                    onSelected: (v) => setState(() {
+                      if (v) _tailles.add(t);
+                      else _tailles.remove(t);
+                    }),
+                    selectedColor: const Color(0xFFEEF3FB),
+                    checkmarkColor: const Color(0xFF0D2B5E),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
 
-            // ── Top 5 produits ──
-            _sectionTitle('Top 5 produits'),
-            // TODO : query produits orderBy totalCommandes desc limit 5
-            _emptyState('Pas encore de données'),
-            const SizedBox(height: 20),
+              // Disponible toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Disponible à la vente',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  Switch(
+                    value: _disponible,
+                    onChanged: (v) => setState(() => _disponible = v),
+                    activeColor: const Color(0xFF0D2B5E),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
 
-            // ── Flop 5 produits ──
-            _sectionTitle('Flop 5 — À promouvoir'),
-            _emptyState('Pas encore de données'),
-          ],
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D2B5E),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _isLoading ? null : _sauvegarder,
+                  child: _isLoading
+                      ? const SizedBox(width: 20, height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Text('Publier le produit',
+                          style: TextStyle(color: Colors.white,
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _caCard(String label, String valeur) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
+  Widget _photoItem(String url) => Container(
+        width: 100, height: 100,
+        margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05),
-              blurRadius: 8, offset: const Offset(0, 2))],
+          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFFF2F4F8),
+          image: DecorationImage(
+              image: NetworkImage(url), fit: BoxFit.cover),
         ),
-        child: Column(
-          children: [
-            Text(label,
-                style: const TextStyle(fontSize: 11,
-                    color: Color(0xFF666666))),
-            const SizedBox(height: 4),
-            Text(valeur,
-                style: const TextStyle(fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0D2B5E))),
-          ],
+      );
+
+  Widget _addPhotoButton() => GestureDetector(
+        onTap: () {
+          // TODO : image_picker → StorageService.uploadPhoto()
+        },
+        child: Container(
+          width: 100, height: 100,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: const Color(0xFFF2F4F8),
+            border: Border.all(color: const Color(0xFFCCCCCC)),
+          ),
+          child: const Icon(Icons.add_photo_alternate_outlined,
+              color: Color(0xFF0D2B5E), size: 32),
         ),
-      ),
-    );
+      );
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(text,
+            style: const TextStyle(fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1F36))),
+      );
+
+  Widget _field(TextEditingController ctrl, String hint,
+      {String? Function(String?)? validator,
+      TextInputType? keyboardType}) =>
+      TextFormField(
+        controller: ctrl,
+        validator: validator,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Color(0xFFAAAAAA)),
+          filled: true,
+          fillColor: const Color(0xFFF5F5F5),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 14),
+        ),
+      );
+
+  @override
+  void dispose() {
+    _nomCtrl.dispose();
+    _prixCtrl.dispose();
+    _prixPromoCtrl.dispose();
+    _stockCtrl.dispose();
+    super.dispose();
   }
-
-  Widget _sectionTitle(String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(title,
-            style: const TextStyle(fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0D2B5E))),
-      );
-
-  Widget _emptyState(String msg) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(msg,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF999999))),
-      );
 }
