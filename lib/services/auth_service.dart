@@ -1,5 +1,5 @@
 // ignore_for_file: avoid_print
-// TODO Falexson : décommenter quand Firebase sera configuré
+// TODO Falexson Mercival : décommenter quand Firebase sera configuré
 // import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:google_sign_in/google_sign_in.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart';
