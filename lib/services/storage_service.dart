@@ -1,110 +1,101 @@
-// ignore_for_file: avoid_print
-// TODO Falexson : décommenter quand Firebase sera configuré
-// import 'package:firebase_storage/firebase_storage.dart';
-// import 'package:flutter_image_compress/flutter_image_compress.dart';
-// import 'dart:io';
+import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
-/// Service Storage — Falexson MERCIVAL
+/// Service Storage Supabase — Falexson MERCIVAL
 /// Branch : feature/firebase-core
 /// Path : lib/services/storage_service.dart
-/// Upload et compression photos avant envoi Firebase Storage
-/// Max 600x600px — obligatoire pour performances sur réseau 3G
 class StorageService {
-  // final FirebaseStorage _storage = FirebaseStorage.instance;
+  final _supabase = Supabase.instance.client;
 
-  // ════════════════════════════════════
-  // PHOTOS PRODUITS
-  // ════════════════════════════════════
+  static const String _bucketProducts = 'products';
+  static const String _bucketShops = 'shops';
 
-  /// Upload photo produit compressée 600x600px
-  /// Retourne URL de téléchargement ou null si erreur
+  // ── Upload photo produit ──
   Future<String?> uploadProductPhoto({
     required String filePath,
     required String shopId,
     required String productId,
   }) async {
     try {
-      // TODO :
-      // // 1. Comprimer image
-      // final dir = await getTemporaryDirectory();
-      // final targetPath = '${dir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      // final compressed = await FlutterImageCompress.compressAndGetFile(
-      //   filePath,
-      //   targetPath,
-      //   minWidth: 600,
-      //   minHeight: 600,
-      //   quality: 85,
-      // );
-      // if (compressed == null) throw Exception('Compression échouée');
-      //
-      // // 2. Upload vers Firebase Storage
-      // final ref = _storage
-      //   .ref()
-      //   .child('shops')
-      //   .child(shopId)
-      //   .child('products')
-      //   .child(productId)
-      //   .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-      //
-      // final task = await ref.putFile(File(compressed.path));
-      // return await task.ref.getDownloadURL();
+      final compressed = await _compress(filePath);
+      if (compressed == null) return null;
 
-      // ── DONNÉES TEST ──
-      print('[TEST] Photo produit uploadée : $filePath');
-      return 'https://via.placeholder.com/600x600?text=Produit';
+      final fileName =
+          '$shopId/$productId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await _supabase.storage
+          .from(_bucketProducts)
+          .upload(fileName, File(compressed));
+
+      return _supabase.storage
+          .from(_bucketProducts)
+          .getPublicUrl(fileName);
     } catch (e) {
-      print('Erreur uploadProductPhoto: $e');
       return null;
     }
   }
 
-  // ════════════════════════════════════
-  // LOGO BOUTIQUE
-  // ════════════════════════════════════
-
+  // ── Upload logo boutique ──
   Future<String?> uploadShopLogo({
     required String filePath,
     required String shopId,
   }) async {
     try {
-      // TODO :
-      // final ref = _storage
-      //   .ref()
-      //   .child('shops')
-      //   .child(shopId)
-      //   .child('logo.jpg');
-      //
-      // final compressed = await FlutterImageCompress.compressAndGetFile(
-      //   filePath,
-      //   filePath.replaceAll('.jpg', '_logo.jpg'),
-      //   minWidth: 300,
-      //   minHeight: 300,
-      //   quality: 90,
-      // );
-      //
-      // final task = await ref.putFile(File(compressed!.path));
-      // return await task.ref.getDownloadURL();
+      final compressed = await _compress(filePath, maxSize: 300);
+      if (compressed == null) return null;
 
-      print('[TEST] Logo boutique uploadé : $filePath');
-      return 'https://via.placeholder.com/300x300?text=Logo';
+      final fileName = '$shopId/logo.jpg';
+
+      await _supabase.storage
+          .from(_bucketShops)
+          .upload(fileName, File(compressed),
+              fileOptions: const FileOptions(upsert: true));
+
+      return _supabase.storage
+          .from(_bucketShops)
+          .getPublicUrl(fileName);
     } catch (e) {
-      print('Erreur uploadShopLogo: $e');
       return null;
     }
   }
 
-  // ════════════════════════════════════
-  // SUPPRIMER
-  // ════════════════════════════════════
-
-  Future<void> deleteFile(String downloadUrl) async {
+  // ── Supprimer fichier ──
+  Future<void> deleteFile(String url, String bucket) async {
     try {
-      // TODO :
-      // final ref = _storage.refFromURL(downloadUrl);
-      // await ref.delete();
-      print('[TEST] Fichier supprimé : $downloadUrl');
+      final path = _extractPath(url, bucket);
+      await _supabase.storage.from(bucket).remove([path]);
     } catch (e) {
-      print('Erreur deleteFile: $e');
+      // Silencieux
     }
+  }
+
+  // ── Compresser image — max 600x600px ──
+  Future<String?> _compress(String filePath, {int maxSize = 600}) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final targetPath =
+          '${dir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      final result = await FlutterImageCompress.compressAndGetFile(
+        filePath,
+        targetPath,
+        minWidth: maxSize,
+        minHeight: maxSize,
+        quality: 85,
+      );
+      return result?.path;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ── Extraire chemin relatif depuis URL publique ──
+  String _extractPath(String url, String bucket) {
+    final marker = '/storage/v1/object/public/$bucket/';
+    final idx = url.indexOf(marker);
+    if (idx == -1) return url;
+    return url.substring(idx + marker.length);
   }
 }
