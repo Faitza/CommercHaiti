@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// TODO : décommenter quand Firebase sera configuré
-// import 'package:firebase_core/firebase_core.dart';
-// import 'firebase_options.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/supabase_config.dart';
 import 'constants/app_colors.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/order_provider.dart';
 import 'screens/auth/splash_screen.dart';
-// TODO : décommenter quand app_router.dart sera mergé
-// import 'router/app_router.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
-/// Branch : feature/firebase-core (merge sur main après)
+/// Branch : feature/firebase-core
 /// Path : lib/main.dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // TODO Falexson : activer quand Firebase sera configuré
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
+  // ── Initialisation Supabase ──
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
 
   runApp(const CommercHaitiApp());
 }
+
+// Accès global au client Supabase — utilisable partout
+final supabase = Supabase.instance.client;
 
 class CommercHaitiApp extends StatelessWidget {
   const CommercHaitiApp({super.key});
@@ -65,8 +66,6 @@ class CommercHaitiApp extends StatelessWidget {
           ),
         ),
         home: const SplashScreen(),
-        // TODO : remplacer par GoRouter quand app_router sera mergé
-        // routerConfig: AppRouter.router,
       ),
     );
   }
