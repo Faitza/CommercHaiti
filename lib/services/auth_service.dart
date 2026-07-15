@@ -1,149 +1,92 @@
-// ignore_for_file: avoid_print
-// TODO Falexson Mercival : décommenter quand Firebase sera configuré
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:google_sign_in/google_sign_in.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 
-/// Service authentification Firebase — Falexson MERCIVAL
+/// Service authentification Supabase — Falexson MERCIVAL
 /// Branch : feature/firebase-core
 /// Path : lib/services/auth_service.dart
-/// SEUL fichier qui parle à Firebase Auth
-/// Ne jamais appeler depuis un Widget — toujours via AuthProvider
 class AuthService {
-  // ── Instance Firebase (décommenter après configuration) ──
-  // final FirebaseAuth _auth = FirebaseAuth.instance;
-  // final FirebaseFirestore _db = FirebaseFirestore.instance;
-  // final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final _supabase = Supabase.instance.client;
 
-  // ════════════════════════════════════
-  // CONNEXION EMAIL / MOT DE PASSE
-  // ════════════════════════════════════
+  // ── Connexion email/mot de passe ──
   Future<UserModel?> signIn(String email, String password) async {
     try {
-      // TODO : décommenter quand Firebase sera configuré
-      // final credential = await _auth.signInWithEmailAndPassword(
-      //   email: email,
-      //   password: password,
-      // );
-      // return await getUserFromFirestore(credential.user!.uid);
-
-      // ── DONNÉES TEST (retirer quand Firebase sera prêt) ──
-      await Future.delayed(const Duration(milliseconds: 800));
-      return UserModel(
-        uid: 'test_uid_${DateTime.now().millisecondsSinceEpoch}',
-        nom: 'Test Utilisateur',
-        telephone: '+50937000000',
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
-        role: 'customer',
-        createdAt: DateTime.now(),
+        password: password,
       );
-    } catch (e) {
-      print('Erreur signIn: $e');
-      rethrow;
+      if (response.user == null) return null;
+      return await getUserFromDatabase(response.user!.id);
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     }
   }
 
-  // ════════════════════════════════════
-  // INSCRIPTION
-  // ════════════════════════════════════
+  // ── Inscription ──
   Future<UserModel?> signUp({
     required String email,
     required String password,
     required Map<String, dynamic> userData,
   }) async {
     try {
-      // TODO :
-      // final credential = await _auth.createUserWithEmailAndPassword(
-      //   email: email,
-      //   password: password,
-      // );
-      // final uid = credential.user!.uid;
-      // await _db.collection('users').doc(uid).set({
-      //   ...userData,
-      //   'uid': uid,
-      //   'createdAt': FieldValue.serverTimestamp(),
-      // });
-      // return await getUserFromFirestore(uid);
-
-      // ── DONNÉES TEST ──
-      await Future.delayed(const Duration(milliseconds: 800));
-      return UserModel(
-        uid: 'test_uid_${DateTime.now().millisecondsSinceEpoch}',
-        nom: userData['nom'] ?? '',
-        telephone: userData['telephone'] ?? '',
+      final response = await _supabase.auth.signUp(
         email: email,
-        role: userData['role'] ?? 'customer',
-        adresse: userData['adresse'],
-        shopCode: userData['shopCode'],
-        createdAt: DateTime.now(),
+        password: password,
       );
-    } catch (e) {
-      print('Erreur signUp: $e');
-      rethrow;
+      if (response.user == null) return null;
+      final uid = response.user!.id;
+
+      await _supabase.from('users').insert({
+        'id':        uid,
+        'nom':       userData['nom'],
+        'telephone': userData['telephone'],
+        'email':     email,
+        'role':      userData['role'] ?? 'customer',
+        'adresse':   userData['adresse'],
+        'shop_code': userData['shop_code'],
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      return await getUserFromDatabase(uid);
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     }
   }
 
-  // ════════════════════════════════════
-  // CONNEXION GOOGLE
-  // ════════════════════════════════════
-  Future<UserModel?> signInWithGoogle() async {
+  // ── Connexion Google ──
+  Future<void> signInWithGoogle() async {
     try {
-      // TODO :
-      // final googleUser = await _googleSignIn.signIn();
-      // if (googleUser == null) return null;
-      // final googleAuth = await googleUser.authentication;
-      // final credential = GoogleAuthProvider.credential(
-      //   accessToken: googleAuth.accessToken,
-      //   idToken: googleAuth.idToken,
-      // );
-      // final userCredential = await _auth.signInWithCredential(credential);
-      // return await getUserFromFirestore(userCredential.user!.uid);
-
-      // ── DONNÉES TEST ──
-      await Future.delayed(const Duration(milliseconds: 800));
-      return UserModel(
-        uid: 'google_test_uid',
-        nom: 'Utilisateur Google',
-        telephone: '',
-        email: 'google@test.com',
-        role: 'customer',
-        createdAt: DateTime.now(),
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.commerchaiti://login-callback/',
       );
-    } catch (e) {
-      print('Erreur signInWithGoogle: $e');
-      rethrow;
+    } on AuthException catch (e) {
+      throw Exception(e.message);
     }
   }
 
-  // ════════════════════════════════════
-  // DÉCONNEXION
-  // ════════════════════════════════════
+  // ── Déconnexion ──
   Future<void> signOut() async {
-    // TODO :
-    // await _googleSignIn.signOut();
-    // await _auth.signOut();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await _supabase.auth.signOut();
   }
 
-  // ════════════════════════════════════
-  // RÉCUPÉRER UTILISATEUR FIRESTORE
-  // ════════════════════════════════════
-  Future<UserModel?> getUserFromFirestore(String uid) async {
+  // ── Récupérer utilisateur depuis base de données ──
+  Future<UserModel?> getUserFromDatabase(String uid) async {
     try {
-      // TODO :
-      // final doc = await _db.collection('users').doc(uid).get();
-      // if (doc.exists) return UserModel.fromMap(doc.data()!);
-      return null;
+      final data = await _supabase
+          .from('users')
+          .select()
+          .eq('id', uid)
+          .single();
+      return UserModel.fromMap(data);
     } catch (e) {
-      print('Erreur getUserFromFirestore: $e');
       return null;
     }
   }
 
-  // ════════════════════════════════════
-  // STREAM AUTH (écoute connexion/déconnexion)
-  // ════════════════════════════════════
-  // Stream<User?> get authStateChanges => _auth.authStateChanges();
+  // ── Écouter changements auth ──
+  Stream<AuthState> get authStateChanges =>
+      _supabase.auth.onAuthStateChange;
+
+  // ── Utilisateur connecté actuellement ──
+  User? get currentUser => _supabase.auth.currentUser;
 }
