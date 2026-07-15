@@ -1,15 +1,15 @@
 /// Modèle avis — Falexson MERCIVAL
 /// Branch : feature/firebase-core
 /// Path : lib/models/review_model.dart
-/// Collection Firestore : reviews/{rid}
-/// Règle : 1 avis par commande seulement (orderId unique)
+/// Table Supabase : reviews
+/// Colonnes : id, shop_id, client_id, order_id, note, commentaire, created_at
 class ReviewModel {
   final String id;
   final String shopId;
   final String clientId;
-  final String orderId;  // 1 avis par commande seulement
-  final int note;        // 1 à 5 étoiles
-  final String? commentaire; // optionnel
+  final String orderId;
+  final int note;
+  final String? commentaire;
   final DateTime createdAt;
 
   const ReviewModel({
@@ -22,35 +22,32 @@ class ReviewModel {
     required this.createdAt,
   });
 
-  /// Vérifie si la note est valide (1 à 5)
   bool get noteValide => note >= 1 && note <= 5;
 
-  /// Firestore → Dart
+  /// Supabase → Dart
   factory ReviewModel.fromMap(Map<String, dynamic> map, String id) {
     return ReviewModel(
-      id: id,
-      shopId: map['shopId'] ?? '',
-      clientId: map['clientId'] ?? '',
-      orderId: map['orderId'] ?? '',
-      note: map['note'] ?? 0,
+      id:          map['id'] ?? id,
+      shopId:      map['shop_id'] ?? '',
+      clientId:    map['client_id'] ?? '',
+      orderId:     map['order_id'] ?? '',
+      note:        map['note'] ?? 0,
       commentaire: map['commentaire'],
-      createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
+      createdAt:   map['created_at'] != null
+                     ? DateTime.parse(map['created_at'])
+                     : DateTime.now(),
     );
   }
 
-  /// Dart → Firestore
+  /// Dart → Supabase
   Map<String, dynamic> toMap() {
     return {
-      'shopId': shopId,
-      'clientId': clientId,
-      'orderId': orderId,
-      'note': note,
+      'shop_id':     shopId,
+      'client_id':   clientId,
+      'order_id':    orderId,
+      'note':        note,
       'commentaire': commentaire,
-      'createdAt': createdAt,
+      'created_at':  createdAt.toIso8601String(),
     };
   }
-
-  @override
-  String toString() =>
-      'ReviewModel(shopId: $shopId, note: $note, orderId: $orderId)';
 }
