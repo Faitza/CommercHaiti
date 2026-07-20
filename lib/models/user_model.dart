@@ -1,4 +1,4 @@
-/// Modèle utilisateur — Faitza COLAS
+/// Modèle utilisateur 
 /// Branch : feature/auth-roles
 /// Path : lib/models/user_model.dart
 /// Table Supabase : users
