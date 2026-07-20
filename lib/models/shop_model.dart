@@ -1,12 +1,15 @@
 /// Modèle boutique — Faitza COLAS
 /// Branch : feature/auth-roles
 /// Path : lib/models/shop_model.dart
+/// Table Supabase : shops
+/// Colonnes : id, proprietaire_id, nom, description, logo_url,
+///            shop_code, zones_livraison, rating, total_avis, is_open, created_at
 class ShopModel {
   final String id;
   final String proprietaireId;
   final String nom;
   final String description;
-  final String? logoURL;
+  final String? logoUrl;
   final String shopCode;
   final List<ZoneLivraison> zonesLivraison;
   final double rating;
@@ -19,7 +22,7 @@ class ShopModel {
     required this.proprietaireId,
     required this.nom,
     required this.description,
-    this.logoURL,
+    this.logoUrl,
     required this.shopCode,
     required this.zonesLivraison,
     this.rating = 0.0,
@@ -36,40 +39,46 @@ class ShopModel {
     return (mots[0][0] + mots[1][0]).toUpperCase();
   }
 
+  /// Supabase → Dart
   factory ShopModel.fromMap(Map<String, dynamic> map, String id) {
     return ShopModel(
-      id: id,
-      proprietaireId: map['proprietaireId'] ?? '',
-      nom: map['nom'] ?? '',
-      description: map['description'] ?? '',
-      logoURL: map['logoURL'],
-      shopCode: map['shopCode'] ?? '',
-      zonesLivraison: (map['zonesLivraison'] as List<dynamic>? ?? [])
-          .map((z) => ZoneLivraison.fromMap(z as Map<String, dynamic>))
-          .toList(),
-      rating: (map['rating'] ?? 0.0).toDouble(),
-      totalAvis: map['totalAvis'] ?? 0,
-      isOpen: map['isOpen'] ?? true,
-      createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
+      id:             map['id'] ?? id,
+      proprietaireId: map['proprietaire_id'] ?? '',
+      nom:            map['nom'] ?? '',
+      description:    map['description'] ?? '',
+      logoUrl:        map['logo_url'],
+      shopCode:       map['shop_code'] ?? '',
+      zonesLivraison: (map['zones_livraison'] as List<dynamic>? ?? [])
+                        .map((z) => ZoneLivraison.fromMap(
+                              z as Map<String, dynamic>))
+                        .toList(),
+      rating:         (map['rating'] ?? 0.0).toDouble(),
+      totalAvis:      map['total_avis'] ?? 0,
+      isOpen:         map['is_open'] ?? true,
+      createdAt:      map['created_at'] != null
+                        ? DateTime.parse(map['created_at'])
+                        : DateTime.now(),
     );
   }
 
+  /// Dart → Supabase
   Map<String, dynamic> toMap() {
     return {
-      'proprietaireId': proprietaireId,
-      'nom': nom,
-      'description': description,
-      'logoURL': logoURL,
-      'shopCode': shopCode,
-      'zonesLivraison': zonesLivraison.map((z) => z.toMap()).toList(),
-      'rating': rating,
-      'totalAvis': totalAvis,
-      'isOpen': isOpen,
-      'createdAt': createdAt,
+      'proprietaire_id':  proprietaireId,
+      'nom':              nom,
+      'description':      description,
+      'logo_url':         logoUrl,
+      'shop_code':        shopCode,
+      'zones_livraison':  zonesLivraison.map((z) => z.toMap()).toList(),
+      'rating':           rating,
+      'total_avis':       totalAvis,
+      'is_open':          isOpen,
+      'created_at':       createdAt.toIso8601String(),
     };
   }
 }
 
+/// Zone de livraison
 class ZoneLivraison {
   final String zone;
   final int delaiMin;
@@ -85,13 +94,17 @@ class ZoneLivraison {
 
   factory ZoneLivraison.fromMap(Map<String, dynamic> map) {
     return ZoneLivraison(
-      zone: map['zone'] ?? '',
-      delaiMin: map['delaiMin'] ?? 30,
-      delaiMax: map['delaiMax'] ?? 45,
+      zone:     map['zone'] ?? '',
+      delaiMin: map['delai_min'] ?? 30,
+      delaiMax: map['delai_max'] ?? 45,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {'zone': zone, 'delaiMin': delaiMin, 'delaiMax': delaiMax};
+    return {
+      'zone':      zone,
+      'delai_min': delaiMin,
+      'delai_max': delaiMax,
+    };
   }
 }
