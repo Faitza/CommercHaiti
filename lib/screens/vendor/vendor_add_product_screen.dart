@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/database_service.dart';
+import '../../services/storage_service.dart';
+import '../../models/product_model.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -11,49 +17,69 @@ class VendorAddProductScreen extends StatefulWidget {
       _VendorAddProductScreenState();
 }
 
-class _VendorAddProductScreenState
-    extends State<VendorAddProductScreen> {
+class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _db = DatabaseService();
+  final _storage = StorageService();
+  final _picker = ImagePicker();
+
   final _nomCtrl = TextEditingController();
   final _prixCtrl = TextEditingController();
   final _prixPromoCtrl = TextEditingController();
   final _stockCtrl = TextEditingController();
 
-  String _categorie = '';
-  String _sousCategorie = '';
-  final List<String> _couleurs = [];
-  final List<String> _tailles = [];
+  List<String> _photoUrls = [];
+  List<String> _tailles = [];
   bool _disponible = true;
   bool _isLoading = false;
 
-  // Max 4 photos
-  final List<String> _photos = []; // URLs après upload
+  final List<String> _taillesDisponibles = ['XS','S','M','L','XL','XXL'];
 
-  final List<String> _taillesDisponibles = [
-    'XS', 'S', 'M', 'L', 'XL', 'XXL'
-  ];
+  Future<void> _ajouterPhoto() async {
+    if (_photoUrls.length >= 4) return;
+    final file = await _picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
 
-  String? _validatePrix(String? v) {
-    if (v == null || v.isEmpty) return 'Prix requis';
-    final n = double.tryParse(v);
-    if (n == null || n <= 0) return 'Prix invalide';
-    return null;
-  }
+    setState(() => _isLoading = true);
+    final auth = context.read<AuthProvider>();
+    final shopId = auth.currentUser?.shopCode ?? '';
+    final productId = DateTime.now().millisecondsSinceEpoch.toString();
 
-  String? _validatePrixPromo(String? v) {
-    if (v == null || v.isEmpty) return null; // optionnel
-    final promo = double.tryParse(v);
-    final normal = double.tryParse(_prixCtrl.text);
-    if (promo == null || promo <= 0) return 'Prix promo invalide';
-    if (normal != null && promo >= normal)
-      return 'Prix promo doit être < prix normal';
-    return null;
+    final url = await _storage.uploadProductPhoto(
+      filePath: file.path,
+      shopId: shopId,
+      productId: productId,
+    );
+
+    if (url != null) setState(() => _photoUrls.add(url));
+    setState(() => _isLoading = false);
   }
 
   Future<void> _sauvegarder() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    // TODO : FirestoreService.createProduct(...)
+
+    final auth = context.read<AuthProvider>();
+    final shopId = auth.currentUser?.shopCode ?? '';
+
+    final product = ProductModel(
+      id: '',
+      shopId: shopId,
+      nom: _nomCtrl.text.trim(),
+      prix: double.parse(_prixCtrl.text),
+      prixPromo: _prixPromoCtrl.text.isEmpty
+          ? null
+          : double.parse(_prixPromoCtrl.text),
+      photos: _photoUrls,
+      stock: int.parse(_stockCtrl.text),
+      categorie: '',
+      sousCategorie: '',
+      tailles: _tailles,
+      disponible: _disponible,
+      createdAt: DateTime.now(),
+    );
+
+    await _db.createProduct(product);
     setState(() => _isLoading = false);
     if (mounted) Navigator.pop(context);
   }
@@ -73,15 +99,37 @@ class _VendorAddProductScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Photos (max 4)
+              // Photos
               _label('Photos (max 4)'),
               SizedBox(
                 height: 100,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    ..._photos.map((url) => _photoItem(url)),
-                    if (_photos.length < 4) _addPhotoButton(),
+                    ..._photoUrls.map((url) => Container(
+                      width: 100, height: 100,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        image: DecorationImage(
+                            image: NetworkImage(url), fit: BoxFit.cover),
+                      ),
+                    )),
+                    if (_photoUrls.length < 4)
+                      GestureDetector(
+                        onTap: _ajouterPhoto,
+                        child: Container(
+                          width: 100, height: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: const Color(0xFFF2F4F8),
+                            border: Border.all(color: const Color(0xFFCCCCCC)),
+                          ),
+                          child: const Icon(Icons.add_photo_alternate_outlined,
+                              color: Color(0xFF0D2B5E), size: 32),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -89,8 +137,7 @@ class _VendorAddProductScreenState
 
               _label('Nom du produit *'),
               _field(_nomCtrl, 'Ex: Robe fleurie',
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Nom requis' : null),
+                  validator: (v) => v == null || v.isEmpty ? 'Nom requis' : null),
               const SizedBox(height: 16),
 
               Row(children: [
@@ -99,7 +146,12 @@ class _VendorAddProductScreenState
                   children: [
                     _label('Prix normal (HTG) *'),
                     _field(_prixCtrl, '500',
-                        validator: _validatePrix,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Prix requis';
+                          if (double.tryParse(v) == null || double.parse(v) <= 0)
+                            return 'Prix invalide';
+                          return null;
+                        },
                         keyboardType: TextInputType.number),
                   ],
                 )),
@@ -109,7 +161,15 @@ class _VendorAddProductScreenState
                   children: [
                     _label('Prix promo (optionnel)'),
                     _field(_prixPromoCtrl, '350',
-                        validator: _validatePrixPromo,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          final promo = double.tryParse(v);
+                          final normal = double.tryParse(_prixCtrl.text);
+                          if (promo == null || promo <= 0) return 'Invalide';
+                          if (normal != null && promo >= normal)
+                            return 'Doit être < prix normal';
+                          return null;
+                        },
                         keyboardType: TextInputType.number),
                   ],
                 )),
@@ -118,12 +178,10 @@ class _VendorAddProductScreenState
 
               _label('Stock initial *'),
               _field(_stockCtrl, '10',
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Stock requis' : null,
+                  validator: (v) => v == null || v.isEmpty ? 'Stock requis' : null,
                   keyboardType: TextInputType.number),
               const SizedBox(height: 16),
 
-              // Tailles
               _label('Tailles (optionnel)'),
               Wrap(
                 spacing: 8,
@@ -143,7 +201,6 @@ class _VendorAddProductScreenState
               ),
               const SizedBox(height: 16),
 
-              // Disponible toggle
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -184,40 +241,10 @@ class _VendorAddProductScreenState
     );
   }
 
-  Widget _photoItem(String url) => Container(
-        width: 100, height: 100,
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: const Color(0xFFF2F4F8),
-          image: DecorationImage(
-              image: NetworkImage(url), fit: BoxFit.cover),
-        ),
-      );
-
-  Widget _addPhotoButton() => GestureDetector(
-        onTap: () {
-          // TODO : image_picker → StorageService.uploadPhoto()
-        },
-        child: Container(
-          width: 100, height: 100,
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: const Color(0xFFF2F4F8),
-            border: Border.all(color: const Color(0xFFCCCCCC)),
-          ),
-          child: const Icon(Icons.add_photo_alternate_outlined,
-              color: Color(0xFF0D2B5E), size: 32),
-        ),
-      );
-
-  Widget _label(String text) => Padding(
+  Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(text,
-            style: const TextStyle(fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36))),
+        child: Text(t, style: const TextStyle(fontSize: 14,
+            fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
       );
 
   Widget _field(TextEditingController ctrl, String hint,
