@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-// import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/auth_provider.dart';
 
 /// Splash Screen — Faitza COLAS
 /// Branch : feature/auth-roles
-/// Path : lib/screens/auth/splash_screen.dart
+/// Path : a
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -36,20 +38,34 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _redirect() async {
+    // Attendre 2.5 secondes
     await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
 
-    // TODO : vérifier si utilisateur déjà connecté
-    // final auth = context.read<AuthProvider>();
-    // if (auth.isLoggedIn) {
-    //   if (auth.isSeller) context.go('/vendor/dashboard');
-    //   else context.go('/client/home');
-    // } else {
-    //   context.go('/onboarding');
-    // }
+    final auth = context.read<AuthProvider>();
+    final prefs = await SharedPreferences.getInstance();
+    final onboardingVu = prefs.getBool('onboarding_done') ?? false;
 
-    // Temporaire — navigation directe vers onboarding
-    Navigator.pushReplacementNamed(context, '/onboarding');
+    if (!mounted) return;
+
+    // Utilisateur déjà connecté → Dashboard ou Accueil
+    if (auth.isLoggedIn) {
+      if (auth.isSeller) {
+        context.go('/vendor/dashboard');
+      } else {
+        context.go('/client/home');
+      }
+      return;
+    }
+
+    // Première ouverture → Onboarding
+    if (!onboardingVu) {
+      context.go('/onboarding');
+      return;
+    }
+
+    // Ouvertures suivantes → Choix du rôle
+    context.go('/role-selection');
   }
 
   @override
@@ -61,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D2B5E), // AppColors.navy
+      backgroundColor: const Color(0xFF0D2B5E),
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -70,51 +86,34 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo placeholder
+                // Logo
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 100, height: 100,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Center(
-                    child: Text(
-                      'CH',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0D2B5E),
-                      ),
-                    ),
+                    child: Text('CH', style: TextStyle(
+                      fontSize: 40, fontWeight: FontWeight.bold,
+                      color: Color(0xFF0D2B5E),
+                    )),
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'CommercHaiti',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
+                const Text('CommercHaiti', style: TextStyle(
+                  fontSize: 32, fontWeight: FontWeight.bold,
+                  color: Colors.white, letterSpacing: 1.2,
+                )),
                 const SizedBox(height: 8),
-                const Text(
-                  'Marketplace locale des Cayes',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFFB5D4F4),
-                  ),
-                ),
+                const Text('Marketplace locale des Cayes',
+                    style: TextStyle(fontSize: 14,
+                        color: Color(0xFFB5D4F4))),
                 const SizedBox(height: 60),
                 const SizedBox(
-                  width: 24,
-                  height: 24,
+                  width: 24, height: 24,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
+                      color: Colors.white, strokeWidth: 2),
                 ),
               ],
             ),
