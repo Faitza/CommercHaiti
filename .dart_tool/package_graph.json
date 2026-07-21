@@ -210,7 +210,7 @@
     },
     {
       "name": "meta",
-      "version": "1.17.0",
+      "version": "1.18.0",
       "dependencies": []
     },
     {
@@ -272,7 +272,11 @@
     },
     {
       "name": "test_api",
+<<<<<<< HEAD
       "version": "0.7.10",
+=======
+      "version": "0.7.11",
+>>>>>>> feature/cart-orders
       "dependencies": [
         "async",
         "boolean_selector",
