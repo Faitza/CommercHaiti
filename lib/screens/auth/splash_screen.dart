@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 
 /// Splash Screen — Faitza COLAS
 /// Branch : feature/auth-roles
-/// Path : a
+/// Path : lib/screens/auth/splash_screen.dart
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -38,34 +38,32 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _redirect() async {
-    // Attendre 2.5 secondes
+    // Etap 1 — Tann 2.5 segonn
     await Future.delayed(const Duration(milliseconds: 2500));
+
+    // Etap 2 — Verifye widget toujou la
     if (!mounted) return;
 
     final auth = context.read<AuthProvider>();
     final prefs = await SharedPreferences.getInstance();
     final onboardingVu = prefs.getBool('onboarding_done') ?? false;
 
+    // Etap 3 — Verifye ankò apre async
     if (!mounted) return;
 
-    // Utilisateur déjà connecté → Dashboard ou Accueil
-    if (auth.isLoggedIn) {
-      if (auth.isSeller) {
-        context.go('/vendor/dashboard');
-      } else {
-        context.go('/client/home');
+    // Etap 4 — Navige apre paj la fin afiche nèt
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (auth.isLoggedIn) {
+        context.go(auth.isSeller
+            ? '/vendor/dashboard'
+            : '/client/home');
+        return;
       }
-      return;
-    }
 
-    // Première ouverture → Onboarding
-    if (!onboardingVu) {
-      context.go('/onboarding');
-      return;
-    }
-
-    // Ouvertures suivantes → Choix du rôle
-    context.go('/role-selection');
+      context.go(!onboardingVu ? '/onboarding' : '/role-selection');
+    });
   }
 
   @override
@@ -87,33 +85,67 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Logo
-                Container(
-                  width: 100, height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Center(
-                    child: Text('CH', style: TextStyle(
-                      fontSize: 40, fontWeight: FontWeight.bold,
-                      color: Color(0xFF0D2B5E),
-                    )),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 150,
+                  height: 150,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 120, height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
+                      child: Text('CH', style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0D2B5E),
+                      )),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text('CommercHaiti', style: TextStyle(
-                  fontSize: 32, fontWeight: FontWeight.bold,
-                  color: Colors.white, letterSpacing: 1.2,
-                )),
+                // Nom app
+                RichText(
+                  text: const TextSpan(
+                    style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2),
+                    children: [
+                      TextSpan(text: 'Commerc',
+                          style: TextStyle(color: Colors.white)),
+                      TextSpan(text: 'Haiti',
+                          style: TextStyle(color: Color(0xFFE63946))),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
-                const Text('Marketplace locale des Cayes',
-                    style: TextStyle(fontSize: 14,
-                        color: Color(0xFFB5D4F4))),
-                const SizedBox(height: 60),
-                const SizedBox(
-                  width: 24, height: 24,
-                  child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                const Text('MARKETPLACE LOCALE',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white54,
+                      letterSpacing: 3,
+                    )),
+                const SizedBox(height: 80),
+                // Lokasyon
+                const Text('Les Cayes - Haïti',
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.white38)),
+                const SizedBox(height: 16),
+                // Indicateurs (3 points)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (i) => Container(
+                    width: 8, height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      color: i == 0
+                          ? const Color(0xFFE63946)
+                          : Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                  )),
                 ),
               ],
             ),

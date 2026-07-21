@@ -20,20 +20,26 @@ import '../screens/vendor/vendor_add_product_screen.dart';
 import '../screens/vendor/vendor_edit_product_screen.dart';
 import '../screens/vendor/vendor_stats_screen.dart';
 
-// Client screens (Claudimyr — décommenter après merge)
-// import '../screens/client/client_home_screen.dart';
-// import '../screens/client/boutiques_screen.dart';
-// import '../screens/client/boutique_detail_screen.dart';
-// import '../screens/client/product_detail_screen.dart';
-// import '../screens/orders/cart_screen.dart';
-// import '../screens/orders/order_form_screen.dart';
-// import '../screens/orders/order_tracking_screen.dart';
-// import '../screens/orders/order_history_screen.dart';
+// Client screens
+import '../screens/client/client_home_screen.dart';
+import '../screens/client/boutiques_screen.dart';
+import '../screens/client/boutique_detail_screen.dart';
+import '../screens/client/subcategory_screen.dart';
+import '../screens/client/product_detail_screen.dart';
+import '../screens/client/product_shops_screen.dart';
 
-// Settings screens (Falexson — décommenter après merge)
-// import '../screens/settings/settings_screen.dart';
-// import '../screens/settings/params_screen.dart';
+// Orders screens
+import '../screens/orders/cart_screen.dart';
+import '../screens/orders/order_form_screen.dart';
+import '../screens/orders/order_tracking_screen.dart';
+import '../screens/orders/order_history_screen.dart';
 
+// Settings screens
+import '../screens/settings/settings_screen.dart';
+import '../screens/settings/params_screen.dart';
+
+import '../models/shop_model.dart';
+import '../models/product_model.dart';
 import '../models/order_model.dart';
 
 /// Router de navigation — Faitza COLAS
@@ -44,24 +50,25 @@ class AppRouter {
         initialLocation: '/splash',
         refreshListenable: auth,
 
-        // ── Guard global ──
         redirect: (context, state) {
           final isLoggedIn = auth.isLoggedIn;
           final isSeller = auth.isSeller;
           final path = state.uri.path;
 
-          // Pas connecté → retour auth
+          // Pa konekte → pa ka al sou pages proteje yo
           if (!isLoggedIn) {
             if (path.startsWith('/vendor')) return '/role-selection';
             if (path.startsWith('/client')) return '/role-selection';
+            if (path.startsWith('/cart')) return '/role-selection';
+            if (path.startsWith('/order')) return '/role-selection';
           }
 
-          // Client essaie pages vendeur → redirigé
+          // Client → pa ka al sou pages vendeur
           if (isLoggedIn && !isSeller && path.startsWith('/vendor')) {
             return '/client/home';
           }
 
-          // Vendeur essaie pages client → redirigé
+          // Vendeur → pa ka al sou pages client
           if (isLoggedIn && isSeller && path.startsWith('/client')) {
             return '/vendor/dashboard';
           }
@@ -140,25 +147,84 @@ class AppRouter {
             builder: (_, __) => const VendorStatsScreen(),
           ),
 
-          // ── Client (Claudimyr — décommenter après merge) ──
-          // GoRoute(path: '/client/home', builder: ...),
-          // GoRoute(path: '/client/boutiques', builder: ...),
-          // GoRoute(path: '/client/boutique', builder: ...),
-          // GoRoute(path: '/client/product', builder: ...),
-          // GoRoute(path: '/cart', builder: ...),
-          // GoRoute(path: '/order-form', builder: ...),
-          // GoRoute(path: '/order-tracking', builder: ...),
-          // GoRoute(path: '/order-history', builder: ...),
+          // ── Client ──
+          GoRoute(
+            path: '/client/home',
+            builder: (_, __) => const ClientHomeScreen(),
+          ),
+          GoRoute(
+            path: '/client/boutiques',
+            builder: (_, __) => const BoutiquesScreen(),
+          ),
+          GoRoute(
+            path: '/client/boutique',
+            builder: (_, state) {
+              final shop = state.extra as ShopModel;
+              return BoutiqueDetailScreen(shop: shop);
+            },
+          ),
+          GoRoute(
+            path: '/client/subcategory',
+            builder: (_, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return SubcategoryScreen(
+                shopId: data['shopId'],
+                categorie: data['categorie'],
+              );
+            },
+          ),
+          GoRoute(
+            path: '/client/product',
+            builder: (_, state) {
+              final product = state.extra as ProductModel;
+              return ProductDetailScreen(product: product);
+            },
+          ),
+          GoRoute(
+            path: '/client/product-shops',
+            builder: (_, state) {
+              final nom = state.extra as String;
+              return ProductShopsScreen(productNom: nom);
+            },
+          ),
 
-          // ── Settings (Falexson — décommenter après merge) ──
-          // GoRoute(path: '/settings', builder: ...),
-          // GoRoute(path: '/params', builder: ...),
+          // ── Commandes ──
+          GoRoute(
+            path: '/cart',
+            builder: (_, __) => const CartScreen(),
+          ),
+          GoRoute(
+            path: '/order-form',
+            builder: (_, __) => const OrderFormScreen(),
+          ),
+          GoRoute(
+            path: '/order-tracking',
+            builder: (_, state) {
+              final data = state.extra as Map<String, dynamic>;
+              return OrderTrackingScreen(
+                orderId: data['orderId'],
+                vendeurTelephone: data['vendeurTelephone'] ?? '',
+              );
+            },
+          ),
+          GoRoute(
+            path: '/order-history',
+            builder: (_, __) => const OrderHistoryScreen(),
+          ),
+
+          // ── Settings ──
+          GoRoute(
+            path: '/settings',
+            builder: (_, __) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/params',
+            builder: (_, __) => const ParamsScreen(),
+          ),
         ],
 
-        errorBuilder: (_, state) => Scaffold(
-          body: Center(
-            child: Text('Page introuvable : ${state.uri}'),
-          ),
+        errorBuilder: (_, state) => const Scaffold(
+          body: Center(child: Text('Page introuvable')),
         ),
       );
 }

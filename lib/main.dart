@@ -8,7 +8,7 @@ import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/order_provider.dart';
-import 'screens/auth/splash_screen.dart';
+import 'router/app_router.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
 /// Branch : feature/firebase-core
@@ -16,7 +16,6 @@ import 'screens/auth/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Initialisation Supabase ──
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
@@ -25,7 +24,6 @@ void main() async {
   runApp(const CommercHaitiApp());
 }
 
-// Accès global au client Supabase — utilisable partout
 final supabase = Supabase.instance.client;
 
 class CommercHaitiApp extends StatelessWidget {
@@ -40,32 +38,38 @@ class CommercHaitiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ShopProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'CommercHaiti',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.navy,
-            primary: AppColors.navy,
-          ),
-          useMaterial3: true,
-          fontFamily: 'Roboto',
-          appBarTheme: const AppBarTheme(
-            backgroundColor: AppColors.navy,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.navy,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      child: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          // ✅ MaterialApp.router — obligatwa pou GoRouter mache
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            title: 'CommercHaiti',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.navy,
+                primary: AppColors.navy,
+              ),
+              useMaterial3: true,
+              fontFamily: 'Roboto',
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.navy,
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.navy,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        home: const SplashScreen(),
+            // ✅ GoRouter injeckte nan tout aplikasyon an
+            routerConfig: AppRouter.router(auth),
+          );
+        },
       ),
     );
   }

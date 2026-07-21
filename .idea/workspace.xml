@@ -4,7 +4,22 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bd902915-26b6-4475-b359-4cf13d007b05" name="Changes" comment="" />
+    <list default="true" id="bd902915-26b6-4475-b359-4cf13d007b05" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.dart_tool/dartpad/web_plugin_registrant.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.dart_tool/version" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.flutter-plugins-dependencies" beforeDir="false" afterPath="$PROJECT_DIR$/.flutter-plugins-dependencies" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/6ab642d2d29d49c7c5f5a6d85fcef46b.cache.dill.track.dill" beforeDir="false" afterPath="$PROJECT_DIR$/build/6ab642d2d29d49c7c5f5a6d85fcef46b.cache.dill.track.dill" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/c6b8aa38a0051f77f6373f93d70c2c39/.filecache" beforeDir="false" afterPath="$PROJECT_DIR$/build/c6b8aa38a0051f77f6373f93d70c2c39/.filecache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/c6b8aa38a0051f77f6373f93d70c2c39/dart_build_result.json" beforeDir="false" afterPath="$PROJECT_DIR$/build/c6b8aa38a0051f77f6373f93d70c2c39/dart_build_result.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/reports/problems/problems-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/build/reports/problems/problems-report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/providers/cart_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/providers/cart_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/router/app_router.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/router/app_router.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/screens/auth/onboarding_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/auth/onboarding_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/screens/auth/role_selection_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/auth/role_selection_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/screens/auth/splash_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/auth/splash_screen.dart" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -56,7 +71,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "Merging main",
     "io.flutter.project.isFirstOpen": "true",
     "kotlin-language-version-configured": "true",
     "show.migrate.to.gradle.popup": "false"
