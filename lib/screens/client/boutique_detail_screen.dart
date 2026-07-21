@@ -71,7 +71,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                 color: const Color(0xFF0D2B5E),
                 child: Center(
                   child: ShopLogoWidget(
-                    logoUrl: widget.shop.logoUrl,
+                    logoURL: widget.shop.logoUrl,
                     initiales: widget.shop.initiales,
                     size: 80,
                   ),

@@ -95,7 +95,7 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
                         child: Row(
                           children: [
                             ShopLogoWidget(
-                              logoUrl: shop.logoUrl,
+                              logoURL: shop.logoUrl,
                               initiales: shop.initiales,
                               size: 50,
                             ),
