@@ -18,3 +18,11 @@ android/app/build/
 
 # Windows
 *.exe
+
+<<<<<<< Updated upstream
+# Supabase credentials
+lib/config/supabase_config.dart
+=======
+# Supabase credentials — pa janm push sou GitHub
+lib/config/supabase_config.dart
+>>>>>>> Stashed changes
