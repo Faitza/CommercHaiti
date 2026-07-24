@@ -11,7 +11,13 @@ import '../../models/shop_model.dart';
 /// Branch : feature/auth-roles
 /// Path : lib/screens/auth/create_shop_screen.dart
 /// Premier écran après inscription vendeur
+// Formulaire de finalisation de la boutique : le vendeur vient de créer
+// son compte (voir auth_screen.dart) et doit maintenant renseigner les
+// informations de sa boutique (nom, description, logo, zones de
+// livraison) avant d'accéder à son tableau de bord.
 class CreateShopScreen extends StatefulWidget {
+  // Code boutique généré côté inscription (ex: "MFL-2026-0000"), affiché
+  // en lecture seule ici et enregistré tel quel avec la boutique.
   final String shopCode;
   const CreateShopScreen({super.key, required this.shopCode});
 
@@ -20,31 +26,45 @@ class CreateShopScreen extends StatefulWidget {
 }
 
 class _CreateShopScreenState extends State<CreateShopScreen> {
+  // Clé du formulaire, utilisée pour déclencher la validation de tous les
+  // champs d'un coup (_formKey.currentState!.validate()).
   final _formKey = GlobalKey<FormState>();
+  // Services d'accès aux données (Supabase) et au stockage (upload logo).
   final _db = DatabaseService();
   final _storage = StorageService();
+  // Sélecteur d'image natif (galerie photo du téléphone).
   final _picker = ImagePicker();
 
   final _nomCtrl         = TextEditingController();
   final _descriptionCtrl = TextEditingController();
 
+  // URL du logo une fois uploadé (null tant qu'aucun logo n'a été choisi).
   String? _logoUrl;
+  // Zones de livraison sélectionnées par le vendeur (au moins une requise).
   final List<String> _zonesSelectionnees = [];
+  // Indique un chargement en cours (upload logo ou création boutique) —
+  // désactive le bouton de soumission et affiche un spinner.
   bool _isLoading = false;
 
+  // Liste fixe des zones de livraison proposées (spécifiques à la région
+  // des Cayes, contexte local de l'application).
   final List<String> _zonesDisponibles = [
     'Cayes Centre', 'Cayes Nord', 'Cayes Sud',
     'Torbeck', 'Saint-Jean', 'Maniche', 'Camp-Perrin',
   ];
 
+  // Ouvre la galerie photo, puis envoie l'image choisie vers le service
+  // de stockage (Supabase Storage) associée à l'ID de l'utilisateur
+  // courant. Met à jour `_logoUrl` avec l'URL retournée.
   Future<void> _uploadLogo() async {
     final file = await _picker.pickImage(source: ImageSource.gallery);
+    // Si l'utilisateur annule la sélection, `file` est null : on arrête là.
     if (file == null) return;
 
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
     final url = await _storage.uploadShopLogo(
-      filePath: file.path,
+      file: file,
       shopId: auth.currentUser!.id,
     );
     setState(() {
@@ -53,6 +73,12 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     });
   }
 
+  // Valide le formulaire, s'assure qu'au moins une zone de livraison est
+  // sélectionnée, puis construit un ShopModel et l'enregistre en base via
+  // DatabaseService.createShop. Une fois la boutique créée, rafraîchit
+  // l'ID de boutique stocké dans AuthProvider (nécessaire pour que le
+  // reste de l'app — dashboard, produits, etc. — sache à quelle boutique
+  // le vendeur est rattaché) puis navigue vers le tableau de bord vendeur.
   Future<void> _creerBoutique() async {
     if (!_formKey.currentState!.validate()) return;
     if (_zonesSelectionnees.isEmpty) {
@@ -66,6 +92,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
 
+    // Construction du modèle boutique. `id` est laissé vide car il sera
+    // généré côté base de données (ex: uuid) lors de l'insertion.
     final shop = ShopModel(
       id: '',
       proprietaireId: auth.currentUser!.id,
@@ -73,6 +101,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       description: _descriptionCtrl.text.trim(),
       logoUrl: _logoUrl,
       shopCode: widget.shopCode,
+      // Convertit chaque zone sélectionnée en objet ZoneLivraison avec
+      // des délais de livraison par défaut (20 à 45 minutes).
       zonesLivraison: _zonesSelectionnees.map((z) =>
           ZoneLivraison(zone: z, delaiMin: 20, delaiMax: 45)).toList(),
       createdAt: DateTime.now(),
@@ -80,6 +110,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
     try {
       await _db.createShop(shop);
+      // Recharge l'ID de boutique dans AuthProvider maintenant qu'une
+      // boutique existe pour ce vendeur.
+      await auth.refreshShopId();
       if (mounted) context.go('/vendor/dashboard');
     } catch (e) {
       if (mounted) {
@@ -89,6 +122,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
         ));
       }
     } finally {
+      // Toujours exécuté (succès ou erreur) : on désactive le spinner.
       setState(() => _isLoading = false);
     }
   }
@@ -101,6 +135,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
         title: const Text('Créer ma boutique'),
+        // Pas de bouton retour automatique : cet écran est une étape
+        // obligatoire après inscription vendeur, l'utilisateur ne doit
+        // pas pouvoir revenir en arrière avant de l'avoir complétée.
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -111,6 +148,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Code boutique
+              // Encadré affichant le code boutique généré automatiquement
+              // (en lecture seule) — sert à identifier la boutique sur les
+              // reçus/commandes.
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -134,6 +174,10 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 24),
 
               // Logo
+              // Zone circulaire cliquable pour choisir/afficher le logo de
+              // la boutique. Affiche une icône "ajouter photo" tant
+              // qu'aucun logo n'est choisi, sinon l'image elle-même en
+              // fond (DecorationImage).
               Center(
                 child: GestureDetector(
                   onTap: _uploadLogo,
@@ -164,6 +208,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+              // Précise que le logo est facultatif (des initiales seront
+              // affichées par défaut ailleurs dans l'app si absent).
               const Center(
                 child: Text('Optionnel — initiales affichées si absent',
                     style: TextStyle(fontSize: 11, color: Color(0xFF999999))),
@@ -171,6 +217,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 24),
 
               // Nom
+              // Champ obligatoire : nom de la boutique (3 à 50 caractères).
               _label('Nom de la boutique *'),
               TextFormField(
                 controller: _nomCtrl,
@@ -185,6 +232,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 16),
 
               // Description
+              // Champ obligatoire : description de la boutique (10 à 200
+              // caractères), affiché sur plusieurs lignes.
               _label('Description *'),
               TextFormField(
                 controller: _descriptionCtrl,
@@ -200,6 +249,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 24),
 
               // Zones livraison
+              // Sélection multiple des zones de livraison via des
+              // FilterChip. Au clic, on ajoute ou on retire la zone de la
+              // liste `_zonesSelectionnees` (voir onSelected).
               _label('Zones de livraison *'),
               const Text('Sélectionnez les zones où vous livrez',
                   style: TextStyle(fontSize: 12, color: Color(0xFF666666))),
@@ -229,6 +281,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 32),
 
               // Bouton
+              // Bouton de soumission final : désactivé et affichant un
+              // spinner pendant `_isLoading` (upload logo ou création en
+              // cours), sinon déclenche `_creerBoutique`.
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -256,12 +311,16 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     );
   }
 
+  // Libellé au-dessus d'un champ de formulaire (même style que les autres
+  // écrans d'authentification, pour cohérence visuelle).
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(t, style: const TextStyle(fontSize: 14,
             fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
       );
 
+  // Décoration commune des champs de texte de cet écran (fond gris clair,
+  // pas de bordure visible sauf en cas d'erreur).
   InputDecoration _deco(String hint) => InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Color(0xFFAAAAAA)),
@@ -279,6 +338,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
   @override
   void dispose() {
+    // Libère les contrôleurs de texte pour éviter les fuites mémoire.
     _nomCtrl.dispose();
     _descriptionCtrl.dispose();
     super.dispose();
