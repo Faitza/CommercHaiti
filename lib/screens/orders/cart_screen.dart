@@ -158,26 +158,19 @@ class CartScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Économies
-                  // Ligne "Économies" affichée seulement si le panier
-                  // bénéficie d'une remise/promo (`cart.hasPromo`).
+                  // Récapitulatif détaillé : Sous-total (prix normal, sans
+                  // promo), Économies promo (si applicable), Livraison
+                  // (gratuite — pas de frais de livraison dans ce projet),
+                  // puis une séparation avant le Total final.
+                  _recapLigne('Sous-total',
+                      '${cart.totalNormal.toStringAsFixed(0)} HTG'),
                   if (cart.hasPromo)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Économies',
-                              style: TextStyle(
-                                  color: Color(0xFF1D9E75), fontSize: 13)),
-                          Text('-${cart.economies.toStringAsFixed(0)} HTG',
-                              style: const TextStyle(
-                                  color: Color(0xFF1D9E75),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13)),
-                        ],
-                      ),
-                    ),
+                    _recapLigne('Économies promo',
+                        '-${cart.economies.toStringAsFixed(0)} HTG',
+                        color: const Color(0xFF1D9E75)),
+                  _recapLigne('Livraison', 'Gratuite',
+                      color: const Color(0xFF1D9E75)),
+                  const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -226,6 +219,23 @@ class CartScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Une ligne du récapitulatif (Sous-total / Économies promo / Livraison) :
+  // libellé à gauche, valeur à droite. `color` optionnelle pour les lignes
+  // à mettre en avant (économies, livraison gratuite — en vert).
+  Widget _recapLigne(String label, String valeur, {Color? color}) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: TextStyle(
+                color: color ?? const Color(0xFF666666), fontSize: 13)),
+            Text(valeur, style: TextStyle(
+                color: color ?? const Color(0xFF1A1F36),
+                fontWeight: FontWeight.w600, fontSize: 13)),
+          ],
+        ),
+      );
 
   // Boîte de dialogue de confirmation avant de vider entièrement le panier
   // (action destructive, on demande confirmation pour éviter les erreurs).

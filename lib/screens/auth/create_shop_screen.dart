@@ -222,9 +222,19 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               TextFormField(
                 controller: _nomCtrl,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Nom requis';
-                  if (v.length < 3) return 'Minimum 3 caractères';
-                  if (v.length > 50) return 'Maximum 50 caractères';
+                  if (v == null || v.trim().isEmpty) return 'Nom requis';
+                  final t = v.trim();
+                  if (t.length < 3) return 'Minimum 3 caractères';
+                  if (t.length > 50) return 'Maximum 50 caractères';
+                  if (!RegExp(r"^[A-Za-zÀ-ÿ' \-0-9&]+$").hasMatch(t)) {
+                    return 'Caractères non autorisés';
+                  }
+                  if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
+                    return 'Le nom ne peut pas être uniquement des chiffres';
+                  }
+                  if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
+                    return 'Maximum 4 chiffres dans le nom';
+                  }
                   return null;
                 },
                 decoration: _deco('Marché Frais Lakay'),
@@ -239,9 +249,13 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                 controller: _descriptionCtrl,
                 maxLines: 3,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Description requise';
-                  if (v.length < 10) return 'Minimum 10 caractères';
-                  if (v.length > 200) return 'Maximum 200 caractères';
+                  if (v == null || v.trim().isEmpty) return 'Description requise';
+                  final t = v.trim();
+                  if (t.length < 10) return 'Minimum 10 caractères';
+                  if (t.length > 200) return 'Maximum 200 caractères';
+                  if (RegExp(r'\d').hasMatch(t)) {
+                    return 'La description ne doit contenir aucun chiffre';
+                  }
                   return null;
                 },
                 decoration: _deco('Décrivez votre boutique...'),

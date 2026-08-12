@@ -75,12 +75,16 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     _telephoneCtrl.text = auth.currentUser?.telephone ?? '';
   }
 
-  // Validateur du champ téléphone : requis, et doit contenir au moins 8
-  // chiffres une fois qu'on a retiré tout ce qui n'est pas un chiffre
-  // (espaces, tirets, indicatif "+509", etc.).
+  // Validateur du champ téléphone : format haïtien, 8 chiffres une fois
+  // l'indicatif "+509" (s'il est saisi) et toute mise en forme retirés.
   String? _valTel(String? v) {
-    if (v == null || v.isEmpty) return 'Requis';
-    if (v.replaceAll(RegExp(r'[^\d]'), '').length < 8) return 'Numéro trop court';
+    if (v == null || v.trim().isEmpty) return 'Requis';
+    var chiffres = v.replaceAll(RegExp(r'[^\d]'), '');
+    if (chiffres.length == 11 && chiffres.startsWith('509')) {
+      chiffres = chiffres.substring(3);
+    }
+    if (chiffres.length != 8) return 'Numéro invalide (8 chiffres attendus)';
+    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return 'Numéro invalide';
     return null;
   }
 
@@ -326,8 +330,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _adresseCtrl,
-                        validator: (v) => v == null || v.length < 5
-                            ? 'Adresse trop courte' : null,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Adresse requise';
+                          if (v.trim().length < 5) return 'Adresse trop courte';
+                          if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(v)) {
+                            return 'L\'adresse ne peut pas être uniquement des chiffres';
+                          }
+                          return null;
+                        },
                         decoration: _deco('Rue Borno, Les Cayes'),
                       ),
                       const SizedBox(height: 14),

@@ -27,15 +27,29 @@ class WhatsAppButtonWidget extends StatelessWidget {
   /// Nettoie le numéro de téléphone (garde uniquement les chiffres et le
   /// signe '+', supprime espaces/tirets/parenthèses via une regex), puis
   /// construit l'URL `wa.me` et l'ouvre dans une application externe
-  /// (WhatsApp) si l'appareil sait la gérer. `canLaunchUrl` vérifie qu'un
-  /// gestionnaire d'URL existe avant de tenter l'ouverture, pour éviter un
-  /// crash si WhatsApp n'est pas installé/disponible.
-  Future<void> _ouvrir() async {
+  /// (WhatsApp). On tente directement `launchUrl` (avec try/catch) plutôt
+  /// que de se fier uniquement à `canLaunchUrl` : sur Android 11+, sans la
+  /// déclaration `<queries>` correspondante dans AndroidManifest.xml,
+  /// `canLaunchUrl` peut renvoyer `false` même quand WhatsApp est bel et
+  /// bien installé (restriction de "package visibility"), ce qui bloquait
+  /// silencieusement le bouton — désormais on affiche un message d'erreur
+  /// explicite si l'ouverture échoue vraiment, au lieu de ne rien faire.
+  Future<void> _ouvrir(BuildContext context) async {
     final numero = telephone.replaceAll(RegExp(r'[^\d+]'), '');
     final url = Uri.parse('https://wa.me/$numero');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    try {
+      final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) _erreur(context);
+    } catch (_) {
+      if (context.mounted) _erreur(context);
     }
+  }
+
+  void _erreur(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé'),
+      backgroundColor: Color(0xFFE63946),
+    ));
   }
 
   @override
@@ -44,7 +58,7 @@ class WhatsAppButtonWidget extends StatelessWidget {
     // ligne de liste), sans texte.
     if (compact) {
       return IconButton(
-        onPressed: _ouvrir,
+        onPressed: () => _ouvrir(context),
         icon: const Icon(Icons.chat, color: Color(0xFF25D366)), // vert WhatsApp officiel
         tooltip: 'Contacter via WhatsApp',
       );
@@ -66,7 +80,7 @@ class WhatsAppButtonWidget extends StatelessWidget {
           label ?? 'Contacter via WhatsApp',
           style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
-        onPressed: _ouvrir,
+        onPressed: () => _ouvrir(context),
       ),
     );
   }

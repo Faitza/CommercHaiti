@@ -39,6 +39,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // bouton et afficher un petit spinner pendant l'appel réseau.
   bool _isSaving = false;
 
+  // Nom : lettres uniquement (accents/tirets/apostrophes compris), avec
+  // au maximum 4 chiffres tolérés — même règle que sur l'écran
+  // d'inscription (auth_screen.dart), pour rester cohérent dans toute
+  // l'app.
+  String? _valNom(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Nom requis';
+    final t = v.trim();
+    if (t.length < 2) return 'Trop court';
+    if (!RegExp(r"^[A-Za-zÀ-ÿ' \-0-9]+$").hasMatch(t)) {
+      return 'Le nom ne peut contenir que des lettres';
+    }
+    if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
+      return 'Le nom ne peut pas être uniquement des chiffres';
+    }
+    if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
+      return 'Maximum 4 chiffres dans le nom';
+    }
+    return null;
+  }
+
+  // Téléphone : format haïtien, 8 chiffres (indicatif +509 optionnel).
+  String? _valTel(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Téléphone requis';
+    var chiffres = v.replaceAll(RegExp(r'[^\d]'), '');
+    if (chiffres.length == 11 && chiffres.startsWith('509')) {
+      chiffres = chiffres.substring(3);
+    }
+    if (chiffres.length != 8) return 'Numéro invalide (8 chiffres attendus)';
+    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return 'Numéro invalide';
+    return null;
+  }
+
+  // Adresse : suffisamment longue et pas composée uniquement de chiffres
+  // (les numéros de rue restent autorisés).
+  String? _valAdresse(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Adresse requise';
+    if (v.trim().length < 5) return 'Adresse trop courte';
+    if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(v)) {
+      return 'L\'adresse ne peut pas être uniquement des chiffres';
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -132,7 +175,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _nomCtrl,
-                validator: (v) => v == null || v.isEmpty ? 'Nom requis' : null,
+                validator: _valNom,
               ),
               const SizedBox(height: 16),
               // Champ Téléphone (obligatoire, clavier numérique adapté
@@ -143,8 +186,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _telephoneCtrl,
                 keyboardType: TextInputType.phone,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Téléphone requis' : null,
+                validator: _valTel,
               ),
               const SizedBox(height: 16),
               // Champ Adresse (obligatoire, sur 2 lignes maximum pour
@@ -155,8 +197,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _adresseCtrl,
                 maxLines: 2,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Adresse requise' : null,
+                validator: _valAdresse,
               ),
               const SizedBox(height: 32),
               // Bouton Enregistrer : désactivé (onPressed: null) pendant

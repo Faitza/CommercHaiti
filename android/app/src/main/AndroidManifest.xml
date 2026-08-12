@@ -41,5 +41,18 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Requis pour que url_launcher (canLaunchUrl/launchUrl) puisse
+             détecter et ouvrir les liens https:// (dont wa.me pour le
+             bouton WhatsApp) — sans ça, Android 11+ (API 30+) cache la
+             visibilité des autres apps par défaut et canLaunchUrl renvoie
+             toujours false, même si WhatsApp est installé. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <!-- Déclare explicitement les deux variantes de l'app WhatsApp
+             (standard et Business) pour la même raison de visibilité. -->
+        <package android:name="com.whatsapp"/>
+        <package android:name="com.whatsapp.w4b"/>
     </queries>
 </manifest>

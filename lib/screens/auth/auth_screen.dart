@@ -25,6 +25,14 @@ class _AuthScreenState extends State<AuthScreen>
   // TabController pour synchroniser ses animations.
   late TabController _tabController;
 
+  // Clés des deux formulaires (un par onglet). Nécessaires pour déclencher
+  // manuellement `validate()` avant _connexion()/_inscription() — sans
+  // elles, les `validator` des TextFormField ci-dessous ne sont JAMAIS
+  // exécutés (c'était le bug : un nom "12345" ou une boutique "999"
+  // passaient sans erreur, car rien n'appelait la validation).
+  final _formKeyConnexion = GlobalKey<FormState>();
+  final _formKeyInscription = GlobalKey<FormState>();
+
   // Contrôleurs de texte pour tous les champs de formulaire (connexion +
   // inscription client/vendeur). Ils doivent tous être libérés (dispose)
   // pour éviter les fuites mémoire — voir la méthode dispose() plus bas.
@@ -65,11 +73,13 @@ class _AuthScreenState extends State<AuthScreen>
   // ── Fonctions de validation des champs (utilisées par les TextFormField
   // via leur paramètre `validator`) ──
 
-  // Vérifie qu'un email est renseigné et respecte un format basique
-  // (regex simple : texte@texte.domaine).
+  // Vérifie qu'un email est renseigné et respecte un format valide
+  // (texte@texte.domaine, domaine d'au moins 2 lettres).
   String? _valEmail(String? v) {
-    if (v == null || v.isEmpty) return 'Email requis';
-    if (!RegExp(r'^[\w.-]+@[\w.-]+\.[a-z]{2,}$').hasMatch(v)) return 'Email invalide';
+    if (v == null || v.trim().isEmpty) return 'Email requis';
+    if (!RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$').hasMatch(v.trim())) {
+      return 'Email invalide';
+    }
     return null;
   }
   // Vérifie que le mot de passe est renseigné et fait au moins 6 caractères.
@@ -78,17 +88,59 @@ class _AuthScreenState extends State<AuthScreen>
     if (v.length < 6) return 'Minimum 6 caractères';
     return null;
   }
-  // Vérifie que le nom est renseigné et fait au moins 2 caractères.
+  // Vérifie que le nom est renseigné, fait au moins 2 caractères, et n'est
+  // composé que de lettres (accents/tirets/apostrophes compris) avec au
+  // maximum 4 chiffres tolérés (ex: surnom/suffixe) — un nom "12345" ou
+  // "Jean@@@" n'est pas valide.
   String? _valNom(String? v) {
-    if (v == null || v.isEmpty) return 'Nom requis';
-    if (v.length < 2) return 'Trop court';
+    if (v == null || v.trim().isEmpty) return 'Nom requis';
+    final t = v.trim();
+    if (t.length < 2) return 'Trop court';
+    if (!RegExp(r"^[A-Za-zÀ-ÿ' \-0-9]+$").hasMatch(t)) {
+      return 'Le nom ne peut contenir que des lettres';
+    }
+    if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
+      return 'Le nom ne peut pas être uniquement des chiffres';
+    }
+    if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
+      return 'Maximum 4 chiffres dans le nom';
+    }
     return null;
   }
-  // Vérifie que le téléphone est renseigné et contient au moins 8 chiffres
-  // (on retire tout caractère non numérique avant de compter).
+  // Vérifie que le téléphone est renseigné et respecte le format haïtien :
+  // 8 chiffres (l'indicatif +509, s'il est saisi, est retiré avant
+  // vérification), commençant par un chiffre de 2 à 9.
   String? _valTel(String? v) {
-    if (v == null || v.isEmpty) return 'Téléphone requis';
-    if (v.replaceAll(RegExp(r'[^\d]'), '').length < 8) return 'Numéro trop court';
+    if (v == null || v.trim().isEmpty) return 'Téléphone requis';
+    var chiffres = v.replaceAll(RegExp(r'[^\d]'), '');
+    if (chiffres.length == 11 && chiffres.startsWith('509')) {
+      chiffres = chiffres.substring(3);
+    }
+    if (chiffres.length != 8) return 'Numéro invalide (8 chiffres attendus)';
+    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return 'Numéro invalide';
+    return null;
+  }
+  // Vérifie que l'adresse est renseignée, suffisamment longue, et pas
+  // composée uniquement de chiffres (une vraie adresse contient toujours
+  // au moins un mot : rue, quartier, ville…) — les chiffres (numéro de
+  // rue) restent autorisés, contrairement au nom.
+  String? _valAdresse(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Adresse requise';
+    if (v.trim().length < 5) return 'Adresse trop courte';
+    if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(v)) {
+      return 'L\'adresse ne peut pas être uniquement des chiffres';
+    }
+    return null;
+  }
+  // Vérifie qu'une description est renseignée, suffisamment longue, et
+  // strictement textuelle (aucun chiffre autorisé).
+  String? _valDescription(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Description requise';
+    final t = v.trim();
+    if (t.length < 10) return 'Minimum 10 caractères';
+    if (RegExp(r'\d').hasMatch(t)) {
+      return 'La description ne doit contenir aucun chiffre';
+    }
     return null;
   }
 
@@ -98,6 +150,7 @@ class _AuthScreenState extends State<AuthScreen>
   // backend, pas du widget.role affiché). En cas d'échec, affiche le
   // message d'erreur retourné par le provider dans un SnackBar.
   Future<void> _connexion() async {
+    if (!_formKeyConnexion.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     final ok = await auth.signIn(_emailCtrl.text.trim(), _passwordCtrl.text);
     // Vérifie que le widget est toujours affiché avant d'utiliser le
@@ -120,6 +173,7 @@ class _AuthScreenState extends State<AuthScreen>
   //    avec le code boutique généré transmis en `extra` ;
   //  - le client est envoyé directement vers /client/home.
   Future<void> _inscription() async {
+    if (!_formKeyInscription.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     bool ok = false;
     if (isVendeur) {
@@ -242,7 +296,9 @@ class _AuthScreenState extends State<AuthScreen>
   Widget _buildConnexion(AuthProvider auth) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
-      child: Column(
+      child: Form(
+        key: _formKeyConnexion,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
@@ -275,6 +331,7 @@ class _AuthScreenState extends State<AuthScreen>
             ),
           ],
         ],
+        ),
       ),
     );
   }
@@ -287,7 +344,9 @@ class _AuthScreenState extends State<AuthScreen>
   Widget _buildInscription(AuthProvider auth) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
-      child: Column(
+      child: Form(
+        key: _formKeyInscription,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
@@ -306,7 +365,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 14),
             _label('Adresse principale'),
             _field(_adresseCtrl, 'Rue Toussaint Louverture, Les Cayes',
-                validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
+                validator: _valAdresse,
                 icon: Icons.location_on_outlined),
           ],
           const SizedBox(height: 14),
@@ -324,7 +383,18 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 14),
             _label('Nom de la boutique'),
             _field(_nomBoutiqueCtrl, 'Marché Frais Lakay',
-                validator: (v) => v == null || v.length < 3 ? 'Min 3 caractères' : null,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Nom requis';
+                  final t = v.trim();
+                  if (t.length < 3) return 'Min 3 caractères';
+                  if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
+                    return 'Ne peut pas être uniquement des chiffres';
+                  }
+                  if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
+                    return 'Maximum 4 chiffres dans le nom';
+                  }
+                  return null;
+                },
                 icon: Icons.store_outlined),
             // Aperçu du code boutique — n'apparaît qu'une fois le nom
             // saisi (voir le listener dans initState).
@@ -352,6 +422,7 @@ class _AuthScreenState extends State<AuthScreen>
             TextFormField(
               controller: _descriptionCtrl,
               maxLines: 3,
+              validator: _valDescription,
               decoration: _deco('Décrivez votre boutique...',
                   Icons.description_outlined),
             ),
@@ -361,6 +432,7 @@ class _AuthScreenState extends State<AuthScreen>
           const SizedBox(height: 12),
           _boutonGoogle(auth),
         ],
+        ),
       ),
     );
   }

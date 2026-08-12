@@ -174,107 +174,148 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F8),
-      // CustomScrollView + slivers permet de combiner une AppBar qui
-      // "rétrécit" au scroll (SliverAppBar) avec un contenu classique
-      // en dessous (SliverToBoxAdapter), dans une seule zone
-      // scrollable fluide.
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: const Color(0xFF0D2B5E),
-            foregroundColor: Colors.white,
-            expandedHeight: 180,
-            // pinned: true -> la barre reste visible (réduite) en haut
-            // même après avoir scrollé, au lieu de disparaître.
-            pinned: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new),
-              // pop() : retour à l'écran précédent (liste de boutiques,
-              // favoris, etc. — peu importe d'où on vient, on revient
-              // simplement en arrière dans la pile).
-              onPressed: () => Navigator.of(context).pop(),
+      // Structure simple Column [en-tête fixe, contenu scrollable] — jan
+      // maket la montre : logo à gauche, nom de la boutique à droite à
+      // côté de lui, description dans une carte séparée en dessous.
+      // (Remplace l'ancien SliverAppBar/FlexibleSpaceBar avec logo centré
+      // en grand, qui ne correspondait pas au maquette.)
+      body: Column(
+        children: [
+          // En-tête bleu marine compact : bouton retour, logo, nom +
+          // note/statut, cœur favori — tous alignés sur une seule rangée.
+          Container(
+            color: const Color(0xFF0D2B5E),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 8,
+              bottom: 14, left: 4, right: 16,
             ),
-            actions: [
-              // Bouton cœur (favori) dans la barre d'action. Consumer2
-              // écoute à la fois AuthProvider et FavoriteProvider et
-              // reconstruit uniquement ce petit widget quand l'un des
-              // deux change (plus efficace qu'un watch() global qui
-              // reconstruirait tout l'écran).
-              Consumer2<AuthProvider, FavoriteProvider>(
-                builder: (context, auth, favProvider, _) {
-                  final estFavori = favProvider.isFavorite(widget.shop.id);
-                  return IconButton(
-                    icon: Icon(
-                        estFavori ? Icons.favorite : Icons.favorite_border,
-                        color: estFavori
-                            ? const Color(0xFFE63946)
-                            : Colors.white),
-                    onPressed: () {
-                      // Un invité (non connecté) ne peut pas ajouter de
-                      // favori : on lui propose plutôt de s'inscrire.
-                      if (!auth.isLoggedIn) {
-                        GuestHomeScreen.showInscriptionSheet(context);
-                        return;
-                      }
-                      favProvider.toggleFavorite(widget.shop.id);
-                    },
-                  );
-                },
-              ),
-            ],
-            // Contenu qui s'affiche dans la zone "flexible" (celle qui
-            // rétrécit) de la SliverAppBar : le nom de la boutique en
-            // titre, et son logo centré en fond.
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(widget.shop.nom,
-                  style: const TextStyle(color: Colors.white, fontSize: 14)),
-              background: Container(
-                color: const Color(0xFF0D2B5E),
-                child: Center(
-                  child: ShopLogoWidget(
-                    logoURL: widget.shop.logoUrl,
-                    initiales: widget.shop.initiales,
-                    size: 80,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new,
+                      color: Colors.white, size: 20),
+                  // pop() : retour à l'écran précédent (liste de
+                  // boutiques, favoris, etc.).
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                ShopLogoWidget(
+                  logoURL: widget.shop.logoUrl,
+                  initiales: widget.shop.initiales,
+                  size: 44,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.shop.nom,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      Row(children: [
+                        const Icon(Icons.star_rounded,
+                            size: 14, color: Color(0xFFF5A623)),
+                        const SizedBox(width: 2),
+                        Text(widget.shop.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                        Text(
+                            widget.shop.isOpen
+                                ? ' · Ouvert' : ' · Fermé',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                      ]),
+                    ],
                   ),
                 ),
-              ),
+                // Bouton cœur (favori). Consumer2 écoute à la fois
+                // AuthProvider et FavoriteProvider et reconstruit
+                // uniquement ce petit widget quand l'un des deux change
+                // (plus efficace qu'un watch() global qui reconstruirait
+                // tout l'écran).
+                Consumer2<AuthProvider, FavoriteProvider>(
+                  builder: (context, auth, favProvider, _) {
+                    final estFavori = favProvider.isFavorite(widget.shop.id);
+                    return IconButton(
+                      icon: Icon(
+                          estFavori ? Icons.favorite : Icons.favorite_border,
+                          color: estFavori
+                              ? const Color(0xFFE63946)
+                              : Colors.white),
+                      onPressed: () {
+                        // Un invité (non connecté) ne peut pas ajouter de
+                        // favori : on lui propose plutôt de s'inscrire.
+                        if (!auth.isLoggedIn) {
+                          GuestHomeScreen.showInscriptionSheet(context);
+                          return;
+                        }
+                        favProvider.toggleFavorite(widget.shop.id);
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          // Corps de l'écran (tout le reste, en dessous de la barre) :
-          // encapsulé dans un seul SliverToBoxAdapter pour pouvoir
-          // utiliser une Column "classique" à l'intérieur d'un
-          // CustomScrollView.
-          SliverToBoxAdapter(
-            child: Column(
+
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
               children: [
-                // Stats boutique
-                // Carte blanche avec 3 statistiques alignées : note
-                // moyenne, nombre d'avis, nombre de produits.
+                // Carte description : icône boutique + texte descriptif,
+                // avec en dessous le délai de livraison et le nombre de
+                // produits — jan maket la montre.
                 Container(
                   margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _statItem('Note', widget.shop.rating.toStringAsFixed(1),
-                          icon: Icons.star_rounded, iconColor: const Color(0xFFF5A623)),
-                      _statItem('Avis', '${widget.shop.totalAvis}'),
-                      _statItem('Produits', '${_produits.length}'),
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5EE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.storefront_outlined,
+                            color: Color(0xFF1D9E75), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(widget.shop.description,
+                                style: const TextStyle(
+                                    fontSize: 13, color: Color(0xFF444444))),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              const Icon(Icons.access_time,
+                                  size: 12, color: Color(0xFF999999)),
+                              const SizedBox(width: 4),
+                              Text(
+                                  widget.shop.zonesLivraison.isNotEmpty
+                                      ? widget.shop.zonesLivraison.first.delaiAffiche
+                                      : '30-45 min',
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Color(0xFF999999))),
+                              Text(' · ${_produits.length} produits',
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Color(0xFF999999))),
+                            ]),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-
-                // Description
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(widget.shop.description,
-                      style: const TextStyle(color: Color(0xFF666666))),
-                ),
-                const SizedBox(height: 16),
 
                 // Bouton WhatsApp
                 // Affiché seulement si on a réussi à récupérer un
@@ -464,6 +505,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                 ],
                 const SizedBox(height: 80),
               ],
+              ),
             ),
           ),
         ],
@@ -479,29 +521,6 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
             fontWeight: FontWeight.bold, color: Color(0xFF0D2B5E))),
       );
 
-  /// Construit un bloc statistique vertical (valeur en gras + libellé
-  /// en dessous), avec une icône optionnelle à côté de la valeur — sert
-  /// pour les 3 stats (Note, Avis, Produits) affichées en haut de la
-  /// fiche boutique.
-  Widget _statItem(String label, String value,
-          {IconData? icon, Color? iconColor}) =>
-      Column(
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16, color: iconColor ?? const Color(0xFF0D2B5E)),
-                const SizedBox(width: 4),
-              ],
-              Text(value, style: const TextStyle(fontSize: 16,
-                  fontWeight: FontWeight.bold, color: Color(0xFF0D2B5E))),
-            ],
-          ),
-          Text(label, style: const TextStyle(fontSize: 12,
-              color: Color(0xFF666666))),
-        ],
-      );
 }
 
 /// Sous-widget indépendant qui affiche les avis clients d'une

@@ -213,11 +213,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             context.push('/client/boutiques');
           }),
           DrawerMenuItem(Icons.category_outlined, 'Catégories', onTap: () {
-            // Remarque : "Catégories" pointe vers le même écran que
-            // "Boutiques" (/client/boutiques) — il n'existe pas encore
-            // d'écran dédié listant les catégories transversalement.
+            // "Catégories" mène maintenant vers le catalogue complet
+            // (/client/all-products), qui affiche justement les filtres
+            // de catégorie en évidence — distinct de "Boutiques" (liste
+            // des boutiques) qu'il dupliquait avant.
             Navigator.pop(context);
-            context.push('/client/boutiques');
+            context.push('/client/all-products');
           }),
           DrawerMenuItem(Icons.grid_view_outlined, 'Tous les produits',
               onTap: () {

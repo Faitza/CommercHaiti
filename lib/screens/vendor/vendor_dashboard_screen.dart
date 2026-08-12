@@ -145,16 +145,23 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
       ),
       body: Column(
         children: [
-          // TopBar fonce (bandeau bleu marine en haut de l'écran) —
-          // affiche le logo/nom de la boutique, l'état ouvert/fermé, ainsi
-          // que les icônes notifications et menu.
+          // TopBar fonce (bandeau bleu marine en haut de l'écran) : contient
+          // DEUX rangées — l'info boutique, PUIS les cartes CA — toutes les
+          // deux peintes sur le même fond bleu marine, jan maket la montre.
           Container(
             color: const Color(0xFF061A3A),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
-              bottom: 14, left: 16, right: 16,
+              bottom: 16, left: 16, right: 16,
             ),
-            child: Row(
+            child: Column(
+              // min : sans ça, ce Column (dans un Container à hauteur non
+              // bornée) essaierait de remplir une hauteur infinie — c'est
+              // ce qui causait le crash "Cannot hit test a render box that
+              // has never been laid out" la première fois.
+              mainAxisSize: MainAxisSize.min,
+              children: [
+            Row(
               children: [
                 // Logo de la boutique (ou initiales générées à partir du
                 // shopCode si aucun logo n'a été téléversé).
@@ -250,10 +257,29 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 18),
+            // Cartes chiffre d'affaires (CA) — BF-031 : les montants ne
+            // viennent pas d'une requête d'agrégation SQL côté serveur,
+            // mais sont recalculés côté client (Dart) à partir de la liste
+            // complète des commandes du vendeur déjà en mémoire
+            // (`orders.ordresVendeur`, reçue via le stream temps réel).
+            // Voir `_calculerCA` plus bas.
+            Row(children: [
+              _caCard('CA Aujourd\'hui',
+                  '${_calculerCA(orders.ordresVendeur, jours: 1).toStringAsFixed(0)} HTG'),
+              const SizedBox(width: 10),
+              _caCardEnAttente(orders.enAttente.length),
+              const SizedBox(width: 10),
+              _caCard('Ce mois',
+                  _formatCourt(_calculerCA(orders.ordresVendeur, jours: 30))),
+            ]),
+              ],
+            ),
           ),
 
-          // Contenu principal (scrollable) du tableau de bord : cartes
-          // CA, section commandes en attente, alertes stock, Top5/Flop5.
+          // Contenu principal (scrollable) du tableau de bord : section
+          // commandes en attente, alertes stock, Top5/Flop5 (les cartes CA
+          // sont maintenant dans le bandeau bleu ci-dessus).
           Expanded(
             child: RefreshIndicator(
               // Tirer vers le bas relance `_loadStats` pour rafraîchir
@@ -274,18 +300,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // via le stream temps réel). Voir `_calculerCA`
                     // ci-dessous.
                     Row(children: [
-                      // CA du jour : somme des commandes non-annulées des
-                      // dernières 24h.
                       _caCard('CA Aujourd\'hui',
                           '${_calculerCA(orders.ordresVendeur, jours: 1).toStringAsFixed(0)} HTG'),
                       const SizedBox(width: 10),
-                      // Nombre de commandes actuellement en attente
-                      // d'acceptation par le vendeur.
                       _caCardEnAttente(orders.enAttente.length),
                       const SizedBox(width: 10),
-                      // CA du mois : somme des commandes non-annulées des
-                      // 30 derniers jours, avec formatage compact ("XK HTG"
-                      // au-delà de 1000).
                       _caCard('Ce mois',
                           _formatCourt(_calculerCA(orders.ordresVendeur, jours: 30))),
                     ]),
@@ -642,7 +661,9 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         color: const Color(0xFFE63946),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Column(children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
         Text('En attente', style: const TextStyle(
             fontSize: 10, color: Colors.white70)),
         const SizedBox(height: 4),
