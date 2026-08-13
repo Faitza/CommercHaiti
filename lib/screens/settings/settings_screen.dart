@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/database_service.dart';
 import '../../models/shop_model.dart';
+import '../../constants/app_colors.dart';
 
 /// Paramètres Vendeur — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -223,9 +224,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // l'état courant du thème (utile si le thème est aussi modifié
     // ailleurs dans l'app).
     final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -248,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                _sectionTitle('Ma boutique'),
+                _sectionTitle('Ma boutique', isDark),
                 // Ces trois items naviguent tous vers le même écran
                 // d'édition de boutique ('/vendor/edit-shop') ; seul le
                 // sous-titre affiché diffère selon l'aspect mis en avant
@@ -257,22 +259,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // revenir naturellement aux paramètres après édition.
                 _item(Icons.image_outlined, 'Logo de la boutique',
                     'Modifier ou remplacer',
-                    () => context.push('/vendor/edit-shop')),
+                    () => context.push('/vendor/edit-shop'), isDark),
                 _item(Icons.edit_outlined, 'Informations boutique',
                     'Nom, description, horaires',
-                    () => context.push('/vendor/edit-shop')),
+                    () => context.push('/vendor/edit-shop'), isDark),
                 _item(Icons.location_on_outlined, 'Zones de livraison',
                     _shop?.zonesLivraison.map((z) => z.zone).join(', ') ?? '',
-                    () => context.push('/vendor/edit-shop')),
+                    () => context.push('/vendor/edit-shop'), isDark),
                 // Switch "Suspendre la boutique" : bascule `is_open` en
                 // base immédiatement au changement (voir _toggleSuspendre).
                 _switchItem(Icons.storefront_outlined, 'Suspendre la boutique',
                     'Masquer temporairement',
                     _shop?.isOpen ?? true,
-                    (v) => _toggleSuspendre(v)),
+                    (v) => _toggleSuspendre(v), isDark),
                 const Divider(),
 
-                _sectionTitle('Notifications'),
+                _sectionTitle('Notifications', isDark),
                 // Ces deux switches ne touchent QUE le stockage local
                 // (SharedPreferences) — pas de requête serveur — donc la
                 // mise à jour est instantanée et fonctionne même hors
@@ -283,17 +285,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     (v) {
                   setState(() => _sonNouvelleCommande = v);
                   _toggleNotifPref('notif_nouvelle_commande', v);
-                }),
+                }, isDark),
                 _switchItem(Icons.warning_amber_rounded,
                     'Alerte stock bas', 'Quand stock ≤ 5',
                     _alerteStockBas,
                     (v) {
                   setState(() => _alerteStockBas = v);
                   _toggleNotifPref('notif_stock_bas', v);
-                }),
+                }, isDark),
                 const Divider(),
 
-                _sectionTitle('Apparence'),
+                _sectionTitle('Apparence', isDark),
                 // Switch "Mode sombre" : délègue directement au
                 // ThemeProvider (qui applique le changement de thème à
                 // toute l'application et le persiste, probablement lui
@@ -301,20 +303,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // conservé au prochain lancement de l'app).
                 _switchItem(Icons.dark_mode_outlined, 'Mode sombre', null,
                     theme.isDarkMode,
-                    (v) => context.read<ThemeProvider>().toggle(v)),
+                    (v) => context.read<ThemeProvider>().toggle(v), isDark),
                 const Divider(),
 
-                _sectionTitle('Sécurité'),
+                _sectionTitle('Sécurité', isDark),
                 _item(Icons.lock_outline, 'Changer le mot de passe', null,
-                    () => _changerMotDePasse(context)),
+                    () => _changerMotDePasse(context), isDark),
                 const Divider(),
 
-                _sectionTitle('À propos'),
+                _sectionTitle('À propos', isDark),
                 // Item purement informatif : `onTap` est `null`, donc pas
                 // de flèche ">" affichée (voir `_item` plus bas) et aucune
                 // action au clic.
                 _item(Icons.info_outline, 'CommercHaiti v1.0',
-                    'ITAC · 2025-2026', null),
+                    'ITAC · 2025-2026', null, isDark),
                 const SizedBox(height: 16),
 
                 // Bouton de déconnexion, mis en évidence visuellement
@@ -323,7 +325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Material(
-                    color: const Color(0xFFFCE9E9),
+                    color: isDark ? const Color(0xFF3A1F1F) : const Color(0xFFFCE9E9),
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
@@ -348,12 +350,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Petit helper : titre de section en majuscules (ex. "MA BOUTIQUE"),
   // utilisé pour regrouper visuellement les items ci-dessous en catégories.
-  Widget _sectionTitle(String t) => Padding(
+  Widget _sectionTitle(String t, bool isDark) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
         child: Text(t.toUpperCase(),
-            style: const TextStyle(fontSize: 11,
+            style: TextStyle(fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF999999), letterSpacing: 1)),
+                color: AppColors.textSecondaryFor(isDark), letterSpacing: 1)),
       );
 
   // Petit helper : ligne de paramètre standard (icône + titre + sous-titre
@@ -362,18 +364,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // interrupteur on/off, voir `_switchItem` pour ça). Si `onTap` est
   // `null`, l'item devient purement informatif (pas de flèche, pas de
   // réaction au clic) — voir l'item "CommercHaiti v1.0" plus haut.
-  Widget _item(IconData icon, String label, String? sous, VoidCallback? onTap) =>
+  Widget _item(IconData icon, String label, String? sous, VoidCallback? onTap,
+          bool isDark) =>
       ListTile(
-        tileColor: Colors.white,
-        leading: Icon(icon, color: const Color(0xFF0D2B5E)),
+        tileColor: AppColors.surface(isDark),
+        leading: Icon(icon, color: AppColors.accentFor(isDark)),
         title: Text(label,
-            style: const TextStyle(
-                color: Color(0xFF1A1F36), fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: AppColors.textPrimaryFor(isDark), fontWeight: FontWeight.w600)),
         subtitle: sous != null && sous.isNotEmpty
-            ? Text(sous, style: const TextStyle(fontSize: 12))
+            ? Text(sous, style: TextStyle(
+                fontSize: 12, color: AppColors.textSecondaryFor(isDark)))
             : null,
         trailing: onTap != null
-            ? const Icon(Icons.chevron_right, color: Color(0xFFCCCCCC))
+            ? Icon(Icons.chevron_right, color: AppColors.borderColor(isDark))
             : null,
         onTap: onTap,
       );
@@ -382,13 +386,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // (SwitchListTile), utilisée pour tous les réglages booléens de l'écran
   // (suspension boutique, notifications, mode sombre).
   Widget _switchItem(IconData icon, String label, String? sous,
-          bool value, ValueChanged<bool> onChanged) =>
+          bool value, ValueChanged<bool> onChanged, bool isDark) =>
       SwitchListTile(
-        tileColor: Colors.white,
-        secondary: Icon(icon, color: const Color(0xFF0D2B5E)),
+        tileColor: AppColors.surface(isDark),
+        secondary: Icon(icon, color: AppColors.accentFor(isDark)),
         title: Text(label,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: sous != null ? Text(sous, style: const TextStyle(fontSize: 12)) : null,
+            style: TextStyle(
+                color: AppColors.textPrimaryFor(isDark), fontWeight: FontWeight.w600)),
+        subtitle: sous != null
+            ? Text(sous, style: TextStyle(
+                fontSize: 12, color: AppColors.textSecondaryFor(isDark)))
+            : null,
         value: value,
         onChanged: onChanged,
         activeColor: const Color(0xFF1D9E75),

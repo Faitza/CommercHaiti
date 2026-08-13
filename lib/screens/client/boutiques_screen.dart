@@ -6,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../auth/guest_home_screen.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Boutiques Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/boutiques_screen.dart
@@ -50,9 +52,10 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
     // /client/home) et à bloquer certaines actions (panier, commandes)
     // pour les invités.
     final isGuest = !context.watch<AuthProvider>().isLoggedIn;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // TopBar
@@ -173,12 +176,12 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                     decoration: BoxDecoration(
                       color: sel
                           ? const Color(0xFF0D2B5E)
-                          : Colors.white,
+                          : AppColors.surface(isDark),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: sel
                             ? const Color(0xFF0D2B5E)
-                            : const Color(0xFFDDDDDD),
+                            : AppColors.borderColor(isDark),
                       ),
                     ),
                     child: Text(zone,
@@ -186,7 +189,7 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                             fontSize: 12,
                             color: sel
                                 ? Colors.white
-                                : const Color(0xFF444444),
+                                : AppColors.textSecondaryFor(isDark),
                             fontWeight: sel
                                 ? FontWeight.bold
                                 : FontWeight.normal)),
@@ -204,8 +207,8 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
             child: Row(children: [
               Text('${shopProvider.shopsFiltres.length} boutique(s) disponible(s)',
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF666666))),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textSecondaryFor(isDark))),
             ]),
           ),
 
@@ -221,13 +224,13 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children: [
                             Icon(Icons.storefront_outlined,
-                                size: 56, color: Color(0xFFCCCCCC)),
-                            SizedBox(height: 12),
+                                size: 56, color: AppColors.borderColor(isDark)),
+                            const SizedBox(height: 12),
                             Text('Aucune boutique disponible',
                                 style: TextStyle(
-                                    color: Color(0xFF999999))),
+                                    color: AppColors.textSecondaryFor(isDark))),
                           ],
                         ),
                       )
@@ -266,7 +269,7 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
       // car ces fonctionnalités nécessitent un compte.
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.08),
             blurRadius: 12, offset: const Offset(0, -2),
@@ -314,13 +317,14 @@ class _ShopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -345,23 +349,24 @@ class _ShopCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(shop.nom,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.bold),
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimaryFor(isDark)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
                       // Zone affichée en dur ("Les Cayes") : ne reflète
                       // pas forcément la vraie zone du modèle shop, à
                       // surveiller si le modèle a un champ zone/ville.
-                      Row(children: const [
+                      Row(children: [
                         Icon(Icons.location_on,
-                            size: 10, color: Color(0xFF888888)),
-                        SizedBox(width: 2),
+                            size: 10, color: AppColors.textSecondaryFor(isDark)),
+                        const SizedBox(width: 2),
                         Text('Les Cayes',
                             style: TextStyle(
                                 fontSize: 10,
-                                color: Color(0xFF888888))),
+                                color: AppColors.textSecondaryFor(isDark))),
                       ]),
                       const SizedBox(height: 2),
                       // Note moyenne (rating) formatée à 1 décimale et
@@ -408,9 +413,9 @@ class _ShopCard extends StatelessWidget {
             Text(shop.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF666666),
+                    color: AppColors.textSecondaryFor(isDark),
                     height: 1.5)),
             const SizedBox(height: 6),
             // Information de livraison affichée en dur (texte statique,
@@ -444,20 +449,23 @@ class _NavItem extends StatelessWidget {
     this.active = false, required this.onTap,
   });
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon,
-          color: active
-              ? const Color(0xFF0D2B5E)
-              : const Color(0xFF999999),
-          size: 22),
-      const SizedBox(height: 2),
-      Text(label, style: TextStyle(
-          fontSize: 10,
-          color: active
-              ? const Color(0xFF0D2B5E)
-              : const Color(0xFF999999))),
-    ]),
-  );
+  Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon,
+            color: active
+                ? AppColors.accentFor(isDark)
+                : AppColors.textSecondaryFor(isDark),
+            size: 22),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(
+            fontSize: 10,
+            color: active
+                ? AppColors.accentFor(isDark)
+                : AppColors.textSecondaryFor(isDark))),
+      ]),
+    );
+  }
 }

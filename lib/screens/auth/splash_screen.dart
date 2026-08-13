@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -17,13 +18,19 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Contrôleur pilotant les deux animations (fondu + zoom) du logo.
   late AnimationController _controller;
   // Animation de fondu (opacité 0 → 1).
   late Animation<double> _fadeAnimation;
   // Animation de zoom (échelle 0.8 → 1.0).
   late Animation<double> _scaleAnimation;
+  // Contrôleur SÉPARÉ (TickerProviderStateMixin, plutôt que
+  // SingleTickerProviderStateMixin, car il faut désormais DEUX
+  // AnimationController actifs en même temps) qui boucle en continu pour
+  // faire "vivre" les 3 points de chargement en bas de l'écran, comme un
+  // indicateur d'app en train de démarrer (effet façon Facebook).
+  late AnimationController _dotsController;
 
   @override
   void initState() {
@@ -39,6 +46,15 @@ class _SplashScreenState extends State<SplashScreen>
         CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     // Démarre l'animation dès l'affichage de l'écran.
     _controller.forward();
+
+    // `..repeat()` : boucle indéfiniment (contrairement à `_controller`
+    // qui ne joue qu'une fois). Sa valeur (0 → 1 en 1.1s, en boucle) sert
+    // de base de temps commune aux 3 points, chacun décalé dans le temps
+    // (voir `_dot()` plus bas) pour créer un effet de vague.
+    _dotsController = AnimationController(
+        duration: const Duration(milliseconds: 1100), vsync: this)
+      ..repeat();
+
     // Lance en parallèle la logique de redirection (ne bloque pas
     // l'animation visuelle).
     _redirect();
@@ -80,9 +96,38 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    // Libère les ressources de l'AnimationController.
+    // Libère les ressources des deux AnimationController.
     _controller.dispose();
+    _dotsController.dispose();
     super.dispose();
+  }
+
+  // Un point de l'indicateur de chargement. `index` décale sa phase dans
+  // la boucle (0.2 par point) pour que les 3 points ne "pulsent" pas en
+  // même temps mais l'un après l'autre, comme une petite vague.
+  Widget _dot(int index) {
+    return AnimatedBuilder(
+      animation: _dotsController,
+      builder: (context, _) {
+        // Phase 0..1 propre à ce point, décalée de celle des autres.
+        final phase = (_dotsController.value + index * 0.2) % 1.0;
+        // sin(phase * 2π) oscille entre -1 et 1 ; on le ramène à 0..1
+        // pour piloter à la fois la taille et l'opacité du point.
+        final wave = (sin(phase * 2 * pi) + 1) / 2;
+        return Transform.scale(
+          scale: 0.6 + wave * 0.6,
+          child: Container(
+            width: 8, height: 8,
+            decoration: BoxDecoration(
+              color: index == 0
+                  ? const Color(0xFFE63946)
+                  : Colors.white.withOpacity(0.3 + wave * 0.7),
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -148,20 +193,14 @@ class _SplashScreenState extends State<SplashScreen>
                 const Text('Les Cayes - Haïti',
                     style: TextStyle(fontSize: 12, color: Colors.white30)),
                 const SizedBox(height: 16),
-                // Trois petits points décoratifs en bas (indicateur visuel
-                // de chargement statique, le premier point en rouge attire
-                // l'œil comme un indicateur de progression).
+                // Trois points de chargement ANIMÉS (effet de vague en
+                // boucle, façon indicateur de démarrage Facebook) — voir
+                // `_dot()` plus bas.
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (i) => Container(
-                    width: 6, height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      color: i == 0
-                          ? const Color(0xFFE63946)
-                          : Colors.white.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
+                  children: List.generate(3, (i) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _dot(i),
                   )),
                 ),
               ],

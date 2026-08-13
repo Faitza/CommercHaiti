@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
 import '../../widgets/order_status_badge.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Commandes Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -61,9 +63,10 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
     // `watch` reconstruit ce widget à chaque nouvelle émission du stream
     // de commandes (mise à jour temps réel de la liste affichée).
     final orders = context.watch<OrderProvider>().ordresVendeur;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         leading: IconButton(
@@ -96,7 +99,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
           if (filtered.isEmpty) {
             return Center(
               child: Text('Aucune commande "${s['label']}"',
-                  style: const TextStyle(color: Color(0xFF999999))),
+                  style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
             );
           }
 

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../models/shop_model.dart';
 import '../../models/product_model.dart';
 import '../../widgets/shop_logo_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Boutiques proposant un produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -91,8 +94,9 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -117,9 +121,9 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _results.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text('Aucune boutique ne propose ce produit',
-                      style: TextStyle(color: Color(0xFF999999))))
+                      style: TextStyle(color: AppColors.textSecondaryFor(isDark))))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _results.length,
@@ -151,7 +155,7 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface(isDark),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -167,8 +171,9 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(shop.nom,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimaryFor(isDark))),
                                   const SizedBox(height: 2),
                                   // Note moyenne de la boutique.
                                   Row(
@@ -177,8 +182,8 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
                                           size: 14, color: Color(0xFFF5A623)),
                                       const SizedBox(width: 2),
                                       Text(shop.rating.toStringAsFixed(1),
-                                          style: const TextStyle(fontSize: 12,
-                                              color: Color(0xFF666666))),
+                                          style: TextStyle(fontSize: 12,
+                                              color: AppColors.textSecondaryFor(isDark))),
                                     ],
                                   ),
                                 ],
@@ -194,17 +199,17 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
                               children: [
                                 Text(
                                   '${product.prixAffiche.toStringAsFixed(0)} HTG',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0D2B5E),
+                                      color: AppColors.accentFor(isDark),
                                       fontSize: 16),
                                 ),
                                 if (product.hasPromo)
                                   Text(
                                     '${product.prix.toStringAsFixed(0)} HTG',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF999999),
+                                        color: AppColors.textSecondaryFor(isDark),
                                         decoration: TextDecoration.lineThrough),
                                   ),
                               ],

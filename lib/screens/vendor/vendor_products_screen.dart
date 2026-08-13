@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/database_service.dart';
 import '../../models/product_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Liste produits Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -61,9 +63,10 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
     // `context.watch` reabonne ce widget aux changements d'AuthProvider
     // (utile si le shopId se resout apres le premier build).
     final shopId = context.watch<AuthProvider>().shopId ?? '';
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // TopBar —  titre + kantite + bouton + wouj
@@ -179,9 +182,9 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                 // Aucune donnée reçue ou boutique sans produit : message
                 // d'état vide invitant à utiliser le bouton "+".
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text('Aucun produit — appuyez sur + pour en ajouter',
-                        style: TextStyle(color: Color(0xFF999999))),
+                        style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                   );
                 }
                 // Chaque ligne brute (Map<String, dynamic>) renvoyée par
@@ -229,6 +232,7 @@ class _ProductListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     // Barre de progression du stock : on prend 20 unités comme "plein"
     // (valeur de référence arbitraire côté UI) et on borne entre 0 et 1.
     final fraction = (product.stock / 20).clamp(0.0, 1.0);
@@ -245,7 +249,7 @@ class _ProductListTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(isDark),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -277,8 +281,8 @@ class _ProductListTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                         '${product.categorie.isEmpty ? "—" : product.categorie} · ${product.prix.toStringAsFixed(0)} HTG',
-                        style: const TextStyle(
-                            color: Color(0xFF999999), fontSize: 12)),
+                        style: TextStyle(
+                            color: AppColors.textSecondaryFor(isDark), fontSize: 12)),
                     const SizedBox(height: 6),
                     Row(children: [
                       Text('Stock : ${product.stock}',
@@ -303,7 +307,7 @@ class _ProductListTile extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: fraction,
                         minHeight: 5,
-                        backgroundColor: const Color(0xFFEEEEEE),
+                        backgroundColor: AppColors.borderColor(isDark),
                         color: stockColor,
                       ),
                     ),
@@ -353,12 +357,12 @@ class _ProductListTile extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF2F4F8),
+                color: AppColors.scaffoldBg(isDark),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text('Non disponible pour l\'acheteur',
+              child: Text('Non disponible pour l\'acheteur',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: Color(0xFF999999))),
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
             ),
         ],
       ),

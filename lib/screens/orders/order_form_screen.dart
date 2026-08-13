@@ -6,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Order Form Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_form_screen.dart
@@ -15,19 +17,11 @@ import '../../models/order_model.dart';
 /// numéro de téléphone, choisit un mode de paiement et peut ajouter une
 /// note pour le vendeur. À la validation, la commande est envoyée en base
 /// via une fonction Postgres transactionnelle (RPC `create_order_atomic`,
-/// voir `_valider()` et OrderProvider.createOrder / DatabaseService).
-///
-/// ⚠️ LIMITATION IMPORTANTE À CONNAÎTRE (pour la soutenance) : même si le
-/// récapitulatif affiché plus bas dans `build()` additionne TOUS les
-/// articles du panier (`cart.items.map(...)` et `cart.totalAvecPromo`),
-/// la commande réellement envoyée au serveur ne contient qu'UN SEUL
-/// article : `cart.items.first` (voir `_valider()`). Le panier peut
-/// contenir plusieurs produits/boutiques différents, mais
-/// `create_order_atomic` ne sait créer qu'une commande pour un seul
-/// article à la fois. C'est une limitation connue de l'implémentation
-/// actuelle (pas un bug de calcul du total affiché : le total affiché est
-/// correct, mais tout ce qui n'est pas le premier article du panier n'est
-/// tout simplement pas transmis au serveur lors de la commande).
+/// voir `_valider()` et OrderProvider.createOrder / DatabaseService) qui
+/// traite TOUS les articles du panier en une seule transaction atomique
+/// (commande + une ligne order_items par article + décrément du stock de
+/// chaque produit) — nécessite `supabase/functions.sql` à jour (version
+/// avec paramètre `p_items` en jsonb).
 class OrderFormScreen extends StatefulWidget {
   const OrderFormScreen({super.key});
   @override
@@ -132,14 +126,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // qui ne devrait pas se produire en pratique.
     if (cart.items.isEmpty) return;
 
-    // ⚠️ LIMITATION CONNUE : on ne prend QUE le premier article du panier
-    // (`cart.items.first`) pour construire la commande envoyée au serveur,
-    // même si le panier contient plusieurs articles (potentiellement de
-    // boutiques différentes). Le récapitulatif visuel plus bas (dans
-    // build()) affiche pourtant bien tous les articles et leur total —
-    // cet écart entre "ce qui est montré" et "ce qui est réellement
-    // envoyé" est une limitation actuelle du projet à garder en tête, pas
-    // un choix voulu de l'UX.
+    // Le vendeur/la boutique de la commande sont résolus à partir du
+    // PREMIER article : le panier ne gère qu'une seule boutique à la fois
+    // dans ce projet (ajouter un produit d'une autre boutique n'est pas
+    // empêché côté UI, mais n'a jamais de sens ici puisqu'une commande
+    // n'a qu'un seul vendeur/livraison). `item` sert uniquement à ça —
+    // TOUS les articles du panier sont bien envoyés au serveur (voir
+    // `items` construit plus bas), ce n'était pas le cas avant ce
+    // correctif (seul `cart.items.first` était réellement commandé).
     final item = cart.items.first;
 
     // Résout le vendeur (proprietaire_id + téléphone) de la boutique du produit
@@ -193,14 +187,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     }
 
     // Construit l'objet OrderModel avec toutes les infos de livraison
-    // saisies dans le formulaire. Notez que `items: []` est laissé vide ici
-    // (les vrais détails de l'article — produit/quantité/prix/variantes —
-    // sont transmis séparément à `orderProvider.createOrder` ci-dessous et
-    // c'est la fonction RPC côté serveur qui se charge de créer la ligne
-    // dans `order_items`). `total: cart.totalAvecPromo` utilise bien le
-    // total de TOUT le panier (voir la remarque sur la limitation en tête
-    // de fichier : le total affiché/enregistré peut donc représenter plus
-    // que ce qui est effectivement commandé côté `order_items`).
+    // saisies dans le formulaire. `items: []` reste vide ici (l'OrderModel
+    // en mémoire ne sert qu'à transporter les infos de livraison) : les
+    // vrais articles sont transmis séparément à `orderProvider.createOrder`
+    // via `items` ci-dessous, et c'est la fonction RPC côté serveur qui
+    // crée les lignes `order_items` correspondantes. `total:
+    // cart.totalAvecPromo` correspond bien à la somme de TOUS les articles
+    // envoyés, plus de décalage entre le total affiché et ce qui est
+    // réellement enregistré.
     final order = OrderModel(
       id: '', clientId: auth.currentUser!.id,
       shopId: item.product.shopId, sellerId: sellerId,
@@ -213,28 +207,36 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       createdAt: DateTime.now(),
     );
 
+    // Un élément par article du panier — c'est cette liste complète (et
+    // non plus un seul produit) qui est envoyée à la RPC
+    // `create_order_atomic`, qui décrémente le stock et crée une ligne
+    // `order_items` pour CHACUN.
+    final items = cart.items.map((i) => {
+          'product_id': i.product.id,
+          'quantite': i.quantite,
+          'nom': i.product.nom,
+          'prix': i.product.prixAffiche,
+          'couleur': i.couleur,
+          'taille': i.taille,
+        }).toList();
+
     // Délègue la création au provider, qui appelle en interne
     // DatabaseService -> Supabase RPC 'create_order_atomic'. C'est une
-    // fonction Postgres transactionnelle : elle crée la commande ET la
-    // ligne d'article ET décrémente le stock du produit en une seule
-    // transaction atomique côté base, pour éviter les incohérences
-    // (ex. commande créée mais stock non décrémenté si l'app plante entre
-    // les deux opérations). Si le stock est insuffisant, la RPC échoue et
+    // fonction Postgres transactionnelle : elle crée la commande ET une
+    // ligne d'article par produit ET décrémente le stock de CHAQUE produit
+    // en une seule transaction atomique côté base, pour éviter les
+    // incohérences (ex. commande créée mais stock non décrémenté si l'app
+    // plante entre les deux opérations). Si le stock d'UN SEUL article est
+    // insuffisant, toute la RPC échoue (rien n'est décrémenté) et
     // orderProvider expose un message d'erreur adapté.
-    final orderId = await orderProvider.createOrder(
-      order: order, productId: item.product.id,
-      quantite: item.quantite, nomProduit: item.product.nom,
-      prixProduit: item.product.prixAffiche,
-      couleur: item.couleur, taille: item.taille,
-    );
+    final orderId = await orderProvider.createOrder(order: order, items: items);
 
     setState(() => _isLoading = false);
 
     if (orderId != null) {
-      // Commande créée avec succès : on vide le panier (le seul article
-      // effectivement commandé — et donc, avec la limitation décrite plus
-      // haut, potentiellement d'autres articles jamais commandés — sont
-      // tous retirés du panier ici) puis on navigue vers l'écran de suivi.
+      // Commande créée avec succès (tous les articles ont bien été
+      // enregistrés et leur stock décrémenté) : on vide le panier puis on
+      // navigue vers l'écran de suivi.
       cart.clear();
       // `mounted` est vérifié après les `await` précédents (résolution
       // vendeur + createOrder) car cet écran aurait pu être démonté entre
@@ -271,9 +273,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // bas doit se mettre à jour si le contenu du panier change pendant que
     // ce formulaire est ouvert.
     final cart = context.watch<CartProvider>();
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // TopBar
@@ -325,8 +328,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // Carte "Adresse de livraison" : champ texte libre pour
                     // l'adresse précise, plus une sélection de zone parmi
                     // une liste fixe de quartiers desservis (`_zones`).
-                    _sectionCard(children: [
-                      _label(Icons.location_on_outlined, 'Adresse de livraison'),
+                    _sectionCard(isDark, children: [
+                      _label(Icons.location_on_outlined, 'Adresse de livraison', isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _adresseCtrl,
@@ -338,10 +341,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           }
                           return null;
                         },
-                        decoration: _deco('Rue Borno, Les Cayes'),
+                        decoration: _deco('Rue Borno, Les Cayes', isDark),
                       ),
                       const SizedBox(height: 14),
-                      _label(Icons.map_outlined, 'Zone de livraison'),
+                      _label(Icons.map_outlined, 'Zone de livraison', isDark),
                       const SizedBox(height: 8),
                       // "Chips" cliquables représentant chaque zone
                       // possible ; la zone sélectionnée est mise en
@@ -360,12 +363,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               decoration: BoxDecoration(
                                 color: sel
                                     ? const Color(0xFF0D2B5E)
-                                    : Colors.white,
+                                    : AppColors.surface(isDark),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: sel
                                       ? const Color(0xFF0D2B5E)
-                                      : const Color(0xFFDDDDDD),
+                                      : AppColors.borderColor(isDark),
                                 ),
                               ),
                               child: Text(z,
@@ -373,7 +376,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                       fontSize: 12,
                                       color: sel
                                           ? Colors.white
-                                          : const Color(0xFF444444),
+                                          : AppColors.textSecondaryFor(isDark),
                                       fontWeight: sel
                                           ? FontWeight.bold
                                           : FontWeight.normal)),
@@ -388,29 +391,29 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // Carte "Téléphone" : demande le numéro deux fois
                     // (saisie + confirmation) pour limiter le risque
                     // d'erreur de contact lors de la livraison.
-                    _sectionCard(children: [
-                      _label(Icons.phone_outlined, 'Numéro de téléphone'),
+                    _sectionCard(isDark, children: [
+                      _label(Icons.phone_outlined, 'Numéro de téléphone', isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _telephoneCtrl,
                         validator: _valTel,
                         keyboardType: TextInputType.phone,
-                        decoration: _deco('+509 XXXX XXXX'),
+                        decoration: _deco('+509 XXXX XXXX', isDark),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Pré-rempli depuis votre profil. Modifiable.',
                         style: TextStyle(
-                            fontSize: 10, color: Color(0xFF999999)),
+                            fontSize: 10, color: AppColors.textSecondaryFor(isDark)),
                       ),
                       const SizedBox(height: 12),
-                      _label(Icons.phone_outlined, 'Confirmer le numéro'),
+                      _label(Icons.phone_outlined, 'Confirmer le numéro', isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _confirmTelCtrl,
                         validator: _valConfirm,
                         keyboardType: TextInputType.phone,
-                        decoration: _deco('Ressaisir le numéro'),
+                        decoration: _deco('Ressaisir le numéro', isDark),
                       ),
                     ]),
                     const SizedBox(height: 12),
@@ -426,8 +429,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // RadioListTile non cliquable, et son texte est grisé)
                     // car son intégration (paiement en ligne réel) n'est
                     // pas encore implémentée dans ce projet étudiant.
-                    _sectionCard(children: [
-                      _label(Icons.payments_outlined, 'PAIEMENT'),
+                    _sectionCard(isDark, children: [
+                      _label(Icons.payments_outlined, 'PAIEMENT', isDark),
                       const SizedBox(height: 4),
                       // Option active : paiement à la livraison. C'est la
                       // seule valeur que `_modePaiement` peut réellement
@@ -458,13 +461,13 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                         onChanged: null,
                         contentPadding: EdgeInsets.zero,
                         dense: true,
-                        title: Row(children: const [
+                        title: Row(children: [
                           Icon(Icons.phone_android,
-                              size: 16, color: Color(0xFFAAAAAA)),
-                          SizedBox(width: 6),
+                              size: 16, color: AppColors.textSecondaryFor(isDark)),
+                          const SizedBox(width: 6),
                           Text('MonCash — Bientôt dispo',
                               style: TextStyle(
-                                  fontSize: 14, color: Color(0xFFAAAAAA))),
+                                  fontSize: 14, color: AppColors.textSecondaryFor(isDark))),
                         ]),
                       ),
                     ]),
@@ -474,14 +477,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // Champ libre et optionnel (limité à 200 caractères)
                     // pour transmettre une instruction spéciale au vendeur
                     // (ex. horaire de livraison préféré).
-                    _sectionCard(children: [
-                      _label(Icons.note_outlined, 'Note pour le vendeur (optionnel)'),
+                    _sectionCard(isDark, children: [
+                      _label(Icons.note_outlined, 'Note pour le vendeur (optionnel)', isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _noteCtrl,
                         maxLines: 2,
                         maxLength: 200,
-                        decoration: _deco('Ex: Livrer après 17h...'),
+                        decoration: _deco('Ex: Livrer après 17h...', isDark),
                       ),
                     ]),
                     const SizedBox(height: 12),
@@ -501,7 +504,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface(isDark),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(children: [
@@ -512,8 +515,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                 style: const TextStyle(fontSize: 12),
                                 overflow: TextOverflow.ellipsis)),
                             Text('x${item.quantite}',
-                                style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF666666))),
+                                style: TextStyle(
+                                    fontSize: 12, color: AppColors.textSecondaryFor(isDark))),
                             const SizedBox(width: 12),
                             Text('${item.sousTotal.toStringAsFixed(0)} HTG',
                                 style: const TextStyle(
@@ -544,9 +547,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                             const Text('Total',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
                             Text('${cart.totalAvecPromo.toStringAsFixed(0)} HTG',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0D2B5E))),
+                                    color: AppColors.accentFor(isDark))),
                           ],
                         ),
                       ]),
@@ -597,10 +600,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // contenant un groupe de champs liés (adresse, téléphone, paiement...).
   // Évite de répéter la même décoration (couleur, arrondi, padding) à
   // chaque section du formulaire.
-  Widget _sectionCard({required List<Widget> children}) => Container(
+  Widget _sectionCard(bool isDark, {required List<Widget> children}) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppColors.surface(isDark),
       borderRadius: BorderRadius.circular(12),
     ),
     child: Column(
@@ -609,22 +612,22 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
   // Petit helper : construit un libellé de section avec une icône, utilisé
   // en tête de chaque `_sectionCard`.
-  Widget _label(IconData icon, String t) => Row(children: [
-    Icon(icon, size: 14, color: const Color(0xFF0D2B5E)),
+  Widget _label(IconData icon, String t, bool isDark) => Row(children: [
+    Icon(icon, size: 14, color: AppColors.accentFor(isDark)),
     const SizedBox(width: 6),
-    Text(t, style: const TextStyle(
+    Text(t, style: TextStyle(
         fontSize: 13, fontWeight: FontWeight.w600,
-        color: Color(0xFF1A1F36))),
+        color: AppColors.textPrimaryFor(isDark))),
   ]);
 
   // Petit helper : décoration commune (fond gris clair, bordures arrondies,
   // style de bordure au focus/erreur) appliquée à tous les TextFormField du
   // formulaire, pour garder une apparence homogène.
-  InputDecoration _deco(String hint) => InputDecoration(
+  InputDecoration _deco(String hint, bool isDark) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+    hintStyle: TextStyle(color: AppColors.textSecondaryFor(isDark), fontSize: 13),
     filled: true,
-    fillColor: const Color(0xFFF5F5F5),
+    fillColor: AppColors.inputFill(isDark),
     border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none),

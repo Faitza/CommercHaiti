@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/product_model.dart';
 import '../../widgets/product_card_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Tous les produits — catalogue complet, toutes boutiques confondues.
 /// Accessible sans compte (BF-010 — navigation libre).
@@ -124,8 +127,9 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -149,22 +153,23 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
             child: Container(
               height: 42,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(isDark),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE0E0E0)),
+                border: Border.all(color: AppColors.borderColor(isDark)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(children: [
-                const Icon(Icons.search, color: Color(0xFF999999), size: 18),
+                Icon(Icons.search, color: AppColors.textSecondaryFor(isDark), size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: AppColors.textPrimaryFor(isDark)),
+                    decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       hintText: 'Rechercher un produit…',
-                      hintStyle: TextStyle(fontSize: 13, color: Color(0xFF999999)),
+                      hintStyle: TextStyle(fontSize: 13, color: AppColors.textSecondaryFor(isDark)),
                     ),
                   ),
                 ),
@@ -200,9 +205,9 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _produitsAffiches.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text('Aucun produit trouvé',
-                            style: TextStyle(color: Color(0xFF999999))))
+                            style: TextStyle(color: AppColors.textSecondaryFor(isDark))))
                     : RefreshIndicator(
                         onRefresh: _charger,
                         child: GridView.builder(
@@ -237,6 +242,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   /// côté serveur).
   Widget _chipCategorie(String label, String value) {
     final sel = _categorieSelectionnee == value;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
@@ -248,12 +254,12 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
         },
         selectedColor: const Color(0xFFEEF3FB),
         labelStyle: TextStyle(
-          color: sel ? const Color(0xFF0D2B5E) : const Color(0xFF666666),
+          color: sel ? AppColors.accentFor(isDark) : AppColors.textSecondaryFor(isDark),
           fontWeight: sel ? FontWeight.bold : FontWeight.normal,
           fontSize: 12,
         ),
         side: BorderSide(
-            color: sel ? const Color(0xFF0D2B5E) : const Color(0xFFCCCCCC)),
+            color: sel ? AppColors.accentFor(isDark) : AppColors.borderColor(isDark)),
       ),
     );
   }

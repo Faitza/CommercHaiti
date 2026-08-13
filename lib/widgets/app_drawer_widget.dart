@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../constants/app_colors.dart';
 
 /// Représente une entrée du menu (icône + libellé + action au clic).
 /// `onTap` est optionnel : si non fourni, un comportement par défaut
@@ -83,9 +84,10 @@ class AppDrawerWidget extends StatelessWidget {
     // automatiquement si le mode sombre change ailleurs dans l'app,
     // gardant le switch synchronisé avec l'état réel.
     final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface(isDark),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,8 +122,9 @@ class AppDrawerWidget extends StatelessWidget {
                   // encore développées).
                   for (final item in items)
                     ListTile(
-                      leading: Icon(item.icon, color: const Color(0xFF0D2B5E)),
-                      title: Text(item.label),
+                      leading: Icon(item.icon, color: AppColors.accentFor(isDark)),
+                      title: Text(item.label,
+                          style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
                       onTap: item.onTap ??
                           () {
                             Navigator.pop(context);
@@ -135,9 +138,10 @@ class AppDrawerWidget extends StatelessWidget {
                   // utilisent ce drawer — navigue vers `settingsRoute`
                   // (différente selon client/vendeur).
                   ListTile(
-                    leading: const Icon(Icons.settings_outlined,
-                        color: Color(0xFF0D2B5E)),
-                    title: const Text('Paramètres'),
+                    leading: Icon(Icons.settings_outlined,
+                        color: AppColors.accentFor(isDark)),
+                    title: Text('Paramètres',
+                        style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
                     onTap: () {
                       Navigator.pop(context);
                       context.push(settingsRoute);
@@ -146,9 +150,10 @@ class AppDrawerWidget extends StatelessWidget {
                   // Interrupteur "Mode sombre" fixe, relié directement au
                   // ThemeProvider global — change le thème de toute l'app.
                   SwitchListTile(
-                    secondary: const Icon(Icons.dark_mode_outlined,
-                        color: Color(0xFF0D2B5E)),
-                    title: const Text('Mode sombre'),
+                    secondary: Icon(Icons.dark_mode_outlined,
+                        color: AppColors.accentFor(isDark)),
+                    title: Text('Mode sombre',
+                        style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
                     value: theme.isDarkMode,
                     activeColor: const Color(0xFF0D2B5E),
                     onChanged: (v) => context.read<ThemeProvider>().toggle(v),

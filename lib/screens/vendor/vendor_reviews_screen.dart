@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Avis clients — vue vendeur (menu hamburger, section 12.2)
 /// Path : lib/screens/vendor/vendor_reviews_screen.dart
@@ -67,8 +69,9 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -81,9 +84,9 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _avis.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text('Aucun avis pour l\'instant',
-                      style: TextStyle(color: Color(0xFF999999))),
+                      style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -98,7 +101,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface(isDark),
                           borderRadius: BorderRadius.circular(12)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +119,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                           if (commentaire != null && commentaire.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(commentaire,
-                                style: const TextStyle(color: Color(0xFF444444))),
+                                style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                           ],
                         ],
                       ),

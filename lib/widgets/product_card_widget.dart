@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/product_model.dart';
+import '../providers/theme_provider.dart';
+import '../constants/app_colors.dart';
 
 /// Carte produit réutilisable — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -24,6 +27,7 @@ class ProductCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     // GestureDetector englobe toute la carte pour la rendre cliquable ;
     // Container donne le fond blanc, les coins arrondis et une légère
     // ombre portée pour un effet "carte" surélevée.
@@ -31,7 +35,7 @@ class ProductCardWidget extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -67,8 +71,8 @@ class ProductCardWidget extends StatelessWidget {
                             fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFFEEF3FB),
-                            child: const Icon(Icons.image_outlined,
-                                color: Color(0xFF0D2B5E), size: 40)),
+                            child: Icon(Icons.image_outlined,
+                                color: AppColors.accentFor(isDark), size: 40)),
                   ),
                 // Badge promo — affiché uniquement si le produit a une
                 // réduction active, en haut à gauche de la photo, avec le
@@ -142,8 +146,8 @@ class ProductCardWidget extends StatelessWidget {
                     children: [
                       Text(
                         '${product.prixAffiche.toStringAsFixed(0)} HTG',
-                        style: const TextStyle(
-                            color: Color(0xFF0D2B5E),
+                        style: TextStyle(
+                            color: AppColors.accentFor(isDark),
                             fontWeight: FontWeight.bold,
                             fontSize: 13),
                       ),
@@ -151,9 +155,9 @@ class ProductCardWidget extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '${product.prix.toStringAsFixed(0)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF999999),
+                              color: AppColors.textSecondaryFor(isDark),
                               decoration: TextDecoration.lineThrough),
                         ),
                       ],

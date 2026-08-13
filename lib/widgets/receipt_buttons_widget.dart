@@ -203,20 +203,22 @@ class _ReceiptButtonsWidgetState extends State<ReceiptButtonsWidget> {
           icon: const Icon(Icons.download_outlined, size: 16),
           label: const Text('PDF'),
         ),
-        // Bouton 2 : partager directement le fichier PDF (share sheet).
+        // Bouton 2 : partage le fichier PDF via la feuille de partage
+        // native (share sheet), mais libellé "Télécharger" à la demande du
+        // client — plus clair pour l'utilisateur final que "Partager".
         TextButton.icon(
           onPressed: () => _action((order, nom) =>
               _receiptService.partager(order, shopNom: nom)),
           icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
-          label: const Text('Partager PDF'),
+          label: const Text('Télécharger PDF'),
         ),
-        // Bouton 3 : partager le reçu sous forme d'image PNG (technique
+        // Bouton 3 : même chose pour le reçu en image PNG (technique
         // Overlay + RepaintBoundary décrite plus haut) — plus adapté à un
         // aperçu WhatsApp qu'un fichier PDF.
         TextButton.icon(
           onPressed: () => _action(_partagerImage),
           icon: const Icon(Icons.image_outlined, size: 16),
-          label: const Text('Partager en image'),
+          label: const Text('Télécharger image'),
         ),
       ],
     );

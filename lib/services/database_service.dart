@@ -181,40 +181,42 @@ class DatabaseService {
   /// Pourquoi une RPC et pas un insert direct ? Une commande implique
   /// PLUSIEURS opérations qui doivent réussir ou échouer ENSEMBLE (créer la
   /// ligne `orders`, créer les lignes `order_items`, décrémenter le stock
-  /// du produit) : c'est une transaction atomique. En faisant tout ça côté
-  /// serveur dans une seule fonction SQL, on garantit qu'aucune commande
-  /// n'est créée si le stock est insuffisant (pas de "race condition" entre
-  /// deux clients qui commanderaient en même temps le dernier article).
+  /// de CHAQUE produit) : c'est une transaction atomique. En faisant tout
+  /// ça côté serveur dans une seule fonction SQL, on garantit qu'aucune
+  /// commande n'est créée si le stock d'un seul des articles est
+  /// insuffisant (pas de "race condition" entre deux clients qui
+  /// commanderaient en même temps le dernier article).
+  ///
+  /// [items] : un élément par produit du panier, chacun sous la forme
+  /// `{'product_id', 'quantite', 'nom', 'prix', 'couleur', 'taille'}` —
+  /// voir order_form_screen.dart pour la construction de cette liste à
+  /// partir de `CartProvider.items`. Avant ce correctif, cette méthode
+  /// n'acceptait qu'UN SEUL produit à la fois (`productId`/`quantite`...),
+  /// ce qui faisait qu'un panier à plusieurs articles n'envoyait au
+  /// serveur que le premier — les autres n'étaient ni enregistrés dans la
+  /// commande, ni décrémentés du stock.
+  ///
   /// La fonction retourne l'id (String) de la commande créée.
   Future<String> createOrder({
     required OrderModel order,
-    required String productId,
-    required int quantite,
-    required String nomProduit,
-    required double prixProduit,
-    String? couleur,
-    String? taille,
+    required List<Map<String, dynamic>> items,
   }) async {
     try {
       final response = await _supabase.rpc(
         'create_order_atomic',
         // Les paramètres sont préfixés "p_" côté SQL (convention pour les
         // distinguer des colonnes de table) ; on les passe ici sous forme
-        // de Map nom_param -> valeur.
+        // de Map nom_param -> valeur. `p_items` est encodé en JSON par le
+        // client Supabase (List<Map> -> jsonb côté Postgres).
         params: {
           'p_client_id':         order.clientId,
           'p_shop_id':           order.shopId,
           'p_seller_id':         order.sellerId,
-          'p_product_id':        productId,
-          'p_quantite':          quantite,
+          'p_items':             items,
           'p_total':             order.total,
           'p_adresse_livraison': order.adresseLivraison,
           'p_zone':              order.zone,
           'p_telephone_client':  order.telephoneClient,
-          'p_nom_produit':       nomProduit,
-          'p_prix_produit':      prixProduit,
-          'p_couleur':           couleur,
-          'p_taille':            taille,
           'p_note_vendeur':      order.noteVendeur,
         },
       );

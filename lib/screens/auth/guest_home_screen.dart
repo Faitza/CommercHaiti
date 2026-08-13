@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/shop_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
@@ -27,6 +29,9 @@ class GuestHomeScreen extends StatefulWidget {
   // visiteur. Propose de s'inscrire, de se connecter, ou de continuer à
   // naviguer sans compte.
   static void showInscriptionSheet(BuildContext context) {
+    // `read` (et non `watch`) : appelé depuis un callback (onTap), pas
+    // pendant un build — `watch` lèverait une erreur hors build.
+    final isDark = context.read<ThemeProvider>().isDarkMode;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -43,23 +48,23 @@ class GuestHomeScreen extends StatefulWidget {
               width: 40, height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: const Color(0xFFCCCCCC),
+                color: AppColors.borderColor(isDark),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text(
+            Text(
               'Créez un compte pour commander',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0D2B5E),
+                color: AppColors.accentFor(isDark),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Inscrivez-vous pour passer commande et suivre vos livraisons.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF666666)),
+              style: TextStyle(color: AppColors.textSecondaryFor(isDark)),
             ),
             const SizedBox(height: 24),
             // Bouton principal : ferme la feuille puis envoie vers le
@@ -90,7 +95,7 @@ class GuestHomeScreen extends StatefulWidget {
               height: 48,
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF0D2B5E)),
+                  side: BorderSide(color: AppColors.accentFor(isDark)),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),
@@ -98,8 +103,9 @@ class GuestHomeScreen extends StatefulWidget {
                   Navigator.pop(context);
                   context.go('/role-selection');
                 },
-                child: const Text('Se connecter',
-                    style: TextStyle(color: Color(0xFF0D2B5E), fontSize: 15)),
+                child: Text('Se connecter',
+                    style: TextStyle(
+                        color: AppColors.accentFor(isDark), fontSize: 15)),
               ),
             ),
             const SizedBox(height: 12),
@@ -107,9 +113,9 @@ class GuestHomeScreen extends StatefulWidget {
             // naviguer en mode visiteur, sans forcer l'inscription.
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 'Continuer à naviguer',
-                style: TextStyle(color: Color(0xFF666666)),
+                style: TextStyle(color: AppColors.textSecondaryFor(isDark)),
               ),
             ),
             const SizedBox(height: 8),
@@ -166,9 +172,10 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
   Widget build(BuildContext context) {
     // Liste des boutiques mise à jour en temps réel via ShopProvider.
     final shops = context.watch<ShopProvider>().shops;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // TopBar
@@ -322,7 +329,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                     // tout" utilise `context.push` (et non `go`) car on
                     // veut garder l'accueil visiteur dans la pile pour
                     // pouvoir y revenir avec le bouton retour.
-                    _sectionTitle('Produits les plus demandés',
+                    _sectionTitle('Produits les plus demandés', isDark,
                         onTap: () => context.push('/client/all-products')),
                     SizedBox(
                       height: 180,
@@ -344,7 +351,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                     // SingleChildScrollView : `shrinkWrap` + physics
                     // désactivées car le scroll parent gère déjà le
                     // défilement global).
-                    _sectionTitle('Boutiques ouvertes',
+                    _sectionTitle('Boutiques ouvertes', isDark,
                         onTap: () => context.go('/client/boutiques')),
                     ListView.builder(
                       shrinkWrap: true,
@@ -369,7 +376,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
       // naviguer réellement.
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.08),
             blurRadius: 12, offset: const Offset(0, -2),
@@ -397,19 +404,19 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
 
   // En-tête de section réutilisable : titre à gauche, lien "Voir tout"
   // optionnel à droite (affiché seulement si `onTap` est fourni).
-  Widget _sectionTitle(String t, {VoidCallback? onTap}) => Padding(
+  Widget _sectionTitle(String t, bool isDark, {VoidCallback? onTap}) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(t, style: const TextStyle(
+        Text(t, style: TextStyle(
             fontSize: 15, fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1F36))),
+            color: AppColors.textPrimaryFor(isDark))),
         if (onTap != null)
           GestureDetector(
             onTap: onTap,
-            child: const Text('Voir tout',
-                style: TextStyle(fontSize: 12, color: Color(0xFF0D2B5E))),
+            child: Text('Voir tout',
+                style: TextStyle(fontSize: 12, color: AppColors.accentFor(isDark))),
           ),
       ],
     ),
@@ -427,13 +434,14 @@ class _GuestProduitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: () => context.push('/client/product', extra: product),
       child: Container(
         width: 130,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -468,8 +476,8 @@ class _GuestProduitCard extends StatelessWidget {
                       width: 26, height: 26,
                       decoration: const BoxDecoration(
                           color: Colors.white70, shape: BoxShape.circle),
-                      child: const Icon(Icons.favorite_border,
-                          size: 14, color: Color(0xFF999999)),
+                      child: Icon(Icons.favorite_border,
+                          size: 14, color: AppColors.textSecondaryFor(isDark)),
                     ),
                   ),
                 ),
@@ -486,8 +494,8 @@ class _GuestProduitCard extends StatelessWidget {
                           fontWeight: FontWeight.w600, fontSize: 12)),
                   const SizedBox(height: 2),
                   Text('${product.prixAffiche.toStringAsFixed(0)} HTG',
-                      style: const TextStyle(
-                          color: Color(0xFF0D2B5E),
+                      style: TextStyle(
+                          color: AppColors.accentFor(isDark),
                           fontWeight: FontWeight.bold,
                           fontSize: 12)),
                 ],
@@ -509,13 +517,14 @@ class _GuestBoutiqueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: () => context.push('/client/boutique-detail', extra: shop),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -540,8 +549,8 @@ class _GuestBoutiqueCard extends StatelessWidget {
                     const Icon(Icons.star_rounded, size: 11, color: Color(0xFFF5A623)),
                     const SizedBox(width: 2),
                     Text('${shop.rating.toStringAsFixed(1)} · ${shop.totalAvis} avis',
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF666666))),
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                   ]),
                 ],
               ),
@@ -586,6 +595,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -593,16 +603,16 @@ class _NavItem extends StatelessWidget {
         children: [
           Icon(icon,
               color: active
-                  ? const Color(0xFF0D2B5E)
-                  : const Color(0xFF999999),
+                  ? AppColors.accentFor(isDark)
+                  : AppColors.textSecondaryFor(isDark),
               size: 22),
           const SizedBox(height: 2),
           Text(label,
               style: TextStyle(
                   fontSize: 10,
                   color: active
-                      ? const Color(0xFF0D2B5E)
-                      : const Color(0xFF999999),
+                      ? AppColors.accentFor(isDark)
+                      : AppColors.textSecondaryFor(isDark),
                   fontWeight: active
                       ? FontWeight.bold
                       : FontWeight.normal)),

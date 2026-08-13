@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/favorite_provider.dart';
 import '../../widgets/shop_logo_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Boutiques favorites — menu hamburger client (section 12.2/12.3)
 /// Path : lib/screens/client/favorites_screen.dart
@@ -25,9 +27,10 @@ class FavoritesScreen extends StatelessWidget {
     // notifie un changement (ajout/retrait d'un favori), la liste
     // affichée ici se met à jour automatiquement.
     final shops = context.watch<FavoriteProvider>().favoriteShops;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -45,15 +48,15 @@ class FavoritesScreen extends StatelessWidget {
       // Affiche soit un état vide (aucun favori), soit la liste des
       // boutiques favorites.
       body: shops.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.favorite_border,
-                      size: 60, color: Color(0xFFCCCCCC)),
-                  SizedBox(height: 12),
+                      size: 60, color: AppColors.borderColor(isDark)),
+                  const SizedBox(height: 12),
                   Text('Aucune boutique favorite pour l\'instant',
-                      style: TextStyle(color: Color(0xFF999999))),
+                      style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ],
               ),
             )
@@ -73,7 +76,7 @@ class FavoritesScreen extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface(isDark),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -89,8 +92,9 @@ class FavoritesScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(shop.nom,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimaryFor(isDark))),
                               const SizedBox(height: 2),
                               // Note moyenne de la boutique (1 décimale).
                               Row(children: [
@@ -98,9 +102,9 @@ class FavoritesScreen extends StatelessWidget {
                                     size: 14, color: Color(0xFFF5A623)),
                                 const SizedBox(width: 2),
                                 Text(shop.rating.toStringAsFixed(1),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF666666))),
+                                        color: AppColors.textSecondaryFor(isDark))),
                               ]),
                             ],
                           ),

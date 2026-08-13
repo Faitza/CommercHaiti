@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import '../../models/product_model.dart';
 import '../../widgets/product_card_widget.dart';
 import '../auth/guest_home_screen.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Détail produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -309,9 +311,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     // l'écran précédent.
     final p = _productLive ?? widget.product;
     final auth = context.watch<AuthProvider>();
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,21 +476,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     children: [
                       Expanded(
                         child: Text(p.nom,
-                            style: const TextStyle(fontSize: 20,
+                            style: TextStyle(fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1F36))),
+                                color: AppColors.textPrimaryFor(isDark))),
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text('${p.prixAffiche.toStringAsFixed(0)} HTG',
-                              style: const TextStyle(fontSize: 18,
+                              style: TextStyle(fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0D2B5E))),
+                                  color: AppColors.accentFor(isDark))),
                           if (p.hasPromo)
                             Text('${p.prix.toStringAsFixed(0)} HTG',
-                                style: const TextStyle(fontSize: 12,
-                                    color: Color(0xFF999999),
+                                style: TextStyle(fontSize: 12,
+                                    color: AppColors.textSecondaryFor(isDark),
                                     decoration: TextDecoration.lineThrough)),
                         ],
                       ),
@@ -499,12 +502,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(children: [
-                        const Icon(Icons.storefront_outlined,
-                            size: 14, color: Color(0xFF999999)),
+                        Icon(Icons.storefront_outlined,
+                            size: 14, color: AppColors.textSecondaryFor(isDark)),
                         const SizedBox(width: 4),
                         Text(_shopNom,
-                            style: const TextStyle(
-                                color: Color(0xFF999999), fontSize: 13)),
+                            style: TextStyle(
+                                color: AppColors.textSecondaryFor(isDark), fontSize: 13)),
                       ]),
                     ),
 
@@ -572,14 +575,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: sel ? const Color(0xFF0D2B5E) : const Color(0xFFF2F4F8),
+                              color: sel ? const Color(0xFF0D2B5E) : AppColors.scaffoldBg(isDark),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: sel
                                   ? const Color(0xFF0D2B5E)
-                                  : const Color(0xFFCCCCCC)),
+                                  : AppColors.borderColor(isDark)),
                             ),
                             child: Text(t, style: TextStyle(
-                                color: sel ? Colors.white : const Color(0xFF1A1F36),
+                                color: sel ? Colors.white : AppColors.textPrimaryFor(isDark),
                                 fontWeight: FontWeight.w600)),
                           ),
                         );
@@ -601,16 +604,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ? () => setState(() => _quantite--)
                           : null,
                       icon: const Icon(Icons.remove_circle_outline),
-                      color: const Color(0xFF0D2B5E),
+                      color: AppColors.accentFor(isDark),
                     ),
-                    Text('$_quantite', style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('$_quantite', style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimaryFor(isDark))),
                     IconButton(
                       onPressed: _quantite < p.stock
                           ? () => setState(() => _quantite++)
                           : null,
                       icon: const Icon(Icons.add_circle_outline),
-                      color: const Color(0xFF0D2B5E),
+                      color: AppColors.accentFor(isDark),
                     ),
                   ]),
                   const SizedBox(height: 24),
@@ -638,17 +642,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               Icon(Icons.lock_outline,
-                                  size: 16, color: Color(0xFF0D2B5E)),
-                              SizedBox(width: 6),
+                                  size: 16, color: AppColors.accentFor(isDark)),
+                              const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
                                     'Connectez-vous pour ajouter au panier',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        color: Color(0xFF0D2B5E))),
+                                        color: AppColors.accentFor(isDark))),
                               ),
                             ],
                           ),
@@ -687,9 +691,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             BorderRadius.circular(10)),
                                   ),
                                   onPressed: () => context.go('/role-selection'),
-                                  child: const Text('Connexion',
+                                  child: Text('Connexion',
                                       style: TextStyle(
-                                          color: Color(0xFF0D2B5E),
+                                          color: AppColors.accentFor(isDark),
                                           fontWeight: FontWeight.bold)),
                                 ),
                               ),
@@ -704,7 +708,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 52,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFCCCCCC),
+                          backgroundColor: AppColors.borderColor(isDark),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
@@ -739,7 +743,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 side: BorderSide(
                                     color: _peutAjouter(p)
                                         ? const Color(0xFF0D2B5E)
-                                        : const Color(0xFFCCCCCC)),
+                                        : AppColors.borderColor(isDark)),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                               ),
@@ -747,13 +751,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   _peutAjouter(p) ? _ajouterAuPanier : null,
                               icon: Icon(Icons.shopping_cart_outlined,
                                   color: _peutAjouter(p)
-                                      ? const Color(0xFF0D2B5E)
-                                      : const Color(0xFFCCCCCC)),
+                                      ? AppColors.accentFor(isDark)
+                                      : AppColors.borderColor(isDark)),
                               label: Text('Panier',
                                   style: TextStyle(
                                       color: _peutAjouter(p)
-                                          ? const Color(0xFF0D2B5E)
-                                          : const Color(0xFFCCCCCC),
+                                          ? AppColors.accentFor(isDark)
+                                          : AppColors.borderColor(isDark),
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold)),
                             ),
@@ -773,7 +777,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _peutAjouter(p)
                                     ? const Color(0xFFE63946)
-                                    : const Color(0xFFCCCCCC),
+                                    : AppColors.borderColor(isDark),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
@@ -805,11 +809,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // sélection couleur/taille n'est pas encore complète
                   // (explique pourquoi les boutons sont grisés).
                   if (auth.isLoggedIn && p.disponible && !_selectionComplete)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
                       child: Text('Sélectionnez couleur et taille avant d\'ajouter',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Color(0xFF999999), fontSize: 12)),
+                          style: TextStyle(color: AppColors.textSecondaryFor(isDark), fontSize: 12)),
                     ),
                   const SizedBox(height: 24),
                 ],
@@ -826,10 +830,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text('Vous aimerez aussi…',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1F36))),
+                        color: AppColors.textPrimaryFor(isDark))),
               ),
               const SizedBox(height: 8),
               SizedBox(

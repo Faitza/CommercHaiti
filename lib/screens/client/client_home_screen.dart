@@ -652,13 +652,17 @@ class _ProduitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Widget privé séparé de _ClientHomeScreenState : il a besoin de sa
+    // propre lecture d'isDark (pas d'accès direct au isDark de l'écran
+    // parent).
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 130,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -752,21 +756,22 @@ class _ProduitCard extends StatelessWidget {
                 children: [
                   Text(product.nom, maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
+                          color: AppColors.textPrimaryFor(isDark),
                           fontWeight: FontWeight.w600, fontSize: 12)),
                   const SizedBox(height: 2),
                   Row(children: [
                     Text('${product.prixAffiche.toStringAsFixed(0)} HTG',
-                        style: const TextStyle(
-                            color: Color(0xFF0D2B5E),
+                        style: TextStyle(
+                            color: AppColors.accentFor(isDark),
                             fontWeight: FontWeight.bold,
                             fontSize: 12)),
                     if (product.hasPromo) ...[
                       const SizedBox(width: 4),
                       Text('${product.prix.toStringAsFixed(0)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 10,
-                              color: Color(0xFF999999),
+                              color: AppColors.textSecondaryFor(isDark),
                               decoration: TextDecoration.lineThrough)),
                     ],
                   ]),
@@ -790,13 +795,16 @@ class _BoutiqueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Widget privé séparé de _ClientHomeScreenState : même raison que
+    // _ProduitCard, il lit lui-même isDark.
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -814,15 +822,16 @@ class _BoutiqueCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(shop.nom, style: const TextStyle(
+                  Text(shop.nom, style: TextStyle(
+                      color: AppColors.textPrimaryFor(isDark),
                       fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 2),
                   Row(children: [
                     const Icon(Icons.star, size: 11, color: Color(0xFFF5A623)),
                     const SizedBox(width: 2),
                     Text('${shop.rating.toStringAsFixed(1)} · ${shop.totalAvis} avis',
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF666666))),
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                   ]),
                 ],
               ),

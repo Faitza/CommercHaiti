@@ -5,6 +5,8 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Détail commande Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -35,8 +37,9 @@ class VendorOrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -58,7 +61,7 @@ class VendorOrderDetailScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface(isDark),
                     borderRadius: BorderRadius.circular(14)),
                 child: Column(children: [
                   const Icon(Icons.check_circle,
@@ -68,8 +71,8 @@ class VendorOrderDetailScreen extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  const Text('Le client a été notifié',
-                      style: TextStyle(color: Color(0xFF999999))),
+                  Text('Le client a été notifié',
+                      style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ]),
               ),
               const SizedBox(height: 16),
@@ -80,20 +83,20 @@ class VendorOrderDetailScreen extends StatelessWidget {
             // Infos client : téléphone, adresse et zone de livraison,
             // total de la commande, et éventuelle note laissée par le
             // client. Chaque ligne est affichée via le helper `_row`.
-            _card(children: [
-              _row('Téléphone', order.telephoneClient),
-              _row('Adresse', order.adresseLivraison),
-              _row('Zone', order.zone),
-              _row('Total', '${order.total.toStringAsFixed(0)} HTG'),
+            _card(isDark: isDark, children: [
+              _row('Téléphone', order.telephoneClient, isDark: isDark),
+              _row('Adresse', order.adresseLivraison, isDark: isDark),
+              _row('Zone', order.zone, isDark: isDark),
+              _row('Total', '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
               if (order.noteVendeur != null)
-                _row('Note client', order.noteVendeur!),
+                _row('Note client', order.noteVendeur!, isDark: isDark),
             ]),
             const SizedBox(height: 16),
 
             // Articles : liste des produits commandés (nom, quantité,
             // sous-total) — `order.items` est déjà chargé en mémoire dans
             // l'objet OrderModel (pas de requête supplémentaire ici).
-            _card(children: order.items.map((item) => Padding(
+            _card(isDark: isDark, children: order.items.map((item) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -184,21 +187,21 @@ class VendorOrderDetailScreen extends StatelessWidget {
 
   // Carte blanche générique avec coins arrondis, utilisée pour regrouper
   // des sections d'informations (infos client, liste d'articles, etc.).
-  Widget _card({required List<Widget> children}) => Container(
+  Widget _card({required List<Widget> children, required bool isDark}) => Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white,
+        decoration: BoxDecoration(color: AppColors.surface(isDark),
             borderRadius: BorderRadius.circular(12)),
         child: Column(children: children),
       );
 
   // Ligne "label : valeur" alignée à gauche/droite, utilisée dans la
   // section infos client.
-  Widget _row(String label, String value) => Padding(
+  Widget _row(String label, String value, {required bool isDark}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: Color(0xFF666666))),
+            Text(label, style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
             Flexible(child: Text(value,
                 style: const TextStyle(fontWeight: FontWeight.w600),
                 textAlign: TextAlign.right)),

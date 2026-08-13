@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
 /// Path : lib/screens/vendor/vendor_edit_shop_screen.dart
@@ -172,8 +174,9 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -208,8 +211,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(children: [
-                            const Text('Code boutique',
-                                style: TextStyle(color: Color(0xFF666666))),
+                            Text('Code boutique',
+                                style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                             const SizedBox(height: 4),
                             Text(_shop!.shopCode,
                                 style: const TextStyle(
@@ -230,10 +233,10 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                             child: Container(
                               width: 100, height: 100,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF2F4F8),
+                                color: AppColors.inputFill(isDark),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                    color: const Color(0xFFCCCCCC), width: 2),
+                                    color: AppColors.borderColor(isDark), width: 2),
                                 image: _logoUrl != null
                                     ? DecorationImage(
                                         image: NetworkImage(_logoUrl!),
@@ -241,8 +244,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                     : null,
                               ),
                               child: _logoUrl == null
-                                  ? const Icon(Icons.add_a_photo_outlined,
-                                      color: Color(0xFF0D2B5E), size: 28)
+                                  ? Icon(Icons.add_a_photo_outlined,
+                                      color: AppColors.accentFor(isDark), size: 28)
                                   : null,
                             ),
                           ),

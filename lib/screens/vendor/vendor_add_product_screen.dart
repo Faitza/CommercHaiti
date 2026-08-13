@@ -5,6 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/product_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -149,6 +151,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
@@ -191,11 +194,11 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            color: const Color(0xFFF2F4F8),
-                            border: Border.all(color: const Color(0xFFCCCCCC)),
+                            color: AppColors.inputFill(isDark),
+                            border: Border.all(color: AppColors.borderColor(isDark)),
                           ),
-                          child: const Icon(Icons.add_photo_alternate_outlined,
-                              color: Color(0xFF0D2B5E), size: 32),
+                          child: Icon(Icons.add_photo_alternate_outlined,
+                              color: AppColors.accentFor(isDark), size: 32),
                         ),
                       ),
                   ],
@@ -306,8 +309,8 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: sel
-                              ? const Color(0xFF0D2B5E)
-                              : const Color(0xFFDDDDDD),
+                              ? AppColors.accentFor(isDark)
+                              : AppColors.borderColor(isDark),
                           width: sel ? 3 : 1,
                         ),
                       ),
@@ -393,26 +396,30 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   }
 
   // Libellé de champ (petit texte gras au-dessus d'un champ de saisie).
-  Widget _label(String t) => Padding(
+  Widget _label(String t) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(t, style: const TextStyle(fontSize: 14,
-            fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+        child: Text(t, style: TextStyle(fontSize: 14,
+            fontWeight: FontWeight.w600, color: AppColors.textPrimaryFor(isDark))),
       );
+  }
 
   // Champ de texte réutilisable avec style commun (fond gris clair,
   // coins arrondis) et validateur/clavier optionnels.
   Widget _field(TextEditingController ctrl, String hint,
       {String? Function(String?)? validator,
-      TextInputType? keyboardType}) =>
-      TextFormField(
+      TextInputType? keyboardType}) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return TextFormField(
         controller: ctrl,
         validator: validator,
         keyboardType: keyboardType,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFFAAAAAA)),
+          hintStyle: TextStyle(color: AppColors.textSecondaryFor(isDark)),
           filled: true,
-          fillColor: const Color(0xFFF5F5F5),
+          fillColor: AppColors.inputFill(isDark),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none),
@@ -420,6 +427,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
               horizontal: 16, vertical: 14),
         ),
       );
+  }
 
   @override
   void dispose() {

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/product_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Modifier produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -197,6 +200,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
@@ -214,7 +218,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
           ),
         ],
       ),
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _product == null
@@ -266,13 +270,13 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                       margin: const EdgeInsets.only(right: 8),
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(10),
-                                        color: const Color(0xFFF2F4F8),
+                                        color: AppColors.inputFill(isDark),
                                         border: Border.all(
-                                            color: const Color(0xFFCCCCCC)),
+                                            color: AppColors.borderColor(isDark)),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                           Icons.add_photo_alternate_outlined,
-                                          color: Color(0xFF0D2B5E), size: 32),
+                                          color: AppColors.accentFor(isDark), size: 32),
                                     ),
                                   ),
                               ],
@@ -340,7 +344,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                               value: ((int.tryParse(_stockCtrl.text) ?? 0) / 20)
                                   .clamp(0.0, 1.0),
                               minHeight: 5,
-                              backgroundColor: const Color(0xFFEEEEEE),
+                              backgroundColor: AppColors.borderColor(isDark),
                               color: (int.tryParse(_stockCtrl.text) ?? 0) == 0
                                   ? const Color(0xFFE63946)
                                   : (int.tryParse(_stockCtrl.text) ?? 0) <= 5
@@ -405,8 +409,8 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: sel
-                                        ? const Color(0xFF0D2B5E)
-                                        : const Color(0xFFDDDDDD),
+                                        ? AppColors.accentFor(isDark)
+                                        : AppColors.borderColor(isDark),
                                     width: sel ? 3 : 1,
                                   ),
                                 ),
@@ -458,12 +462,12 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                           ],
                         ),
                         if (!_disponible)
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
                                 'Non disponible pour l\'acheteur — masqué avec overlay dans le catalogue.',
                                 style: TextStyle(
-                                    fontSize: 12, color: Color(0xFF999999))),
+                                    fontSize: 12, color: AppColors.textSecondaryFor(isDark))),
                           ),
                         const SizedBox(height: 24),
 
@@ -520,43 +524,50 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
     );
   }
 
-  Widget _card({required List<Widget> children}) => Container(
+  Widget _card({required List<Widget> children}) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: children),
       );
+  }
 
-  Widget _label(String t, {IconData? icon}) => Padding(
+  Widget _label(String t, {IconData? icon}) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Row(children: [
           if (icon != null) ...[
-            Icon(icon, size: 15, color: const Color(0xFF0D2B5E)),
+            Icon(icon, size: 15, color: AppColors.accentFor(isDark)),
             const SizedBox(width: 6),
           ],
-          Text(t, style: const TextStyle(fontSize: 14,
-              fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+          Text(t, style: TextStyle(fontSize: 14,
+              fontWeight: FontWeight.w600, color: AppColors.textPrimaryFor(isDark))),
         ]),
       );
+  }
 
   Widget _field(TextEditingController ctrl, String hint,
           {String? Function(String?)? validator,
           TextInputType? keyboardType,
-          ValueChanged<String>? onChanged}) =>
-      TextFormField(
+          ValueChanged<String>? onChanged}) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return TextFormField(
         controller: ctrl,
         validator: validator,
         keyboardType: keyboardType,
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFFAAAAAA)),
+          hintStyle: TextStyle(color: AppColors.textSecondaryFor(isDark)),
           filled: true,
-          fillColor: const Color(0xFFF5F5F5),
+          fillColor: AppColors.inputFill(isDark),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none),
@@ -564,6 +575,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
               horizontal: 16, vertical: 14),
         ),
       );
+  }
 
   @override
   void dispose() {

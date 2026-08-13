@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
@@ -52,6 +54,11 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     'Cayes Centre', 'Cayes Nord', 'Cayes Sud',
     'Torbeck', 'Saint-Jean', 'Maniche', 'Camp-Perrin',
   ];
+
+  // Mode sombre courant, mis à jour à chaque build() et réutilisé par les
+  // méthodes utilitaires (_label, _deco) qui construisent des widgets en
+  // dehors de build() lui-même.
+  bool _isDark = false;
 
   // Ouvre la galerie photo, puis envoie l'image choisie vers le service
   // de stockage (Supabase Storage) associée à l'ID de l'utilisateur
@@ -129,8 +136,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg(_isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -184,9 +192,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                   child: Container(
                     width: 100, height: 100,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF2F4F8),
+                      color: AppColors.surface(_isDark),
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFCCCCCC), width: 2),
+                      border: Border.all(color: AppColors.borderColor(_isDark), width: 2),
                       image: _logoUrl != null
                           ? DecorationImage(
                               image: NetworkImage(_logoUrl!),
@@ -194,14 +202,14 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                           : null,
                     ),
                     child: _logoUrl == null
-                        ? const Column(
+                        ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.add_a_photo_outlined,
-                                  color: Color(0xFF0D2B5E), size: 28),
-                              SizedBox(height: 4),
+                                  color: AppColors.accentFor(_isDark), size: 28),
+                              const SizedBox(height: 4),
                               Text('Logo', style: TextStyle(
-                                  fontSize: 12, color: Color(0xFF666666))),
+                                  fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
                             ])
                         : null,
                   ),
@@ -210,9 +218,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 8),
               // Précise que le logo est facultatif (des initiales seront
               // affichées par défaut ailleurs dans l'app si absent).
-              const Center(
+              Center(
                 child: Text('Optionnel — initiales affichées si absent',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF999999))),
+                    style: TextStyle(fontSize: 11, color: AppColors.textSecondaryFor(_isDark))),
               ),
               const SizedBox(height: 24),
 
@@ -267,8 +275,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               // FilterChip. Au clic, on ajoute ou on retire la zone de la
               // liste `_zonesSelectionnees` (voir onSelected).
               _label('Zones de livraison *'),
-              const Text('Sélectionnez les zones où vous livrez',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF666666))),
+              Text('Sélectionnez les zones où vous livrez',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8, runSpacing: 8,
@@ -284,10 +292,10 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                     selectedColor: const Color(0xFFEEF3FB),
                     checkmarkColor: const Color(0xFF0D2B5E),
                     labelStyle: TextStyle(
-                      color: sel ? const Color(0xFF0D2B5E) : const Color(0xFF666666),
+                      color: sel ? const Color(0xFF0D2B5E) : AppColors.textSecondaryFor(_isDark),
                     ),
                     side: BorderSide(
-                      color: sel ? const Color(0xFF0D2B5E) : const Color(0xFFCCCCCC),
+                      color: sel ? const Color(0xFF0D2B5E) : AppColors.borderColor(_isDark),
                     ),
                   );
                 }).toList(),
@@ -329,17 +337,17 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // écrans d'authentification, pour cohérence visuelle).
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(t, style: const TextStyle(fontSize: 14,
-            fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+        child: Text(t, style: TextStyle(fontSize: 14,
+            fontWeight: FontWeight.w600, color: AppColors.textPrimaryFor(_isDark))),
       );
 
   // Décoration commune des champs de texte de cet écran (fond gris clair,
   // pas de bordure visible sauf en cas d'erreur).
   InputDecoration _deco(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFFAAAAAA)),
+        hintStyle: TextStyle(color: AppColors.textSecondaryFor(_isDark)),
         filled: true,
-        fillColor: const Color(0xFFF5F5F5),
+        fillColor: AppColors.inputFill(_isDark),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none),

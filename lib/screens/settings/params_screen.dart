@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Paramètres Client — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -185,10 +186,11 @@ class _ParamsScreenState extends State<ParamsScreen> {
     // profil se rafraîchissent automatiquement si le thème ou
     // l'utilisateur connecté changent pendant que cet écran est affiché.
     final theme = context.watch<ThemeProvider>();
+    final isDark = theme.isDarkMode;
     final user = context.watch<AuthProvider>().currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -208,20 +210,20 @@ class _ParamsScreenState extends State<ParamsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                _sectionTitle('Mon profil'),
+                _sectionTitle('Mon profil', isDark),
                 // Ces items naviguent vers l'écran d'édition de profil ou
                 // de favoris ; `push()` (empile la route) car on veut
                 // revenir naturellement à cet écran de paramètres après
                 // édition.
                 _item(Icons.person_outline, 'Informations personnelles',
-                    user?.nom, () => context.push('/client/edit-profile')),
+                    user?.nom, () => context.push('/client/edit-profile'), isDark),
                 _item(Icons.location_on_outlined, 'Adresse de livraison',
-                    user?.adresse, () => context.push('/client/edit-profile')),
+                    user?.adresse, () => context.push('/client/edit-profile'), isDark),
                 _item(Icons.favorite_border, 'Mes favoris', null,
-                    () => context.push('/client/favorites')),
+                    () => context.push('/client/favorites'), isDark),
                 const Divider(),
 
-                _sectionTitle('Notifications'),
+                _sectionTitle('Notifications', isDark),
                 // Ces switches ne touchent que le stockage local
                 // (SharedPreferences), donc mise à jour instantanée, sans
                 // requête serveur.
@@ -230,35 +232,35 @@ class _ParamsScreenState extends State<ParamsScreen> {
                     _notifCommande, (v) {
                   setState(() => _notifCommande = v);
                   _toggleNotifPref('notif_suivi_commande', v);
-                }),
+                }, isDark),
                 _switchItem(Icons.local_offer_outlined,
                     'Promotions', 'Nouvelles offres et réductions',
                     _notifPromos, (v) {
                   setState(() => _notifPromos = v);
                   _toggleNotifPref('notif_promos', v);
-                }),
+                }, isDark),
                 const Divider(),
 
-                _sectionTitle('Apparence'),
+                _sectionTitle('Apparence', isDark),
                 // Switch "Mode sombre" : délègue au ThemeProvider, qui
                 // applique le changement à toute l'application.
                 _switchItem(Icons.dark_mode_outlined, 'Mode sombre', null,
                     theme.isDarkMode,
-                    (v) => context.read<ThemeProvider>().toggle(v)),
+                    (v) => context.read<ThemeProvider>().toggle(v), isDark),
                 const Divider(),
 
-                _sectionTitle('Sécurité'),
+                _sectionTitle('Sécurité', isDark),
                 _item(Icons.lock_outline, 'Changer le mot de passe', null,
-                    () => _changerMotDePasse(context)),
+                    () => _changerMotDePasse(context), isDark),
                 const Divider(),
 
-                _sectionTitle('À propos'),
+                _sectionTitle('À propos', isDark),
                 // Items informatifs : `onTap` à `null` pour les deux,
                 // donc pas de flèche ">" ni de réaction au clic (voir
                 // `_item` plus bas).
                 _item(Icons.info_outline, 'CommercHaiti v1.0',
-                    'ITAC · 2025-2026', null),
-                _item(Icons.privacy_tip_outlined, 'Confidentialité', null, null),
+                    'ITAC · 2025-2026', null, isDark),
+                _item(Icons.privacy_tip_outlined, 'Confidentialité', null, null, isDark),
                 const SizedBox(height: 16),
 
                 // Bouton de déconnexion, mis en évidence visuellement
@@ -267,7 +269,7 @@ class _ParamsScreenState extends State<ParamsScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Material(
-                    color: const Color(0xFFFCE9E9),
+                    color: isDark ? const Color(0xFF3A1F1F) : const Color(0xFFFCE9E9),
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
@@ -292,29 +294,31 @@ class _ParamsScreenState extends State<ParamsScreen> {
 
   // Petit helper : titre de section en majuscules (ex. "MON PROFIL"),
   // utilisé pour regrouper visuellement les items ci-dessous en catégories.
-  Widget _sectionTitle(String t) => Padding(
+  Widget _sectionTitle(String t, bool isDark) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
         child: Text(t.toUpperCase(),
-            style: const TextStyle(fontSize: 11,
+            style: TextStyle(fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF999999), letterSpacing: 1)),
+                color: AppColors.textSecondaryFor(isDark), letterSpacing: 1)),
       );
 
   // Petit helper : ligne de paramètre standard (icône + titre + sous-titre
   // optionnel + flèche ">" si cliquable). Si `onTap` est `null`, l'item
   // devient purement informatif (pas de flèche, pas de réaction au clic).
-  Widget _item(IconData icon, String label, String? sous, VoidCallback? onTap) =>
+  Widget _item(IconData icon, String label, String? sous, VoidCallback? onTap,
+          bool isDark) =>
       ListTile(
-        tileColor: Colors.white,
-        leading: Icon(icon, color: const Color(0xFF0D2B5E)),
+        tileColor: AppColors.surface(isDark),
+        leading: Icon(icon, color: AppColors.accentFor(isDark)),
         title: Text(label,
-            style: const TextStyle(
-                color: Color(0xFF1A1F36), fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: AppColors.textPrimaryFor(isDark), fontWeight: FontWeight.w600)),
         subtitle: sous != null && sous.isNotEmpty
-            ? Text(sous, style: const TextStyle(fontSize: 12))
+            ? Text(sous, style: TextStyle(
+                fontSize: 12, color: AppColors.textSecondaryFor(isDark)))
             : null,
         trailing: onTap != null
-            ? const Icon(Icons.chevron_right, color: Color(0xFFCCCCCC))
+            ? Icon(Icons.chevron_right, color: AppColors.borderColor(isDark))
             : null,
         onTap: onTap,
       );
@@ -323,13 +327,17 @@ class _ParamsScreenState extends State<ParamsScreen> {
   // (SwitchListTile), utilisée pour tous les réglages booléens de l'écran
   // (notifications, mode sombre).
   Widget _switchItem(IconData icon, String label, String? sous,
-          bool value, ValueChanged<bool> onChanged) =>
+          bool value, ValueChanged<bool> onChanged, bool isDark) =>
       SwitchListTile(
-        tileColor: Colors.white,
-        secondary: Icon(icon, color: const Color(0xFF0D2B5E)),
+        tileColor: AppColors.surface(isDark),
+        secondary: Icon(icon, color: AppColors.accentFor(isDark)),
         title: Text(label,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: sous != null ? Text(sous, style: const TextStyle(fontSize: 12)) : null,
+            style: TextStyle(
+                color: AppColors.textPrimaryFor(isDark), fontWeight: FontWeight.w600)),
+        subtitle: sous != null
+            ? Text(sous, style: TextStyle(
+                fontSize: 12, color: AppColors.textSecondaryFor(isDark)))
+            : null,
         value: value,
         onChanged: onChanged,
         activeColor: const Color(0xFF1D9E75),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/review_model.dart';
 import '../services/database_service.dart';
+import '../providers/theme_provider.dart';
+import '../constants/app_colors.dart';
 
 /// Bottom sheet "Laisser un avis" — après une commande livrée.
 /// Path : lib/widgets/review_dialog_widget.dart
@@ -119,7 +122,10 @@ class _ReviewSheetState extends State<_ReviewSheet> {
     // affiché ; on l'ajoute au padding bas pour que le contenu (et surtout
     // le bouton "Envoyer") remonte au-dessus du clavier au lieu d'être
     // masqué par lui.
-    return Padding(
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Container(
+      color: AppColors.surface(isDark),
+      child: Padding(
       padding: EdgeInsets.only(
         left: 24, right: 24, top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -131,11 +137,11 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Laisser un avis',
+          Text('Laisser un avis',
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0D2B5E))),
+                  color: AppColors.accentFor(isDark))),
           const SizedBox(height: 16),
           // ── Sélecteur de note : 5 étoiles cliquables ──
           // `List.generate(5, ...)` crée 5 IconButton, un par étoile
@@ -169,7 +175,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             decoration: InputDecoration(
               hintText: 'Commentaire (optionnel)…',
               filled: true,
-              fillColor: const Color(0xFFF5F5F5),
+              fillColor: AppColors.inputFill(isDark),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none),
@@ -198,6 +204,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

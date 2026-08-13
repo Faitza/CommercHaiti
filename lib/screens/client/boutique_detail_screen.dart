@@ -9,6 +9,8 @@ import '../../widgets/whatsapp_button_widget.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/favorite_provider.dart';
 import '../auth/guest_home_screen.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Détail boutique — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -172,8 +174,9 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       // Structure simple Column [en-tête fixe, contenu scrollable] — jan
       // maket la montre : logo à gauche, nom de la boutique à droite à
       // côté de lui, description dans une carte séparée en dessous.
@@ -272,7 +275,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface(isDark),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -293,22 +296,22 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(widget.shop.description,
-                                style: const TextStyle(
-                                    fontSize: 13, color: Color(0xFF444444))),
+                                style: TextStyle(
+                                    fontSize: 13, color: AppColors.textSecondaryFor(isDark))),
                             const SizedBox(height: 6),
                             Row(children: [
-                              const Icon(Icons.access_time,
-                                  size: 12, color: Color(0xFF999999)),
+                              Icon(Icons.access_time,
+                                  size: 12, color: AppColors.textSecondaryFor(isDark)),
                               const SizedBox(width: 4),
                               Text(
                                   widget.shop.zonesLivraison.isNotEmpty
                                       ? widget.shop.zonesLivraison.first.delaiAffiche
                                       : '30-45 min',
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Color(0xFF999999))),
+                                  style: TextStyle(
+                                      fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                               Text(' · ${_produits.length} produits',
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Color(0xFF999999))),
+                                  style: TextStyle(
+                                      fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                             ]),
                           ],
                         ),
@@ -369,7 +372,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                             margin: const EdgeInsets.only(right: 12),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.surface(isDark),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [BoxShadow(
                                 color: Colors.black.withOpacity(0.04),
@@ -395,10 +398,10 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: Color(0xFF1A1F36))),
+                                        color: AppColors.textPrimaryFor(isDark))),
                               ],
                             ),
                           ),
@@ -444,7 +447,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                               context.push('/client/product', extra: p),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.surface(isDark),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(
@@ -474,15 +477,16 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(p.nom,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               fontWeight: FontWeight.w600,
-                                              fontSize: 13),
+                                              fontSize: 13,
+                                              color: AppColors.textPrimaryFor(isDark)),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
                                       Text(
                                           '${p.prixAffiche.toStringAsFixed(0)} HTG',
-                                          style: const TextStyle(
-                                              color: Color(0xFF0D2B5E),
+                                          style: TextStyle(
+                                              color: AppColors.accentFor(isDark),
                                               fontWeight: FontWeight.bold)),
                                     ],
                                   ),
@@ -515,11 +519,14 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
 
   /// Petit titre de section réutilisé (Catégories, Produits populaires,
   /// Avis clients...).
-  Widget _sectionTitle(String t) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        child: Text(t, style: const TextStyle(fontSize: 16,
-            fontWeight: FontWeight.bold, color: Color(0xFF0D2B5E))),
-      );
+  Widget _sectionTitle(String t) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Text(t, style: TextStyle(fontSize: 16,
+          fontWeight: FontWeight.bold, color: AppColors.accentFor(isDark))),
+    );
+  }
 
 }
 
@@ -585,6 +592,7 @@ class _AvisSectionState extends State<_AvisSection> {
         child: Center(child: CircularProgressIndicator()),
       );
     }
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     // État "vide" : aucun avis pour cette boutique pour l'instant.
     if (_avis.isEmpty) {
       return Padding(
@@ -593,10 +601,10 @@ class _AvisSectionState extends State<_AvisSection> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(12)),
-          child: const Text('Aucun avis pour l\'instant',
+              color: AppColors.surface(isDark), borderRadius: BorderRadius.circular(12)),
+          child: Text('Aucun avis pour l\'instant',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF999999))),
+              style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
         ),
       );
     }
@@ -615,7 +623,7 @@ class _AvisSectionState extends State<_AvisSection> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                color: AppColors.surface(isDark), borderRadius: BorderRadius.circular(12)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -634,7 +642,7 @@ class _AvisSectionState extends State<_AvisSection> {
                 if (commentaire != null && commentaire.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(commentaire,
-                      style: const TextStyle(color: Color(0xFF444444))),
+                      style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ],
               ],
             ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/database_service.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Modifier profil client — Informations personnelles + Adresse
 /// Path : lib/screens/client/edit_profile_screen.dart
@@ -147,8 +149,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -170,33 +173,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               // Champ Nom complet (obligatoire, validateur simple :
               // non vide).
-              const Text('Nom complet *',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              Text('Nom complet *',
+                  style: TextStyle(fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimaryFor(isDark))),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _nomCtrl,
+                style: TextStyle(color: AppColors.textPrimaryFor(isDark)),
                 validator: _valNom,
               ),
               const SizedBox(height: 16),
               // Champ Téléphone (obligatoire, clavier numérique adapté
               // via keyboardType: TextInputType.phone).
-              const Text('Téléphone *',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              Text('Téléphone *',
+                  style: TextStyle(fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimaryFor(isDark))),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _telephoneCtrl,
                 keyboardType: TextInputType.phone,
+                style: TextStyle(color: AppColors.textPrimaryFor(isDark)),
                 validator: _valTel,
               ),
               const SizedBox(height: 16),
               // Champ Adresse (obligatoire, sur 2 lignes maximum pour
               // laisser un peu de place à une adresse plus longue).
-              const Text('Adresse principale *',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              Text('Adresse principale *',
+                  style: TextStyle(fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimaryFor(isDark))),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _adresseCtrl,
                 maxLines: 2,
+                style: TextStyle(color: AppColors.textPrimaryFor(isDark)),
                 validator: _valAdresse,
               ),
               const SizedBox(height: 32),

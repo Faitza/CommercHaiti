@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Auth Screen — Faitza COLAS
 /// Path : lib/screens/auth/auth_screen.dart
@@ -52,6 +54,11 @@ class _AuthScreenState extends State<AuthScreen>
 
   // Raccourci pratique : vrai si le rôle courant est "vendeur".
   bool get isVendeur => widget.role == 'seller';
+
+  // Mode sombre courant, mis à jour à chaque build() et réutilisé par les
+  // méthodes utilitaires (_label, _deco, _bouton, ...) qui construisent des
+  // widgets en dehors de build() lui-même.
+  bool _isDark = false;
 
   @override
   void initState() {
@@ -215,8 +222,9 @@ class _AuthScreenState extends State<AuthScreen>
     // `isLoading` ou `errorMessage` changent (pour afficher le spinner sur
     // les boutons pendant les appels réseau).
     final auth = context.watch<AuthProvider>();
+    _isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(_isDark),
       body: Column(
         children: [
           // Header
@@ -324,9 +332,9 @@ class _AuthScreenState extends State<AuthScreen>
             Center(
               child: TextButton(
                 onPressed: () => context.go('/guest'),
-                child: const Text('Parcourir sans s\'inscrire',
+                child: Text('Parcourir sans s\'inscrire',
                     style: TextStyle(
-                        color: Color(0xFF666666), fontSize: 13)),
+                        color: AppColors.textSecondaryFor(_isDark), fontSize: 13)),
               ),
             ),
           ],
@@ -442,9 +450,9 @@ class _AuthScreenState extends State<AuthScreen>
   // Libellé au-dessus d'un champ de formulaire.
   Widget _label(String t) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Text(t, style: const TextStyle(
+    child: Text(t, style: TextStyle(
         fontSize: 13, fontWeight: FontWeight.w600,
-        color: Color(0xFF1A1F36))),
+        color: AppColors.textPrimaryFor(_isDark))),
   );
 
   // Champ de texte générique avec icône, placeholder et validateur
@@ -465,19 +473,19 @@ class _AuthScreenState extends State<AuthScreen>
   // champs de saisie pour garder un style cohérent dans tout l'écran.
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
-    prefixIcon: Icon(icon, size: 18, color: const Color(0xFF888888)),
+    hintStyle: TextStyle(color: AppColors.textSecondaryFor(_isDark), fontSize: 13),
+    prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondaryFor(_isDark)),
     filled: true,
-    fillColor: Colors.white,
+    fillColor: AppColors.inputFill(_isDark),
     border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+        borderSide: BorderSide(color: AppColors.borderColor(_isDark))),
     enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+        borderSide: BorderSide(color: AppColors.borderColor(_isDark))),
     focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: const BorderSide(color: Color(0xFF0D2B5E), width: 1.5)),
+        borderSide: BorderSide(color: AppColors.accentFor(_isDark), width: 1.5)),
     errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
         borderSide: const BorderSide(color: Color(0xFFE63946))),
@@ -494,7 +502,7 @@ class _AuthScreenState extends State<AuthScreen>
       suffixIcon: IconButton(
         icon: Icon(_obscurePassword ? Icons.visibility_off_outlined
             : Icons.visibility_outlined,
-            size: 18, color: const Color(0xFF888888)),
+            size: 18, color: AppColors.textSecondaryFor(_isDark)),
         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
       ),
     ),
@@ -532,15 +540,15 @@ class _AuthScreenState extends State<AuthScreen>
     height: 50,
     child: OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Color(0xFFDDDDDD)),
+        side: BorderSide(color: AppColors.borderColor(_isDark)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface(_isDark),
       ),
       icon: const Text('G', style: TextStyle(
           fontSize: 18, fontWeight: FontWeight.bold,
           color: Color(0xFF4285F4))),
-      label: const Text('Continuer avec Google',
-          style: TextStyle(color: Color(0xFF333333), fontSize: 14)),
+      label: Text('Continuer avec Google',
+          style: TextStyle(color: AppColors.textPrimaryFor(_isDark), fontSize: 14)),
       onPressed: auth.isLoading ? null : () => auth.signInWithGoogle(),
     ),
   );

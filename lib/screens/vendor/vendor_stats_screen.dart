@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/database_service.dart';
 import '../../models/product_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Stats Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -73,6 +75,7 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
@@ -99,9 +102,9 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
                   children: [
                     // Section Top 5 : classement 1 à 5 avec le nombre de
                     // commandes de chaque produit affiché en suffixe.
-                    _sectionTitle('Top 5 produits les plus demandés'),
+                    _sectionTitle('Top 5 produits les plus demandés', isDark: isDark),
                     _top5.isEmpty
-                        ? _emptyState('Pas encore de données')
+                        ? _emptyState('Pas encore de données', isDark: isDark)
                         : Column(
                             children: _top5.asMap().entries.map((e) =>
                               _produitRow(e.key + 1, e.value,
@@ -113,9 +116,9 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
                     // bouton "Promo rapide" menant directement à l'écran
                     // de modification du produit (pour y baisser le prix
                     // par exemple).
-                    _sectionTitle('Flop 5 — Produits à promouvoir'),
+                    _sectionTitle('Flop 5 — Produits à promouvoir', isDark: isDark),
                     _flop5.isEmpty
-                        ? _emptyState('Pas encore de données')
+                        ? _emptyState('Pas encore de données', isDark: isDark)
                         : Column(
                             children: _flop5.map((p) => Card(
                               child: ListTile(
@@ -137,9 +140,9 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
                     // Section Alertes stock bas (BF-033) : produits dont
                     // le stock est ≤ 5, avec bouton direct vers l'écran de
                     // modification du produit pour réapprovisionner.
-                    _sectionTitle('Alertes stock bas (≤ 5 unités)'),
+                    _sectionTitle('Alertes stock bas (≤ 5 unités)', isDark: isDark),
                     _stockBas.isEmpty
-                        ? _emptyState('Tous les stocks sont OK')
+                        ? _emptyState('Tous les stocks sont OK', isDark: isDark)
                         : Column(
                             children: _stockBas.map((p) => Card(
                               child: ListTile(
@@ -183,21 +186,21 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
       );
 
   // Titre de section (ex : "Top 5 produits les plus demandés").
-  Widget _sectionTitle(String t) => Padding(
+  Widget _sectionTitle(String t, {required bool isDark}) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(t, style: const TextStyle(fontSize: 15,
-            fontWeight: FontWeight.bold, color: Color(0xFF0D2B5E))),
+        child: Text(t, style: TextStyle(fontSize: 15,
+            fontWeight: FontWeight.bold, color: AppColors.accentFor(isDark))),
       );
 
   // Message affiché quand une section n'a pas encore de données (ex :
   // aucune commande encore passée pour calculer un classement).
-  Widget _emptyState(String msg) => Container(
+  Widget _emptyState(String msg, {required bool isDark}) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(bottom: 4),
-        decoration: BoxDecoration(color: Colors.white,
+        decoration: BoxDecoration(color: AppColors.surface(isDark),
             borderRadius: BorderRadius.circular(12)),
         child: Text(msg, textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF999999))),
+            style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
       );
 }

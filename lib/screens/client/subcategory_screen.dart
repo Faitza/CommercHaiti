@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../widgets/product_card_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Sous-catégories & produits — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -122,8 +125,9 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -162,9 +166,9 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _produits.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text('Aucun produit dans cette catégorie',
-                            style: TextStyle(color: Color(0xFF999999))))
+                            style: TextStyle(color: AppColors.textSecondaryFor(isDark))))
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
                         gridDelegate:
@@ -200,6 +204,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
   /// produits correspondant au nouveau filtre depuis Supabase.
   Widget _filterChip(String label, String value) {
     final sel = _sousCatSelectionnee == value;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
@@ -211,11 +216,11 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
         },
         selectedColor: const Color(0xFFEEF3FB),
         labelStyle: TextStyle(
-          color: sel ? const Color(0xFF0D2B5E) : const Color(0xFF666666),
+          color: sel ? AppColors.accentFor(isDark) : AppColors.textSecondaryFor(isDark),
           fontWeight: sel ? FontWeight.bold : FontWeight.normal,
         ),
         side: BorderSide(
-            color: sel ? const Color(0xFF0D2B5E) : const Color(0xFFCCCCCC)),
+            color: sel ? AppColors.accentFor(isDark) : AppColors.borderColor(isDark)),
       ),
     );
   }

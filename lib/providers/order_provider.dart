@@ -120,26 +120,13 @@ class OrderProvider extends ChangeNotifier {
   /// d'appels séparés depuis le client.
   Future<String?> createOrder({
     required OrderModel order,
-    required String productId,
-    required int quantite,
-    required String nomProduit,
-    required double prixProduit,
-    String? couleur,
-    String? taille,
+    required List<Map<String, dynamic>> items,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      final orderId = await _db.createOrder(
-        order: order,
-        productId: productId,
-        quantite: quantite,
-        nomProduit: nomProduit,
-        prixProduit: prixProduit,
-        couleur: couleur,
-        taille: taille,
-      );
+      final orderId = await _db.createOrder(order: order, items: items);
       return orderId;
     } catch (e) {
       // La RPC Postgres lève une exception contenant "stock_insuffisant"
@@ -164,12 +151,62 @@ class OrderProvider extends ChangeNotifier {
   /// Changer statut commande (vendeur)
   /// Utilisé par le vendeur pour faire avancer une commande dans le
   /// workflow (ex : "nouvelle" → "acceptee" → "preparation" ...).
+  /// LORSQUE LA COMMANDE EST ACCEPTEE, LE STOCK EST DECREMENTE
+  /// AUTOMATIQUEMENT POUR CHAQUE PRODUIT DANS LA COMMANDE.
   Future<void> updateStatut(String orderId, String newStatut) async {
     try {
+      // 1. Mete ajou statut kòmand lan
       await _db.updateOrderStatus(orderId, newStatut);
+      
+      // 2. Si kòmand lan vin "acceptee", diminye stock la
+      if (newStatut == 'acceptee') {
+        // Chache kòmand lan nan lis vendeur a
+        final order = _ordresVendeur.firstWhere(
+          (o) => o.id == orderId,
+          orElse: () => throw Exception('Kòmand pa jwenn'),
+        );
+        
+        // Pou chak pwodwi nan kòmand lan, diminye stock la
+        for (final item in order.items) {
+          await _decrementStock(item.productId, item.quantite);
+        }
+      }
+      
     } catch (e) {
-      _errorMessage = 'Erreur mise à jour statut';
+      _errorMessage = 'Erreur mise à jour statut: $e';
       notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Metòd prive pou dekremente stock yon pwodwi
+  /// Pran stock aktyèl la, soustrai kantite a, epi mete ajou nan baz done a
+  Future<void> _decrementStock(String productId, int quantity) async {
+    try {
+      // Pran stock aktyèl la
+      final result = await _supabase
+          .from('products')
+          .select('stock')
+          .eq('id', productId)
+          .single();
+      
+      final currentStock = result['stock'] as int? ?? 0;
+      final newStock = currentStock - quantity;
+      
+      // Verifye si gen ase stock
+      if (newStock < 0) {
+        throw Exception('Stock insuffisant pou pwodwi sa a');
+      }
+      
+      // Mete ajou stock la
+      await _supabase
+          .from('products')
+          .update({'stock': newStock})
+          .eq('id', productId);
+          
+    } catch (e) {
+      print('Error decrementing stock: $e');
+      rethrow;
     }
   }
 

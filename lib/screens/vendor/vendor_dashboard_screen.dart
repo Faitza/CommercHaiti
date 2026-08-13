@@ -161,125 +161,124 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
               // has never been laid out" la première fois.
               mainAxisSize: MainAxisSize.min,
               children: [
-            Row(
-              children: [
-                // Logo de la boutique (ou initiales générées à partir du
-                // shopCode si aucun logo n'a été téléversé).
-                ShopLogoWidget(
-                  logoURL: _shop?.logoUrl,
-                  initiales: _shop?.initiales ??
-                      auth.currentUser?.shopCode?.substring(0, 2) ?? 'CH',
-                  size: 36,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_shop?.nom ?? 'Ma Boutique',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700)),
-                      Row(children: [
-                        Icon(Icons.circle, size: 7,
-                            color: (_shop?.isOpen ?? true)
-                                ? const Color(0xFF1D9E75)
-                                : const Color(0xFFE63946)),
-                        const SizedBox(width: 4),
-                        Text((_shop?.isOpen ?? true)
-                                ? 'Boutique ouverte' : 'Boutique fermée',
-                            style: const TextStyle(
-                                color: Colors.white54, fontSize: 9)),
-                      ]),
-                    ],
-                  ),
-                ),
-                // Icône cloche de notification : englobée dans un
-                // GestureDetector qui navigue directement vers l'écran des
-                // commandes (`/vendor/orders`) au tap, pour permettre au
-                // vendeur d'accéder rapidement à ses commandes en attente
-                // (BF-031, réactivité vendeur). Un badge rouge avec le
-                // nombre de commandes en attente est superposé (Stack +
-                // Positioned) tant que `orders.enAttente` n'est pas vide.
-                GestureDetector(
-                  onTap: () => context.push('/vendor/orders'),
-                  child: Stack(
-                    children: [
-                      Container(
+                Row(
+                  children: [
+                    // Logo de la boutique (ou initiales générées à partir du
+                    // shopCode si aucun logo n'a été téléversé).
+                    ShopLogoWidget(
+                      logoURL: _shop?.logoUrl,
+                      initiales: _shop?.initiales ??
+                          auth.currentUser?.shopCode?.substring(0, 2) ?? 'CH',
+                      size: 36,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_shop?.nom ?? 'Ma Boutique',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700)),
+                          Row(children: [
+                            Icon(Icons.circle, size: 7,
+                                color: (_shop?.isOpen ?? true)
+                                    ? const Color(0xFF1D9E75)
+                                    : const Color(0xFFE63946)),
+                            const SizedBox(width: 4),
+                            Text((_shop?.isOpen ?? true)
+                                    ? 'Boutique ouverte' : 'Boutique fermée',
+                                style: const TextStyle(
+                                    color: Colors.white54, fontSize: 9)),
+                          ]),
+                        ],
+                      ),
+                    ),
+                    // Icône cloche de notification : englobée dans un
+                    // GestureDetector qui navigue directement vers l'écran des
+                    // commandes (`/vendor/orders`) au tap, pour permettre au
+                    // vendeur d'accéder rapidement à ses commandes en attente
+                    // (BF-031, réactivité vendeur). Un badge rouge avec le
+                    // nombre de commandes en attente est superposé (Stack +
+                    // Positioned) tant que `orders.enAttente` n'est pas vide.
+                    GestureDetector(
+                      onTap: () => context.push('/vendor/orders'),
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 34, height: 34,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.notifications_outlined,
+                                color: Colors.white, size: 18),
+                          ),
+                          // Badge numéroté affiché seulement s'il y a au moins
+                          // une commande en attente de traitement.
+                          if (orders.enAttente.isNotEmpty)
+                            Positioned(
+                              top: 4, right: 4,
+                              child: Container(
+                                width: 14, height: 14,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE63946),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text('${orders.enAttente.length}',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Bouton menu (icône hamburger) : ouvre le drawer latéral
+                    // (endDrawer défini plus haut) via la `_scaffoldKey`.
+                    GestureDetector(
+                      onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
+                      child: Container(
                         width: 34, height: 34,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.notifications_outlined,
+                        child: const Icon(Icons.menu,
                             color: Colors.white, size: 18),
                       ),
-                      // Badge numéroté affiché seulement s'il y a au moins
-                      // une commande en attente de traitement.
-                      if (orders.enAttente.isNotEmpty)
-                        Positioned(
-                          top: 4, right: 4,
-                          child: Container(
-                            width: 14, height: 14,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFE63946),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text('${orders.enAttente.length}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Bouton menu (icône hamburger) : ouvre le drawer latéral
-                // (endDrawer défini plus haut) via la `_scaffoldKey`.
-                GestureDetector(
-                  onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
-                  child: Container(
-                    width: 34, height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.menu,
-                        color: Colors.white, size: 18),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            // Cartes chiffre d'affaires (CA) — BF-031 : les montants ne
-            // viennent pas d'une requête d'agrégation SQL côté serveur,
-            // mais sont recalculés côté client (Dart) à partir de la liste
-            // complète des commandes du vendeur déjà en mémoire
-            // (`orders.ordresVendeur`, reçue via le stream temps réel).
-            // Voir `_calculerCA` plus bas.
-            Row(children: [
-              _caCard('CA Aujourd\'hui',
-                  '${_calculerCA(orders.ordresVendeur, jours: 1).toStringAsFixed(0)} HTG'),
-              const SizedBox(width: 10),
-              _caCardEnAttente(orders.enAttente.length),
-              const SizedBox(width: 10),
-              _caCard('Ce mois',
-                  _formatCourt(_calculerCA(orders.ordresVendeur, jours: 30))),
-            ]),
+                const SizedBox(height: 18),
+                // Cartes chiffre d'affaires (CA) — BF-031 : les montants ne
+                // viennent pas d'une requête d'agrégation SQL côté serveur,
+                // mais sont recalculés côté client (Dart) à partir de la liste
+                // complète des commandes du vendeur déjà en mémoire
+                // (`orders.ordresVendeur`, reçue via le stream temps réel).
+                // Voir `_calculerCA` plus bas.
+                Row(children: [
+                  _caCard('CA Aujourd\'hui',
+                      '${_calculerCA(orders.ordresVendeur, jours: 1).toStringAsFixed(0)} HTG'),
+                  const SizedBox(width: 10),
+                  _caCardEnAttente(orders.enAttente.length),
+                  const SizedBox(width: 10),
+                  _caCard('Ce mois',
+                      _formatCourt(_calculerCA(orders.ordresVendeur, jours: 30))),
+                ]),
               ],
             ),
           ),
 
           // Contenu principal (scrollable) du tableau de bord : section
-          // commandes en attente, alertes stock, Top5/Flop5 (les cartes CA
-          // sont maintenant dans le bandeau bleu ci-dessus).
+          // commandes en attente, alertes stock, Top5/Flop5.
           Expanded(
             child: RefreshIndicator(
               // Tirer vers le bas relance `_loadStats` pour rafraîchir
@@ -292,24 +291,6 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Cartes chiffre d'affaires (CA) — BF-031 : les
-                    // montants ne viennent pas d'une requête d'agrégation
-                    // SQL côté serveur, mais sont recalculés côté client
-                    // (Dart) à partir de la liste complète des commandes du
-                    // vendeur déjà en mémoire (`orders.ordresVendeur`, reçue
-                    // via le stream temps réel). Voir `_calculerCA`
-                    // ci-dessous.
-                    Row(children: [
-                      _caCard('CA Aujourd\'hui',
-                          '${_calculerCA(orders.ordresVendeur, jours: 1).toStringAsFixed(0)} HTG'),
-                      const SizedBox(width: 10),
-                      _caCardEnAttente(orders.enAttente.length),
-                      const SizedBox(width: 10),
-                      _caCard('Ce mois',
-                          _formatCourt(_calculerCA(orders.ordresVendeur, jours: 30))),
-                    ]),
-                    const SizedBox(height: 18),
-
                     // Section "Commandes en attente" : liste des commandes
                     // dont le vendeur doit encore accepter ou refuser la
                     // demande. Le badge affiche leur nombre.

@@ -7,6 +7,8 @@ import '../../models/order_model.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/review_dialog_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Historique commandes — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
@@ -45,9 +47,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     // widget se reconstruise automatiquement à chaque fois que la liste
     // `ordresClient` change (nouvelle commande, changement de statut, etc.)
     final orders = context.watch<OrderProvider>().ordresClient;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
@@ -64,15 +67,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       // Affiche un état vide illustré s'il n'y a aucune commande, sinon
       // une liste défilante de cartes.
       body: orders.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.receipt_long_outlined,
-                      size: 60, color: Color(0xFFCCCCCC)),
-                  SizedBox(height: 12),
+                      size: 60, color: AppColors.borderColor(isDark)),
+                  const SizedBox(height: 12),
                   Text('Aucune commande pour l\'instant',
-                      style: TextStyle(color: Color(0xFF999999))),
+                      style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ],
               ),
             )
@@ -94,6 +97,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       // Ici on utilise context.push() (et non go()) : on veut EMPILER
       // l'écran de suivi par-dessus l'historique, afin que le bouton
@@ -112,7 +116,7 @@ class _OrderCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -128,11 +132,11 @@ class _OrderCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text('${order.total.toStringAsFixed(0)} HTG · ${order.zone}',
-                style: const TextStyle(color: Color(0xFF666666))),
+                style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
             const SizedBox(height: 4),
             Text(order.createdAt.toString().substring(0, 10),
-                style: const TextStyle(fontSize: 12,
-                    color: Color(0xFF999999))),
+                style: TextStyle(fontSize: 12,
+                    color: AppColors.textSecondaryFor(isDark))),
             // Une fois la commande livrée, on propose deux actions
             // supplémentaires : laisser un avis sur la boutique et
             // télécharger/partager le reçu PDF.

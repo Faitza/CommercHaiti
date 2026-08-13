@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/cart_item_model.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Cart Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/cart_screen.dart
@@ -19,9 +21,10 @@ class CartScreen extends StatelessWidget {
     // `watch` : ce widget doit se reconstruire à chaque changement du
     // panier (ajout/suppression d'article, changement de quantité...).
     final cart = context.watch<CartProvider>();
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // TopBar
@@ -93,15 +96,15 @@ class CartScreen extends StatelessWidget {
                               size: 40, color: Color(0xFF0D2B5E)),
                         ),
                         const SizedBox(height: 16),
-                        const Text('Votre panier est vide',
+                        Text('Votre panier est vide',
                             style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A1F36))),
+                                color: AppColors.textPrimaryFor(isDark))),
                         const SizedBox(height: 8),
-                        const Text('Ajoutez des produits pour commander',
+                        Text('Ajoutez des produits pour commander',
                             style: TextStyle(
-                                fontSize: 13, color: Color(0xFF666666))),
+                                fontSize: 13, color: AppColors.textSecondaryFor(isDark))),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
@@ -150,7 +153,7 @@ class CartScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface(isDark),
                 boxShadow: [BoxShadow(
                   color: Colors.black.withOpacity(0.06),
                   blurRadius: 10, offset: const Offset(0, -2),
@@ -163,25 +166,27 @@ class CartScreen extends StatelessWidget {
                   // (gratuite — pas de frais de livraison dans ce projet),
                   // puis une séparation avant le Total final.
                   _recapLigne('Sous-total',
-                      '${cart.totalNormal.toStringAsFixed(0)} HTG'),
+                      '${cart.totalNormal.toStringAsFixed(0)} HTG', isDark),
                   if (cart.hasPromo)
                     _recapLigne('Économies promo',
-                        '-${cart.economies.toStringAsFixed(0)} HTG',
+                        '-${cart.economies.toStringAsFixed(0)} HTG', isDark,
                         color: const Color(0xFF1D9E75)),
-                  _recapLigne('Livraison', 'Gratuite',
+                  _recapLigne('Livraison', 'Gratuite', isDark,
                       color: const Color(0xFF1D9E75)),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total',
+                      Text('Total',
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimaryFor(isDark))),
                       Text('${cart.totalAvecPromo.toStringAsFixed(0)} HTG',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0D2B5E))),
+                              color: AppColors.accentFor(isDark))),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -223,15 +228,15 @@ class CartScreen extends StatelessWidget {
   // Une ligne du récapitulatif (Sous-total / Économies promo / Livraison) :
   // libellé à gauche, valeur à droite. `color` optionnelle pour les lignes
   // à mettre en avant (économies, livraison gratuite — en vert).
-  Widget _recapLigne(String label, String valeur, {Color? color}) => Padding(
+  Widget _recapLigne(String label, String valeur, bool isDark, {Color? color}) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: TextStyle(
-                color: color ?? const Color(0xFF666666), fontSize: 13)),
+                color: color ?? AppColors.textSecondaryFor(isDark), fontSize: 13)),
             Text(valeur, style: TextStyle(
-                color: color ?? const Color(0xFF1A1F36),
+                color: color ?? AppColors.textPrimaryFor(isDark),
                 fontWeight: FontWeight.w600, fontSize: 13)),
           ],
         ),
@@ -285,11 +290,12 @@ class _CartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface(isDark),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(
           color: Colors.black.withOpacity(0.04),
@@ -332,16 +338,16 @@ class _CartItemCard extends StatelessWidget {
                       if (item.couleur != null) 'Couleur: ${item.couleur}',
                       if (item.taille != null) 'Taille: ${item.taille}',
                     ].join(' · '),
-                    style: const TextStyle(
-                        fontSize: 10, color: Color(0xFF888888)),
+                    style: TextStyle(
+                        fontSize: 10, color: AppColors.textSecondaryFor(isDark)),
                   ),
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('${item.sousTotal.toStringAsFixed(0)} HTG',
-                        style: const TextStyle(
-                            color: Color(0xFF0D2B5E),
+                        style: TextStyle(
+                            color: AppColors.accentFor(isDark),
                             fontWeight: FontWeight.bold,
                             fontSize: 13)),
                     // Bouton kantite
@@ -390,8 +396,8 @@ class _CartItemCard extends StatelessWidget {
           // Icône "croix" pour retirer complètement cet article du panier.
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(Icons.close,
-                size: 18, color: Color(0xFFCCCCCC)),
+            child: Icon(Icons.close,
+                size: 18, color: AppColors.borderColor(isDark)),
           ),
         ],
       ),

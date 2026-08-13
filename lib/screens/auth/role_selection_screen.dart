@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Role Selection Screen — Faitza COLAS
 /// Path : lib/screens/auth/role_selection_screen.dart
@@ -21,8 +24,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // Header bleu marine — jan demo a
@@ -94,11 +98,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   // afficher (ou non) le style "sélectionné".
                   _RoleCard(
                     icon: Icons.shopping_bag_outlined,
-                    iconColor: const Color(0xFF0D2B5E),
+                    iconColor: AppColors.accentFor(isDark),
                     titre: 'Je suis Client',
                     description: 'Parcourir les boutiques, commander des produits et suivre mes livraisons.',
                     badge: 'ACHETEUR',
-                    badgeColor: const Color(0xFF0D2B5E),
+                    badgeColor: AppColors.accentFor(isDark),
                     selected: _selectedRole == 'customer',
                     onTap: () => setState(() => _selectedRole = 'customer'),
                     features: const ['Voir les boutiques', 'Passer des commandes', 'Suivi en temps réel'],
@@ -166,7 +170,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _selectedRole != null
                             ? const Color(0xFF0D2B5E)
-                            : const Color(0xFFCCCCCC),
+                            : AppColors.borderColor(isDark),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
@@ -188,9 +192,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   // voir BF-010 dans guest_home_screen.dart).
                   TextButton(
                     onPressed: () => context.go('/guest'),
-                    child: const Text('Parcourir sans s\'inscrire',
+                    child: Text('Parcourir sans s\'inscrire',
                         style: TextStyle(
-                            color: Color(0xFF666666), fontSize: 13)),
+                            color: AppColors.textSecondaryFor(isDark), fontSize: 13)),
                   ),
                 ],
               ),
@@ -230,6 +234,7 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -239,11 +244,11 @@ class _RoleCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface(isDark),
           borderRadius: BorderRadius.circular(14),
           // Bordure plus épaisse et colorée quand la carte est sélectionnée.
           border: Border.all(
-            color: selected ? iconColor : const Color(0xFFE0E0E0),
+            color: selected ? iconColor : AppColors.borderColor(isDark),
             width: selected ? 2 : 1,
           ),
           // Ombre plus marquée (colorée) quand sélectionnée, sinon ombre
@@ -279,7 +284,7 @@ class _RoleCard extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               color: selected
                                   ? iconColor
-                                  : const Color(0xFF1A1F36))),
+                                  : AppColors.textPrimaryFor(isDark))),
                       const SizedBox(height: 2),
                       // Badge texte (ex: "ACHETEUR") dans une pastille colorée.
                       Container(
@@ -308,8 +313,8 @@ class _RoleCard extends StatelessWidget {
             const SizedBox(height: 10),
             // Description détaillée du rôle.
             Text(description,
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF666666), height: 1.4)),
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textSecondaryFor(isDark), height: 1.4)),
             const SizedBox(height: 10),
             // Liste des fonctionnalités associées à ce rôle, générée
             // dynamiquement à partir de la liste `features` passée en
@@ -321,8 +326,8 @@ class _RoleCard extends StatelessWidget {
                   Icon(Icons.check_circle_outline,
                       size: 13, color: iconColor),
                   const SizedBox(width: 6),
-                  Text(f, style: const TextStyle(
-                      fontSize: 11, color: Color(0xFF444444))),
+                  Text(f, style: TextStyle(
+                      fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                 ],
               ),
             )),

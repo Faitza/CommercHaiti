@@ -6,6 +6,8 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../constants/app_colors.dart';
 
 /// Order Tracking Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_tracking_screen.dart
@@ -46,8 +48,9 @@ class OrderTrackingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: AppColors.scaffoldBg(isDark),
       body: Column(
         children: [
           // TopBar
@@ -112,12 +115,24 @@ class OrderTrackingScreen extends StatelessWidget {
                 // de donnée (premier chargement).
                 String statut = 'nouvelle';
                 double total = 0;
+                // Adresse/zone/téléphone : déjà présents sur la même ligne
+                // `orders` reçue via le stream (aucune requête
+                // supplémentaire nécessaire) — juste pas encore affichés
+                // avant ce correctif, alors que le client en a besoin pour
+                // vérifier ce qu'il a saisi.
+                String adresse = '';
+                String zone = '';
+                String telephoneClient = '';
                 if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   // Le flux renvoie une liste de lignes correspondant au
                   // filtre ; ici il ne peut y avoir qu'une seule commande
                   // avec cet id, donc on prend `.first`.
-                  statut = snapshot.data!.first['statut'] ?? 'nouvelle';
-                  total = (snapshot.data!.first['total'] ?? 0).toDouble();
+                  final row = snapshot.data!.first;
+                  statut = row['statut'] ?? 'nouvelle';
+                  total = (row['total'] ?? 0).toDouble();
+                  adresse = row['adresse_livraison'] ?? '';
+                  zone = row['zone'] ?? '';
+                  telephoneClient = row['telephone_client'] ?? '';
                 }
 
                 // On retrouve l'index de l'étape courante dans `_etapes`
@@ -137,7 +152,7 @@ class OrderTrackingScreen extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface(isDark),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Column(
@@ -146,14 +161,74 @@ class OrderTrackingScreen extends StatelessWidget {
                             const SizedBox(height: 8),
                             if (total > 0)
                               Text('${total.toStringAsFixed(0)} HTG',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF0D2B5E))),
+                                      color: AppColors.accentFor(isDark))),
                           ],
                         ),
                       ),
                       const SizedBox(height: 14),
+
+                      // Détails livraison
+                      // Carte affichant l'adresse, la zone, le téléphone
+                      // saisis par le client à la commande (déjà stockés
+                      // sur la ligne `orders`) ainsi qu'un délai de
+                      // livraison estimé — jan maket la montre. Manquait
+                      // complètement avant ce correctif : le client
+                      // n'avait aucun moyen de revérifier ce qu'il avait
+                      // saisi une fois la commande passée.
+                      if (adresse.isNotEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface(isDark),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Détails livraison',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.accentFor(isDark))),
+                              const SizedBox(height: 10),
+                              Row(children: [
+                                const Icon(Icons.location_on_outlined,
+                                    size: 15, color: Color(0xFFE63946)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                      zone.isNotEmpty
+                                          ? '$adresse — $zone'
+                                          : adresse,
+                                      style: const TextStyle(fontSize: 13)),
+                                ),
+                              ]),
+                              if (telephoneClient.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Row(children: [
+                                  Icon(Icons.phone_outlined,
+                                      size: 15, color: AppColors.accentFor(isDark)),
+                                  const SizedBox(width: 8),
+                                  Text(telephoneClient,
+                                      style: const TextStyle(fontSize: 13)),
+                                ]),
+                              ],
+                              const SizedBox(height: 8),
+                              Row(children: [
+                                const Icon(Icons.access_time,
+                                    size: 15, color: Color(0xFF1D9E75)),
+                                const SizedBox(width: 8),
+                                const Text('Livraison estimée : 30-45 min',
+                                    style: TextStyle(fontSize: 13)),
+                              ]),
+                            ],
+                          ),
+                        ),
+                      if (adresse.isNotEmpty) const SizedBox(height: 14),
 
                       // Timeline
                       // Carte affichant la timeline verticale : une ligne par
@@ -162,7 +237,7 @@ class OrderTrackingScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface(isDark),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Column(
@@ -187,12 +262,12 @@ class OrderTrackingScreen extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: estPasse
                                           ? const Color(0xFF0D2B5E)
-                                          : const Color(0xFFF2F4F8),
+                                          : AppColors.scaffoldBg(isDark),
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                         color: estPasse
                                             ? const Color(0xFF0D2B5E)
-                                            : const Color(0xFFCCCCCC),
+                                            : AppColors.borderColor(isDark),
                                       ),
                                     ),
                                     child: Icon(
@@ -200,7 +275,7 @@ class OrderTrackingScreen extends StatelessWidget {
                                       size: 16,
                                       color: estPasse
                                           ? Colors.white
-                                          : const Color(0xFFCCCCCC),
+                                          : AppColors.borderColor(isDark),
                                     ),
                                   ),
                                   if (i < _etapes.length - 1)
@@ -208,7 +283,7 @@ class OrderTrackingScreen extends StatelessWidget {
                                       width: 2, height: 28,
                                       color: estPasse
                                           ? const Color(0xFF0D2B5E)
-                                          : const Color(0xFFEEEEEE),
+                                          : AppColors.borderColor(isDark),
                                     ),
                                 ]),
                                 const SizedBox(width: 12),
@@ -222,8 +297,8 @@ class OrderTrackingScreen extends StatelessWidget {
                                           ? FontWeight.bold
                                           : FontWeight.normal,
                                       color: estPasse
-                                          ? const Color(0xFF0D2B5E)
-                                          : const Color(0xFF999999),
+                                          ? AppColors.accentFor(isDark)
+                                          : AppColors.textSecondaryFor(isDark),
                                     ),
                                   ),
                                 ),
@@ -244,7 +319,7 @@ class OrderTrackingScreen extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.surface(isDark),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: ReceiptButtonsWidget(orderId: orderId),
@@ -298,18 +373,18 @@ class OrderTrackingScreen extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF2F4F8),
+                            color: AppColors.scaffoldBg(isDark),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(children: [
-                            const Icon(Icons.info_outline,
-                                size: 14, color: Color(0xFF999999)),
+                            Icon(Icons.info_outline,
+                                size: 14, color: AppColors.textSecondaryFor(isDark)),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Annulation impossible — commande déjà acceptée',
                               style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF999999)),
+                                  color: AppColors.textSecondaryFor(isDark)),
                             ),
                           ]),
                         ),

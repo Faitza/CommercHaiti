@@ -80,4 +80,27 @@ class AppColors {
   // gris (textSecondary) en mode clair.
   static Color textSecondaryFor(bool isDark) =>
       isDark ? Colors.white60 : textSecondary;
+
+  // Couleur d'accent "navy" utilisée comme TEXTE/ICÔNE sur une carte
+  // (ex : prix, titres de section, icônes de catégorie) — PAS pour les
+  // boutons/AppBar (qui restent navy dans les deux thèmes, contraste
+  // blanc-sur-navy déjà correct partout). En mode clair, le navy plein
+  // (`navy`) est parfaitement lisible sur fond blanc ; mais posé tel quel
+  // sur une carte sombre (`surface(true)` ≈ gris très foncé), un navy
+  // aussi sombre devient quasi invisible. En mode sombre, on utilise donc
+  // un bleu plus clair et plus saturé à la place.
+  static Color accentFor(bool isDark) =>
+      isDark ? const Color(0xFF6FA8DC) : navy;
+
+  // Bordures / séparateurs (champs de formulaire, cartes, Divider) :
+  // gris clair en mode clair, gris plus clair QUE la surface en mode
+  // sombre (pour rester visible sur un fond déjà sombre).
+  static Color borderColor(bool isDark) =>
+      isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0);
+
+  // Fond de remplissage des champs de saisie (TextFormField `fillColor`) :
+  // gris très clair en mode clair, gris foncé (mais plus clair que le
+  // fond de page) en mode sombre.
+  static Color inputFill(bool isDark) =>
+      isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5);
 }
