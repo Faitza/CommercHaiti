@@ -295,11 +295,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // dont le vendeur doit encore accepter ou refuser la
                     // demande. Le badge affiche leur nombre.
                     _sectionTitle(
-                      'En attente du vendeur',
+                      'En attente du vendeur', isDark,
                       badge: orders.enAttente.length,
                     ),
                     orders.enAttente.isEmpty
-                        ? _emptyCard('Aucune commande en attente')
+                        ? _emptyCard('Aucune commande en attente', isDark)
                         // Une carte par commande en attente, construite
                         // directement depuis la liste `orders.enAttente`
                         // (déjà filtrée par OrderProvider).
@@ -308,7 +308,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.surface(isDark),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
@@ -328,38 +328,40 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                       children: [
                                         Text(
                                             'Commande #${o.id.substring(0, 6).toUpperCase()}',
-                                            style: const TextStyle(
+                                            style: TextStyle(
+                                                color: AppColors.textPrimaryFor(isDark),
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13)),
                                         const SizedBox(height: 4),
                                         Row(children: [
-                                          const Icon(Icons.phone_iphone,
-                                              size: 12, color: Color(0xFF666666)),
+                                          Icon(Icons.phone_iphone,
+                                              size: 12, color: AppColors.textSecondaryFor(isDark)),
                                           const SizedBox(width: 4),
                                           Text(o.telephoneClient,
-                                              style: const TextStyle(
-                                                  color: Color(0xFF666666),
+                                              style: TextStyle(
+                                                  color: AppColors.textSecondaryFor(isDark),
                                                   fontSize: 11)),
                                         ]),
                                         const SizedBox(height: 2),
                                         Row(children: [
-                                          const Icon(Icons.location_on_outlined,
-                                              size: 12, color: Color(0xFF666666)),
+                                          Icon(Icons.location_on_outlined,
+                                              size: 12, color: AppColors.textSecondaryFor(isDark)),
                                           const SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
                                                 '${o.adresseLivraison}, ${o.zone}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                    color: Color(0xFF666666),
+                                                style: TextStyle(
+                                                    color: AppColors.textSecondaryFor(isDark),
                                                     fontSize: 11)),
                                           ),
                                         ]),
                                         const SizedBox(height: 4),
                                         Text(
                                             '${o.items.map((i) => "${i.nom} ×${i.quantite}").join(" · ")} · ${o.total.toStringAsFixed(0)} HTG',
-                                            style: const TextStyle(
+                                            style: TextStyle(
+                                                color: AppColors.textPrimaryFor(isDark),
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600)),
                                       ],
@@ -428,10 +430,10 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // Section "Alertes stock bas" (BF-033) : produits dont
                     // le stock est descendu à 5 unités ou moins,
                     // pré-chargés dans `_stockBas` par `_loadStats`.
-                    _sectionTitle('Alertes stock ≤ 5',
+                    _sectionTitle('Alertes stock ≤ 5', isDark,
                         badge: _stockBas.length),
                     _stockBas.isEmpty
-                        ? _emptyCard('Tous les stocks sont OK')
+                        ? _emptyCard('Tous les stocks sont OK', isDark)
                         : Column(
                             children: _stockBas.map((p) => Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -486,15 +488,15 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // Section "Top 5 produits" (BF-031) : classement des 5
                     // produits ayant le plus de commandes, avec un badge
                     // numéroté (1 à 5) devant chaque nom.
-                    _sectionTitle('Top 5 produits'),
+                    _sectionTitle('Top 5 produits', isDark),
                     _top5.isEmpty
-                        ? _emptyCard('Pas encore de données')
+                        ? _emptyCard('Pas encore de données', isDark)
                         : Column(
                             children: _top5.asMap().entries.map((e) => Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.surface(isDark),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(children: [
@@ -515,7 +517,8 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(e.value.nom,
-                                      style: const TextStyle(
+                                      style: TextStyle(
+                                          color: AppColors.textPrimaryFor(isDark),
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13))),
                                 Text('${e.value.totalCommandes} cmd',
@@ -532,15 +535,15 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // commandés, avec un bouton "Promo rapide" menant à
                     // l'écran de modification du produit (pour y baisser
                     // le prix, par exemple).
-                    _sectionTitle('Flop 5 — à promouvoir'),
+                    _sectionTitle('Flop 5 — à promouvoir', isDark),
                     _flop5.isEmpty
-                        ? _emptyCard('Pas encore de données')
+                        ? _emptyCard('Pas encore de données', isDark)
                         : Column(
                             children: _flop5.map((p) => Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.surface(isDark),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(children: [
@@ -548,12 +551,13 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(p.nom, style: const TextStyle(
+                                      Text(p.nom, style: TextStyle(
+                                          color: AppColors.textPrimaryFor(isDark),
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13)),
                                       Text('${p.totalCommandes} commandes',
-                                          style: const TextStyle(
-                                              color: Color(0xFF999999),
+                                          style: TextStyle(
+                                              color: AppColors.textSecondaryFor(isDark),
                                               fontSize: 11)),
                                     ],
                                   ),
@@ -683,12 +687,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
   // Titre de section avec un badge numéroté optionnel (ex : "En attente du
   // vendeur" + badge rouge "3") affiché seulement si `badge > 0`.
-  Widget _sectionTitle(String t, {int badge = 0}) => Padding(
+  Widget _sectionTitle(String t, bool isDark, {int badge = 0}) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Row(children: [
-      Text(t, style: const TextStyle(
+      Text(t, style: TextStyle(
           fontSize: 14, fontWeight: FontWeight.bold,
-          color: Color(0xFF1A1F36))),
+          color: AppColors.textPrimaryFor(isDark))),
       if (badge > 0) ...[
         const SizedBox(width: 8),
         Container(
@@ -709,17 +713,17 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
   // Message d'état vide affiché quand une section n'a pas encore de
   // données (ex : aucune commande en attente, aucune alerte de stock).
-  Widget _emptyCard(String msg) => Container(
+  Widget _emptyCard(String msg, bool isDark) => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(14),
     margin: const EdgeInsets.only(bottom: 4),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppColors.surface(isDark),
       borderRadius: BorderRadius.circular(12),
     ),
     child: Text(msg,
         textAlign: TextAlign.center,
-        style: const TextStyle(color: Color(0xFF999999), fontSize: 13)),
+        style: TextStyle(color: AppColors.textSecondaryFor(isDark), fontSize: 13)),
   );
 }
 
