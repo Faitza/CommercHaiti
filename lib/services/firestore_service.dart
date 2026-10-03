@@ -90,7 +90,7 @@ class FirestoreService {
         ],
         rating: 4.5,
         totalAvis: 23,
-        isOpen: true,
+        isOpenBase: true,
         createdAt: DateTime.now(),
       ),
       ShopModel(
@@ -104,7 +104,7 @@ class FirestoreService {
         ],
         rating: 4.2,
         totalAvis: 15,
-        isOpen: true,
+        isOpenBase: true,
         createdAt: DateTime.now(),
       ),
     ]);

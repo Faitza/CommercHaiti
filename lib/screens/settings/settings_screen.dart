@@ -7,6 +7,7 @@ import '../../providers/theme_provider.dart';
 import '../../services/database_service.dart';
 import '../../models/shop_model.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/horaire_boutique_widget.dart';
 
 /// Paramètres Vendeur — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -38,6 +39,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Indique si le chargement initial (boutique + préférences) est en
   // cours ; affiche un spinner tant que c'est `true`.
   bool _isLoading = true;
+  // Horaire de la boutique en cours d'édition (section "Horaire").
+  TimeOfDay? _ouverture;
+  TimeOfDay? _fermeture;
+  List<String> _jours = [];
+  bool _isSavingHoraire = false;
 
   @override
   void initState() {
@@ -61,6 +67,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       setState(() {
         _shop = shop;
+        _ouverture = HoraireBoutiqueWidget.depuisTexte(shop?.horaireOuverture);
+        _fermeture = HoraireBoutiqueWidget.depuisTexte(shop?.horaireFermeture);
+        _jours = List<String>.from(shop?.joursOuverture ?? const []);
         _sonNouvelleCommande = prefs.getBool('notif_nouvelle_commande') ?? true;
         _alerteStockBas = prefs.getBool('notif_stock_bas') ?? true;
         _isLoading = false;
@@ -68,25 +77,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Ouvre ou suspend la boutique (champ `is_open`) : quand la boutique est
-  // suspendue, elle n'est probablement plus visible/achetable côté client
-  // (logique gérée ailleurs, ce switch se contente de changer le champ).
-  Future<void> _toggleSuspendre(bool ouvert) async {
+  // Recharge la boutique (après un forçage ouvert/fermé ou un nouvel
+  // horaire) pour rafraîchir le statut affiché.
+  Future<void> _rechargerBoutique() async {
     if (_shop == null) return;
-    await _db.updateShop(_shop!.id, {'is_open': ouvert});
-    // ShopModel est une classe immuable (pas de setter sur `isOpen`) : pour
-    // refléter le changement localement sans re-télécharger toute la
-    // boutique depuis le serveur, on reconstruit un nouvel objet ShopModel
-    // identique en tout point sauf `isOpen`, qui prend la nouvelle valeur.
-    setState(() => _shop = ShopModel(
-          id: _shop!.id, proprietaireId: _shop!.proprietaireId,
-          nom: _shop!.nom, description: _shop!.description,
-          logoUrl: _shop!.logoUrl, shopCode: _shop!.shopCode,
-          zonesLivraison: _shop!.zonesLivraison,
-          categories: _shop!.categories, rating: _shop!.rating,
-          totalAvis: _shop!.totalAvis, isOpen: ouvert,
-          createdAt: _shop!.createdAt,
+    final shop = await _db.getShop(_shop!.id);
+    if (mounted && shop != null) setState(() => _shop = shop);
+  }
+
+  // Enregistre l'horaire (heures + jours de travail) de la boutique.
+  Future<void> _enregistrerHoraire() async {
+    if (_shop == null) return;
+    if (_ouverture == null || _fermeture == null ||
+        _ouverture == _fermeture || _jours.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Horaire incomplet : heures d\'ouverture et de '
+            'fermeture différentes, et au moins un jour de travail'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
+    setState(() => _isSavingHoraire = true);
+    try {
+      await _db.updateShop(_shop!.id, {
+        'horaire_ouverture': HoraireBoutiqueWidget.versTexte(_ouverture),
+        'horaire_fermeture': HoraireBoutiqueWidget.versTexte(_fermeture),
+        'jours_ouverture': _jours,
+      });
+      await _rechargerBoutique();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Horaire enregistré'),
+          backgroundColor: Color(0xFF1D9E75),
         ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : ${e.toString()}'),
+          backgroundColor: const Color(0xFFE63946),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingHoraire = false);
+    }
   }
 
   // Enregistre une préférence booléenne (clé/valeur) dans le stockage
@@ -267,12 +301,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _item(Icons.location_on_outlined, 'Zones de livraison',
                     _shop?.zonesLivraison.map((z) => z.zone).join(', ') ?? '',
                     () => context.push('/vendor/edit-shop'), isDark),
-                // Switch "Suspendre la boutique" : bascule `is_open` en
-                // base immédiatement au changement (voir _toggleSuspendre).
-                _switchItem(Icons.storefront_outlined, 'Suspendre la boutique',
-                    'Masquer temporairement',
-                    _shop?.isOpen ?? true,
-                    (v) => _toggleSuspendre(v), isDark),
+                const Divider(),
+
+                // Horaire automatique : statut actuel, forçage manuel
+                // ("Ouvrir maintenant" / "Fermer maintenant") et choix
+                // des heures + jours de travail.
+                if (_shop != null) ...[
+                  _sectionTitle('Horaire', isDark),
+                  Container(
+                    color: AppColors.surface(isDark),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ForcerStatutWidget(
+                          shop: _shop!,
+                          isDark: isDark,
+                          onChanged: _rechargerBoutique,
+                        ),
+                        const SizedBox(height: 16),
+                        HoraireBoutiqueWidget(
+                          ouverture: _ouverture,
+                          fermeture: _fermeture,
+                          jours: _jours,
+                          isDark: isDark,
+                          onOuvertureChanged: (t) =>
+                              setState(() => _ouverture = t),
+                          onFermetureChanged: (t) =>
+                              setState(() => _fermeture = t),
+                          onJoursChanged: (l) => setState(() => _jours = l),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.navy,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed:
+                                _isSavingHoraire ? null : _enregistrerHoraire,
+                            child: Text(
+                                _isSavingHoraire
+                                    ? 'Enregistrement…'
+                                    : 'Enregistrer l\'horaire',
+                                style: const TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const Divider(),
 
                 _sectionTitle('Notifications', isDark),

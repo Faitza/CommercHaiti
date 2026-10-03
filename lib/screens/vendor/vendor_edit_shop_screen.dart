@@ -8,6 +8,7 @@ import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/categories_boutique_widget.dart';
+import '../../widgets/horaire_boutique_widget.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
 /// Path : lib/screens/vendor/vendor_edit_shop_screen.dart
@@ -46,8 +47,10 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   final List<String> _zonesSelectionnees = [];
   // Catégories vendues cochées par le vendeur.
   List<String> _categoriesSelectionnees = [];
-  // Statut "boutique ouverte" (visible/achetable par les clients).
-  bool _isOpen = true;
+  // Horaire (heures + jours de travail), enregistré avec le formulaire.
+  TimeOfDay? _ouverture;
+  TimeOfDay? _fermeture;
+  List<String> _jours = [];
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -91,7 +94,9 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         _nomCtrl.text = row.nom;
         _descriptionCtrl.text = row.description;
         _logoUrl = row.logoUrl;
-        _isOpen = row.isOpen;
+        _ouverture = HoraireBoutiqueWidget.depuisTexte(row.horaireOuverture);
+        _fermeture = HoraireBoutiqueWidget.depuisTexte(row.horaireFermeture);
+        _jours = List<String>.from(row.joursOuverture);
         // Reconstruit la liste des zones sélectionnées à partir des
         // objets `zonesLivraison` de la boutique (on ne garde que le nom
         // de la zone, pas les délais).
@@ -104,6 +109,14 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
     } catch (_) {
       setState(() => _isLoading = false);
     }
+  }
+
+  /// Recharge uniquement la boutique après un forçage ouvert/fermé, sans
+  /// toucher aux champs du formulaire en cours de modification.
+  Future<void> _rechargerStatut() async {
+    if (_shop == null) return;
+    final shop = await _db.getShop(_shop!.id);
+    if (mounted && shop != null) setState(() => _shop = shop);
   }
 
   /// Ouvre la galerie pour choisir une nouvelle photo de logo, l'envoie
@@ -154,6 +167,15 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       ));
       return;
     }
+    if (_ouverture == null || _fermeture == null ||
+        _ouverture == _fermeture || _jours.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Horaire incomplet : heures d\'ouverture et de '
+            'fermeture différentes, et au moins un jour de travail'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
     setState(() => _isSaving = true);
     try {
       // Met à jour la ligne `shops` correspondant à `_shop!.id` avec les
@@ -165,7 +187,9 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         'nom': _nomCtrl.text.trim(),
         'description': _descriptionCtrl.text.trim(),
         'logo_url': _logoUrl,
-        'is_open': _isOpen,
+        'horaire_ouverture': HoraireBoutiqueWidget.versTexte(_ouverture),
+        'horaire_fermeture': HoraireBoutiqueWidget.versTexte(_fermeture),
+        'jours_ouverture': _jours,
         'zones_livraison': _zonesSelectionnees
             .map((z) => {'zone': z, 'delai_min': 20, 'delai_max': 45})
             .toList(),
@@ -286,23 +310,32 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                               : null,
                         ),
                         const SizedBox(height: 16),
-                        // Interrupteur "Boutique ouverte" : ne modifie que
-                        // l'état local `_isOpen` — l'enregistrement réel en
-                        // base ne se fait qu'au clic sur "Enregistrer" (via
-                        // `_enregistrer`), contrairement au switch de
-                        // disponibilité produit qui, lui, écrit
-                        // immédiatement.
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Boutique ouverte',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            Switch(
-                              value: _isOpen,
-                              onChanged: (v) => setState(() => _isOpen = v),
-                              activeColor: const Color(0xFF0D2B5E),
-                            ),
-                          ],
+                        // Statut actuel + "Ouvrir maintenant" / "Fermer
+                        // maintenant" (écrit immédiatement en base).
+                        const Text('Statut',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        ForcerStatutWidget(
+                          shop: _shop!,
+                          isDark: isDark,
+                          onChanged: _rechargerStatut,
+                        ),
+                        const SizedBox(height: 16),
+                        // Horaire automatique (enregistré avec le bouton
+                        // "Enregistrer").
+                        const Text('Horaire d\'ouverture *',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        HoraireBoutiqueWidget(
+                          ouverture: _ouverture,
+                          fermeture: _fermeture,
+                          jours: _jours,
+                          isDark: isDark,
+                          onOuvertureChanged: (t) =>
+                              setState(() => _ouverture = t),
+                          onFermetureChanged: (t) =>
+                              setState(() => _fermeture = t),
+                          onJoursChanged: (l) => setState(() => _jours = l),
                         ),
                         const SizedBox(height: 16),
                         // Sélection des zones de livraison via des
