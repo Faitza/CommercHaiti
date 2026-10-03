@@ -7,6 +7,7 @@ import '../../services/database_service.dart';
 import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/whatsapp_share_product_widget.dart';
 
 /// Liste produits Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -224,7 +225,8 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
 
 /// Carte affichant un produit dans la liste : photo, nom, prix, stock
 /// (avec barre de progression et alerte couleur), interrupteur de
-/// disponibilité et boutons modifier/supprimer.
+/// disponibilité, boutons modifier/supprimer et bouton de partage
+/// WhatsApp.
 class _ProductListTile extends StatelessWidget {
   final ProductModel product;
   final DatabaseService db;
@@ -364,6 +366,11 @@ class _ProductListTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
             ),
+          const SizedBox(height: 10),
+          // Même bouton que celui proposé après l'ajout d'un produit :
+          // ouvre WhatsApp avec un message pré-écrit (nom, prix, boutique,
+          // lien de téléchargement de l'app).
+          WhatsAppShareProductWidget(product: product),
         ],
       ),
     );

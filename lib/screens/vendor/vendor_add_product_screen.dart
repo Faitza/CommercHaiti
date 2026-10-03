@@ -7,6 +7,7 @@ import '../../services/storage_service.dart';
 import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/whatsapp_share_product_widget.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -145,8 +146,41 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     );
 
     await _db.createProduct(product);
+    if (!mounted) return;
     setState(() => _isLoading = false);
+    // Après l'ajout, on propose au vendeur de partager le produit sur
+    // WhatsApp avant de revenir à la liste.
+    await _proposerPartage(product);
     if (mounted) Navigator.pop(context);
+  }
+
+  /// Boîte de dialogue affichée après l'ajout réussi d'un produit, avec le
+  /// bouton "Partager sur WhatsApp" (message pré-écrit : nom, prix, nom de
+  /// la boutique et lien de téléchargement de l'app) et un bouton
+  /// "Terminer" pour revenir à la liste des produits.
+  Future<void> _proposerPartage(ProductModel product) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Produit ajouté ✓'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('« ${product.nom} » est maintenant en vente. '
+                'Faites-le connaître à vos clients :'),
+            const SizedBox(height: 16),
+            WhatsAppShareProductWidget(product: product),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Terminer'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
