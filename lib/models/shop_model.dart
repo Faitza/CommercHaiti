@@ -3,7 +3,8 @@
 /// Path : lib/models/shop_model.dart
 /// Table Supabase : shops
 /// Colonnes : id, proprietaire_id, nom, description, logo_url,
-///            shop_code, zones_livraison, rating, total_avis, is_open, created_at
+///            shop_code, zones_livraison, categories, rating, total_avis,
+///            is_open, created_at
 ///
 /// Représente UNE boutique créée par un vendeur. Contient les infos
 /// d'identité de la boutique (nom, logo, description), son code unique
@@ -27,6 +28,10 @@ class ShopModel {
   /// Liste des zones de livraison desservies par la boutique, chacune
   /// avec son délai estimé (voir ZoneLivraison plus bas).
   final List<ZoneLivraison> zonesLivraison;
+  /// Catégories vendues par la boutique (ex : ["Alimentation", "Beauté"]),
+  /// choisies parmi `Categories.toutes` (voir constants/categories.dart).
+  /// Limite les catégories proposées à l'ajout d'un produit.
+  final List<String> categories;
   /// Note moyenne de la boutique (calculée à partir des avis clients).
   final double rating;
   /// Nombre total d'avis reçus par la boutique.
@@ -48,6 +53,7 @@ class ShopModel {
     this.logoUrl,
     required this.shopCode,
     required this.zonesLivraison,
+    this.categories = const [],
     this.rating = 0.0,
     this.totalAvis = 0,
     this.isOpen = true,
@@ -85,6 +91,7 @@ class ShopModel {
                         .map((z) => ZoneLivraison.fromMap(
                               z as Map<String, dynamic>))
                         .toList(),
+      categories:     List<String>.from(map['categories'] ?? const []),
       rating:         (map['rating'] ?? 0.0).toDouble(),
       totalAvis:      map['total_avis'] ?? 0,
       isOpen:         map['is_open'] ?? true,
@@ -107,6 +114,7 @@ class ShopModel {
       'logo_url':         logoUrl,
       'shop_code':        shopCode,
       'zones_livraison':  zonesLivraison.map((z) => z.toMap()).toList(),
+      'categories':       categories,
       'rating':           rating,
       'total_avis':       totalAvis,
       'is_open':          isOpen,

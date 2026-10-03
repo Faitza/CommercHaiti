@@ -7,6 +7,7 @@ import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/categories_boutique_widget.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
 /// Path : lib/screens/vendor/vendor_edit_shop_screen.dart
@@ -43,6 +44,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   String? _logoUrl;
   // Zones de livraison actuellement cochées par le vendeur.
   final List<String> _zonesSelectionnees = [];
+  // Catégories vendues cochées par le vendeur.
+  List<String> _categoriesSelectionnees = [];
   // Statut "boutique ouverte" (visible/achetable par les clients).
   bool _isOpen = true;
   bool _isLoading = true;
@@ -95,6 +98,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         _zonesSelectionnees
           ..clear()
           ..addAll(row.zonesLivraison.map((z) => z.zone));
+        _categoriesSelectionnees = List<String>.from(row.categories);
         _isLoading = false;
       });
     } catch (_) {
@@ -143,6 +147,13 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       ));
       return;
     }
+    if (_categoriesSelectionnees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sélectionnez au moins une catégorie vendue'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
     setState(() => _isSaving = true);
     try {
       // Met à jour la ligne `shops` correspondant à `_shop!.id` avec les
@@ -158,6 +169,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         'zones_livraison': _zonesSelectionnees
             .map((z) => {'zone': z, 'delai_min': 20, 'delai_max': 45})
             .toList(),
+        'categories': _categoriesSelectionnees,
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -317,6 +329,18 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                               checkmarkColor: const Color(0xFF0D2B5E),
                             );
                           }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                        // Catégories vendues (cases à cocher) : limitent
+                        // les catégories proposées à l'ajout d'un produit.
+                        const Text('Catégories vendues *',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        CategoriesBoutiqueWidget(
+                          selection: _categoriesSelectionnees,
+                          isDark: isDark,
+                          onChanged: (l) =>
+                              setState(() => _categoriesSelectionnees = l),
                         ),
                         const SizedBox(height: 32),
                         // Bouton "Enregistrer" — désactivé pendant la

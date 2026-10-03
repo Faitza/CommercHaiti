@@ -82,7 +82,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           id: _shop!.id, proprietaireId: _shop!.proprietaireId,
           nom: _shop!.nom, description: _shop!.description,
           logoUrl: _shop!.logoUrl, shopCode: _shop!.shopCode,
-          zonesLivraison: _shop!.zonesLivraison, rating: _shop!.rating,
+          zonesLivraison: _shop!.zonesLivraison,
+          categories: _shop!.categories, rating: _shop!.rating,
           totalAvis: _shop!.totalAvis, isOpen: ouvert,
           createdAt: _shop!.createdAt,
         ));

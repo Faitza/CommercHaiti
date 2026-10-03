@@ -33,6 +33,7 @@ create table if not exists public.shops (
   logo_url          text,
   shop_code         text not null unique,
   zones_livraison   jsonb not null default '[]'::jsonb,
+  categories        text[] not null default '{}',
   rating            numeric(2,1) not null default 0.0,
   total_avis        integer not null default 0,
   is_open           boolean not null default true,

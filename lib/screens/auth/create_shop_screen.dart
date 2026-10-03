@@ -8,6 +8,7 @@ import '../../constants/app_colors.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
+import '../../widgets/categories_boutique_widget.dart';
 
 /// Créer boutique — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -44,6 +45,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   String? _logoUrl;
   // Zones de livraison sélectionnées par le vendeur (au moins une requise).
   final List<String> _zonesSelectionnees = [];
+  // Catégories vendues cochées par le vendeur (au moins une requise).
+  List<String> _categoriesSelectionnees = [];
   // Indique un chargement en cours (upload logo ou création boutique) —
   // désactive le bouton de soumission et affiche un spinner.
   bool _isLoading = false;
@@ -95,6 +98,13 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       ));
       return;
     }
+    if (_categoriesSelectionnees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sélectionnez au moins une catégorie vendue'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
 
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
@@ -112,6 +122,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       // des délais de livraison par défaut (20 à 45 minutes).
       zonesLivraison: _zonesSelectionnees.map((z) =>
           ZoneLivraison(zone: z, delaiMin: 20, delaiMax: 45)).toList(),
+      categories: _categoriesSelectionnees,
       createdAt: DateTime.now(),
     );
 
@@ -299,6 +310,20 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                     ),
                   );
                 }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Catégories vendues
+              // Cases à cocher (multi-sélection) : limitent ensuite les
+              // catégories proposées à l'ajout d'un produit.
+              _label('Catégories vendues *'),
+              Text('Cochez les catégories de produits que vous vendez',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
+              const SizedBox(height: 12),
+              CategoriesBoutiqueWidget(
+                selection: _categoriesSelectionnees,
+                isDark: _isDark,
+                onChanged: (l) => setState(() => _categoriesSelectionnees = l),
               ),
               const SizedBox(height: 32),
 
