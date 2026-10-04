@@ -103,6 +103,12 @@ class ReceiptImageWidget extends StatelessWidget {
             const SizedBox(height: 10),
             const Divider(height: 1, color: Color(0xFFE0E0E0)),
             const SizedBox(height: 10),
+            // ── Livraison (déjà incluse dans le total) ──
+            if (order.fraisLivraison > 0) ...[
+              _ligne('Livraison',
+                  '${order.fraisLivraison.toStringAsFixed(0)} HTG'),
+              const SizedBox(height: 6),
+            ],
             // ── Total de la commande, mis en évidence ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

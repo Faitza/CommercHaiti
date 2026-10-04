@@ -130,12 +130,16 @@ class ZoneLivraison {
   final int delaiMin;
   /// Délai maximum estimé de livraison, en minutes.
   final int delaiMax;
+  /// Prix de la livraison dans cette zone, en HTG (0 = gratuite).
+  /// Voir migration_frais_livraison.sql.
+  final double frais;
 
   /// Constructeur constant — tous les champs requis.
   const ZoneLivraison({
     required this.zone,
     required this.delaiMin,
     required this.delaiMax,
+    this.frais = 0,
   });
 
   /// Texte formaté pour l'affichage, ex : "30-45 min".
@@ -149,6 +153,7 @@ class ZoneLivraison {
       zone:     map['zone'] ?? '',
       delaiMin: map['delai_min'] ?? 30,
       delaiMax: map['delai_max'] ?? 45,
+      frais:    (map['frais'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -159,6 +164,7 @@ class ZoneLivraison {
       'zone':      zone,
       'delai_min': delaiMin,
       'delai_max': delaiMax,
+      'frais':     frais,
     };
   }
 }

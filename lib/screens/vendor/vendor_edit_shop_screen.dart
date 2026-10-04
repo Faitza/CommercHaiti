@@ -45,6 +45,11 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   String? _logoUrl;
   // Zones de livraison actuellement cochées par le vendeur.
   final List<String> _zonesSelectionnees = [];
+  // Prix de livraison saisi pour chaque zone sélectionnée (en HTG).
+  final Map<String, TextEditingController> _fraisCtrls = {};
+
+  TextEditingController _fraisCtrl(String zone) =>
+      _fraisCtrls.putIfAbsent(zone, () => TextEditingController());
   // Statut "boutique ouverte" (visible/achetable par les clients).
   bool _isOpen = true;
   bool _isLoading = true;
@@ -98,6 +103,10 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         _zonesSelectionnees
           ..clear()
           ..addAll(row.zonesLivraison.map((z) => z.zone));
+        for (final z in row.zonesLivraison) {
+          _fraisCtrl(z.zone).text =
+              z.frais > 0 ? z.frais.toStringAsFixed(0) : '';
+        }
         _isLoading = false;
       });
     } catch (_) {
@@ -163,9 +172,23 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         'description': _descriptionCtrl.text.trim(),
         'logo_url': _logoUrl,
         'is_open': _isOpen,
-        'zones_livraison': _zonesSelectionnees
-            .map((z) => {'zone': z, 'delai_min': 20, 'delai_max': 45})
-            .toList(),
+        // Chaque zone garde ses délais existants (20-45 min par défaut)
+        // et reçoit le prix de livraison saisi (vide = gratuit).
+        'zones_livraison': _zonesSelectionnees.map((z) {
+          ZoneLivraison? existante;
+          for (final e in _shop!.zonesLivraison) {
+            if (e.zone == z) existante = e;
+          }
+          final frais = double.tryParse(
+                  _fraisCtrl(z).text.trim().replaceAll(',', '.')) ??
+              0;
+          return {
+            'zone': z,
+            'delai_min': existante?.delaiMin ?? 20,
+            'delai_max': existante?.delaiMax ?? 45,
+            'frais': frais < 0 ? 0 : frais,
+          };
+        }).toList(),
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -352,6 +375,44 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                             );
                           }).toList(),
                         ),
+                        // Prix de livraison de chaque zone choisie : il
+                        // s'ajoute au total de la commande du client.
+                        if (_zonesSelectionnees.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text('Prix de livraison par zone (HTG)',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          const Text('Laissez vide si la livraison est gratuite.',
+                              style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          for (final zone in _zonesDisponibles
+                              .where(_zonesSelectionnees.contains))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Row(children: [
+                                Expanded(child: Text(zone)),
+                                SizedBox(
+                                  width: 110,
+                                  child: TextFormField(
+                                    controller: _fraisCtrl(zone),
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.right,
+                                    decoration: const InputDecoration(
+                                        hintText: '0', suffixText: 'HTG',
+                                        isDense: true),
+                                    validator: (v) {
+                                      final t = (v ?? '').trim();
+                                      if (t.isEmpty) return null;
+                                      final n = double.tryParse(
+                                          t.replaceAll(',', '.'));
+                                      return n == null || n < 0
+                                          ? 'Invalide'
+                                          : null;
+                                    },
+                                  ),
+                                ),
+                              ]),
+                            ),
+                        ],
                         const SizedBox(height: 32),
                         // Bouton "Enregistrer" — désactivé pendant la
                         // sauvegarde (`_isSaving`) et remplacé par un
@@ -388,6 +449,9 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
     _nomCtrl.dispose();
     _descriptionCtrl.dispose();
     _moncashCtrl.dispose();
+    for (final c in _fraisCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 }

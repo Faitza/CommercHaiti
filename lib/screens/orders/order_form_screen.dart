@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
+import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/moncash_widgets.dart';
@@ -48,6 +49,17 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   String _modePaiement = 'livraison';
   // Numéro MonCash de la boutique du panier (null = MonCash non proposé).
   String? _moncashNumero;
+  // Zones livrées par la boutique du panier et leur prix de livraison
+  // (HTG). Vide tant que la boutique n'est pas chargée, ou si elle n'a
+  // configuré aucune zone : on retombe alors sur la liste fixe `_zones`.
+  Map<String, double> _fraisParZone = {};
+
+  List<String> get _zonesProposees =>
+      _fraisParZone.isEmpty ? _zones : _fraisParZone.keys.toList();
+
+  // Prix de livraison de la zone choisie. Le serveur recalcule le même
+  // montant à la création de la commande (migration_frais_livraison.sql).
+  double get _fraisLivraison => _fraisParZone[_zone] ?? 0;
   // Numéro de transaction MonCash saisi par le client.
   final _moncashRefCtrl = TextEditingController();
   // Bascule à `true` pendant l'appel réseau de création de commande, pour
@@ -70,13 +82,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // modifiable, voir le texte d'aide affiché sous le champ dans build()).
     final auth = context.read<AuthProvider>();
     _telephoneCtrl.text = auth.currentUser?.telephone ?? '';
-    _chargerMoncash();
+    _chargerBoutique();
   }
 
-  // Récupère le numéro MonCash de la boutique du panier. `select()` sans
-  // liste de colonnes : ne plante pas si migration_moncash.sql n'a pas
-  // encore été exécutée (la colonne est alors simplement absente).
-  Future<void> _chargerMoncash() async {
+  // Récupère le numéro MonCash et les zones (avec leur prix de livraison)
+  // de la boutique du panier. `select()` sans liste de colonnes : ne
+  // plante pas si migration_moncash.sql n'a pas encore été exécutée (la
+  // colonne est alors simplement absente).
+  Future<void> _chargerBoutique() async {
     final cart = context.read<CartProvider>();
     if (cart.items.isEmpty) return;
     try {
@@ -85,10 +98,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
           .select()
           .eq('id', cart.items.first.product.shopId)
           .maybeSingle();
-      final numero = (row?['moncash_numero'] as String?)?.trim();
-      if (mounted && numero != null && numero.isNotEmpty) {
-        setState(() => _moncashNumero = numero);
-      }
+      if (row == null || !mounted) return;
+      final numero = (row['moncash_numero'] as String?)?.trim();
+      final zones = ShopModel.fromMap(row, row['id']).zonesLivraison;
+      setState(() {
+        if (numero != null && numero.isNotEmpty) _moncashNumero = numero;
+        _fraisParZone = {for (final z in zones) z.zone: z.frais};
+        if (_zone.isNotEmpty && !_zonesProposees.contains(_zone)) _zone = '';
+      });
     } catch (_) {}
   }
 
@@ -391,7 +408,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       // manuelle faite dans `_valider()`.
                       Wrap(
                         spacing: 8, runSpacing: 8,
-                        children: _zones.map((z) {
+                        children: _zonesProposees.map((z) {
                           final sel = _zone == z;
                           return GestureDetector(
                             onTap: () => setState(() => _zone = z),
@@ -409,7 +426,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                       : AppColors.borderColor(isDark),
                                 ),
                               ),
-                              child: Text(z,
+                              child: Text(
+                                  (_fraisParZone[z] ?? 0) > 0
+                                      ? '$z · ${_fraisParZone[z]!.toStringAsFixed(0)} HTG'
+                                      : z,
                                   style: TextStyle(
                                       fontSize: 12,
                                       color: sel
@@ -521,7 +541,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                         const SizedBox(height: 4),
                         MoncashInstructions(
                             numero: _moncashNumero!,
-                            total: cart.totalAvecPromo),
+                            total: cart.totalAvecPromo + _fraisLivraison),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _moncashRefCtrl,
@@ -601,12 +621,30 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               ],
                             ),
                           ),
+                        // Livraison : prix de la zone choisie (le serveur
+                        // l'ajoute au total de la commande).
+                        if (_zone.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Livraison',
+                                    style: TextStyle(fontSize: 13)),
+                                Text(
+                                    _fraisLivraison > 0
+                                        ? '${_fraisLivraison.toStringAsFixed(0)} HTG'
+                                        : 'Gratuite',
+                                    style: const TextStyle(fontSize: 13)),
+                              ],
+                            ),
+                          ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Total',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text('${cart.totalAvecPromo.toStringAsFixed(0)} HTG',
+                            Text('${(cart.totalAvecPromo + _fraisLivraison).toStringAsFixed(0)} HTG',
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.accentFor(isDark))),
