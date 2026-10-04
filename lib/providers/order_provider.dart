@@ -133,8 +133,15 @@ class OrderProvider extends ChangeNotifier {
       // quand le stock ne permet pas la commande (vérifié côté serveur
       // pour éviter les race conditions entre deux clients simultanés).
       // On traduit ce cas précis en message clair, sinon message générique.
-      if (e.toString().contains('stock_insuffisant')) {
+      final err = e.toString();
+      if (err.contains('stock_insuffisant')) {
         _errorMessage = 'Stock insuffisant — commande annulée';
+      } else if (err.contains('compte_bloque')) {
+        _errorMessage = 'Votre compte a été bloqué — commande impossible';
+      } else if (err.contains('boutique_indisponible')) {
+        _errorMessage = 'Cette boutique n\'accepte pas de commandes pour le moment';
+      } else if (err.contains('produit_indisponible')) {
+        _errorMessage = 'Un produit du panier n\'est plus disponible';
       } else {
         _errorMessage = 'Erreur lors de la commande';
       }

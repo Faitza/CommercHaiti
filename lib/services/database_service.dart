@@ -230,6 +230,13 @@ class DatabaseService {
       if (e.message.contains('stock_insuffisant')) {
         throw Exception('stock_insuffisant');
       }
+      // Refus posés par la modération admin (triggers SQL, voir
+      // supabase/migration_admin_moderation.sql).
+      for (final code in const [
+        'compte_bloque', 'boutique_indisponible', 'produit_indisponible',
+      ]) {
+        if (e.message.contains(code)) throw Exception(code);
+      }
       // Toute autre erreur Postgrest est simplement propagée telle quelle.
       rethrow;
     }

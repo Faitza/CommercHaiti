@@ -40,6 +40,10 @@ class ProductModel {
   /// Compteur de commandes total pour ce produit (utile pour trier les
   /// produits populaires).
   final int totalCommandes;
+  /// Produit masqué par un administrateur (modération depuis l'admin
+  /// web) et motif éventuel. Lecture seule : jamais envoyé par toMap().
+  final bool masqueAdmin;
+  final String? motifModeration;
   /// Date de création du produit.
   final DateTime createdAt;
 
@@ -60,6 +64,8 @@ class ProductModel {
     this.tailles = const [],
     this.disponible = true,
     this.totalCommandes = 0,
+    this.masqueAdmin = false,
+    this.motifModeration,
     required this.createdAt,
   });
 
@@ -112,6 +118,8 @@ class ProductModel {
       tailles:         List<String>.from(map['tailles'] ?? []),
       disponible:      map['disponible'] ?? true,
       totalCommandes:  map['total_commandes'] ?? 0,
+      masqueAdmin:     map['masque_admin'] ?? false,
+      motifModeration: map['motif_moderation'],
       // Repli sur l'heure actuelle si created_at est absent de la réponse.
       createdAt:       map['created_at'] != null
                          ? DateTime.parse(map['created_at'])

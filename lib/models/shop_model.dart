@@ -51,6 +51,10 @@ class ShopModel {
   /// true = "Ouvrir maintenant", false = "Fermer maintenant",
   /// null = statut calculé automatiquement selon l'horaire.
   final bool? isOpenManuel;
+  /// Validation par l'administration (colonne `statut_validation`) :
+  /// 'en_attente', 'approuvee' ou 'suspendue'. Seules les boutiques
+  /// approuvées sont visibles des clients (politique RLS côté Supabase).
+  final String statutValidation;
   /// Date de création de la boutique.
   final DateTime createdAt;
 
@@ -73,6 +77,7 @@ class ShopModel {
     this.horaireFermeture,
     this.joursOuverture = const [],
     this.isOpenManuel,
+    this.statutValidation = 'approuvee',
     required this.createdAt,
   });
 
@@ -179,6 +184,7 @@ class ShopModel {
       horaireFermeture: _hhmm(map['horaire_fermeture']),
       joursOuverture: List<String>.from(map['jours_ouverture'] ?? const []),
       isOpenManuel:   map['is_open_manuel'],
+      statutValidation: map['statut_validation'] ?? 'approuvee',
       // Repli sur l'heure actuelle si created_at est absent.
       createdAt:      map['created_at'] != null
                         ? DateTime.parse(map['created_at'])

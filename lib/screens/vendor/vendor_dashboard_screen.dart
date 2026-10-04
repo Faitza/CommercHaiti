@@ -291,6 +291,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Bandeau de validation : tant que l'administration
+                    // n'a pas approuvé la boutique (ou si elle l'a
+                    // suspendue), les clients ne la voient pas.
+                    if (_shop != null && _shop!.statutValidation != 'approuvee')
+                      _bandeauValidation(_shop!.statutValidation),
                     // Section "Commandes en attente" : liste des commandes
                     // dont le vendeur doit encore accepter ou refuser la
                     // demande. Le badge affiche leur nombre.
@@ -687,6 +692,36 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
   // Titre de section avec un badge numéroté optionnel (ex : "En attente du
   // vendeur" + badge rouge "3") affiché seulement si `badge > 0`.
+  /// Bandeau affiché quand la boutique n'est pas (ou plus) approuvée par
+  /// l'administration CommercHaiti.
+  Widget _bandeauValidation(String statut) {
+    final suspendue = statut == 'suspendue';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: suspendue ? const Color(0xFFFDEAEA) : const Color(0xFFFFF4E0),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(children: [
+        Icon(suspendue ? Icons.block : Icons.hourglass_top,
+            color: suspendue ? const Color(0xFFE63946) : const Color(0xFFF5A623)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            suspendue
+                ? 'Boutique suspendue par l\'administration : elle n\'est '
+                    'plus visible des clients. Contactez CommercHaiti.'
+                : 'Boutique en attente d\'approbation : elle sera visible '
+                    'des clients dès qu\'un administrateur l\'aura validée.',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _sectionTitle(String t, bool isDark, {int badge = 0}) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Row(children: [
