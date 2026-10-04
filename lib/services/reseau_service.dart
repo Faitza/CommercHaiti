@@ -63,6 +63,11 @@ String messageErreur(Object erreur,
   if (erreur is PostgrestException && erreur.code == 'PGRST301') {
     return 'Votre session a expiré. Reconnectez-vous.';
   }
+  // Même numéro de transaction MonCash déjà utilisé pour une autre
+  // commande (index unique, voir migration_production.sql, point 10).
+  if (texte.contains('idx_orders_moncash_reference_unique')) {
+    return 'Ce numéro de transaction MonCash a déjà été utilisé.';
+  }
   if (texte.contains('fichier_trop_lourd')) {
     return 'Image trop lourde. Choisissez une photo plus légère.';
   }

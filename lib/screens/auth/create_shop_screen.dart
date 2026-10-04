@@ -65,6 +65,10 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // de stockage (Supabase Storage) associée à l'ID de l'utilisateur
   // courant. Met à jour `_logoUrl` avec l'URL retournée.
   Future<void> _uploadLogo() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     final file = await _picker.pickImage(
       source: ImageSource.gallery,
       // Checklist production (point 14) : réduit déjà la photo au moment
@@ -105,6 +109,10 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // reste de l'app — dashboard, produits, etc. — sache à quelle boutique
   // le vendeur est rattaché) puis navigue vers le tableau de bord vendeur.
   Future<void> _creerBoutique() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     if (_zonesSelectionnees.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

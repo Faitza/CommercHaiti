@@ -60,6 +60,10 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   /// Ouvre la galerie, sélectionne une photo (max 4 au total) et
   /// l'envoie à Supabase Storage.
   Future<void> _ajouterPhoto() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     if (_photoUrls.length >= 4) return;
     // `pickImage` renvoie un `XFile` (type multiplateforme d'image_picker)
     // plutôt qu'un `dart:io.File`, car cette app doit aussi fonctionner
@@ -113,6 +117,10 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   /// saisis, puis l'insère en base via `DatabaseService.createProduct`
   /// (INSERT Supabase dans la table `products`).
   Future<void> _sauvegarder() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 

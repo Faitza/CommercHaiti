@@ -6,6 +6,11 @@
 -- envoyés par _supabase.rpc('create_order_atomic', params: {...}).
 --
 -- À exécuter après schema.sql.
+--
+-- ⚠ supabase/migration_production.sql remplace create_order_atomic par
+-- une version à 10 paramètres (clé d'idempotence + limites). Si vous
+-- relancez ce fichier après elle, relancez aussi migration_production.sql
+-- (elle supprime la version à 9 paramètres recréée ici).
 -- ════════════════════════════════════════════════════════════════
 
 -- IMPORTANT — mise à jour du 2026 : l'ancienne version de cette fonction

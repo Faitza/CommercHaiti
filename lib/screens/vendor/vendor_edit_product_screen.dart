@@ -109,6 +109,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
   /// Ajoute une nouvelle photo au produit : sélection depuis la galerie
   /// puis upload vers Supabase Storage.
   Future<void> _ajouterPhoto() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (_photoUrls.length >= 4 || _product == null) return;
     // `XFile` (pas `dart:io.File`) car cette app tourne aussi sur Flutter
     // Web, où dart:io/path_provider ne sont pas disponibles.
@@ -147,6 +151,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
   /// UPDATE Supabase (`DatabaseService.updateProduct`) ciblé sur
   /// `widget.productId`, avec toutes les valeurs actuelles des champs.
   Future<void> _sauvegarder() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 

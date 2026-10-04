@@ -109,6 +109,10 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   /// (colonne `logo_url`) ne se fait qu'au moment d'"Enregistrer" — cette
   /// méthode ne fait qu'uploader le fichier et mémoriser son URL.
   Future<void> _uploadLogo() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (_shop == null) return;
     // `pickImage` retourne un `XFile` (type multiplateforme de
     // image_picker) et non un `dart:io.File`, car dart:io n'existe pas
@@ -151,6 +155,10 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   /// Valide le formulaire puis enregistre les modifications de la
   /// boutique en base via un UPDATE Supabase sur la table `shops`.
   Future<void> _enregistrer() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate() || _shop == null) return;
     // Règle métier : au moins une zone de livraison doit être
     // sélectionnée, sinon la boutique ne pourrait livrer nulle part.

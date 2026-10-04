@@ -206,12 +206,14 @@ class OrderProvider extends ChangeNotifier {
   Future<String?> createOrder({
     required OrderModel order,
     required List<Map<String, dynamic>> items,
+    String? cleIdempotence,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      final orderId = await _db.createOrder(order: order, items: items);
+      final orderId = await _db.createOrder(
+          order: order, items: items, cleIdempotence: cleIdempotence);
       return orderId;
     } catch (e) {
       // La RPC Postgres lève une exception contenant "stock_insuffisant"
@@ -221,7 +223,11 @@ class OrderProvider extends ChangeNotifier {
       if (e.toString().contains('stock_insuffisant')) {
         _errorMessage = 'Stock insuffisant — commande annulée';
       } else {
-        _errorMessage = 'Erreur lors de la commande';
+        // Délai dépassé, pas de réseau, trop de commandes d'affilée…
+        // (checklist production, points 01, 07, 08). Réessayer avec la
+        // même clé d'idempotence ne crée pas de doublon (point 10).
+        _errorMessage =
+            messageErreur(e, parDefaut: 'Erreur lors de la commande');
       }
       notifyListeners();
       return null;
@@ -238,7 +244,12 @@ class OrderProvider extends ChangeNotifier {
   /// workflow (ex : "nouvelle" → "acceptee" → "preparation" ...).
   /// LORSQUE LA COMMANDE EST ACCEPTEE, LE STOCK EST DECREMENTE
   /// AUTOMATIQUEMENT POUR CHAQUE PRODUIT DANS LA COMMANDE.
-  Future<void> updateStatut(String orderId, String newStatut) async {
+  /// Retourne false si l'appel a été ignoré (action déjà en cours).
+  Future<bool> updateStatut(String orderId, String newStatut) async {
+    // Checklist production (point 09) : un 2e appui sur « Accepter »
+    // pendant que le 1er est en cours est ignoré (sinon le stock était
+    // décrémenté deux fois).
+    if (!_commandesEnCours.add(orderId)) return false;
     try {
       // 1. Mete ajou statut kòmand lan
       await _db.updateOrderStatus(orderId, newStatut);
@@ -257,10 +268,13 @@ class OrderProvider extends ChangeNotifier {
         }
       }
       
+      return true;
     } catch (e) {
       _errorMessage = 'Erreur mise à jour statut: $e';
       notifyListeners();
       rethrow;
+    } finally {
+      _commandesEnCours.remove(orderId);
     }
   }
 
@@ -300,15 +314,25 @@ class OrderProvider extends ChangeNotifier {
   /// côté base de données/service : si la commande a déjà été acceptée,
   /// l'appel échoue et on informe le client via _errorMessage.
   Future<bool> cancelOrder(String orderId) async {
+    if (!_commandesEnCours.add(orderId)) return false; // point 09
     try {
       await _db.cancelOrder(orderId);
       return true;
     } catch (e) {
-      _errorMessage = 'Annulation impossible — commande déjà acceptée';
+      _errorMessage = e.toString().contains('Annulation impossible')
+          ? 'Annulation impossible — commande déjà acceptée'
+          : messageErreur(e);
       notifyListeners();
       return false;
+    } finally {
+      _commandesEnCours.remove(orderId);
     }
   }
+
+  /// Commandes pour lesquelles une action (statut, annulation) est en
+  /// cours — sert à ignorer les doubles appuis (checklist production,
+  /// point 09).
+  final Set<String> _commandesEnCours = {};
 
   /// Efface le message d'erreur courant (par ex. après que l'UI l'a
   /// affiché dans une SnackBar et n'en a plus besoin).

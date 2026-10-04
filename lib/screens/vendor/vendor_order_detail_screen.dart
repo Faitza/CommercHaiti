@@ -7,6 +7,7 @@ import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
 
 /// Détail commande Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -31,8 +32,23 @@ class VendorOrderDetailScreen extends StatelessWidget {
   /// cet écran de détail pour revenir à la liste des commandes.
   Future<void> _changerStatut(
       BuildContext context, String newStatut) async {
-    await context.read<OrderProvider>().updateStatut(order.id, newStatut);
-    if (context.mounted) Navigator.pop(context);
+    // Checklist production (points 07 et 09) : on ne referme l'écran que
+    // si le changement a vraiment été fait (pas sur un 2e appui ignoré),
+    // et on affiche un message clair si le serveur refuse ou ne répond pas.
+    try {
+      final fait = await context
+          .read<OrderProvider>()
+          .updateStatut(order.id, newStatut);
+      if (fait && context.mounted) Navigator.pop(context);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(messageErreur(e,
+              parDefaut: 'Le statut n\'a pas pu être modifié. Réessayez.')),
+          backgroundColor: const Color(0xFFE63946),
+        ));
+      }
+    }
   }
 
   @override
