@@ -96,6 +96,36 @@ class StorageService {
     }
   }
 
+  /// Compresse puis uploade une photo jointe à un litige dans le bucket
+  /// `litiges`, dans le dossier du client (`<uid>/<commande>/...`) : la
+  /// règle Storage n'autorise chaque client à écrire que dans son dossier.
+  /// Retourne l'URL publique (affichée dans l'admin web), ou null en cas
+  /// d'échec.
+  Future<String?> uploadLitigePhoto({
+    required XFile file,
+    required String orderId,
+  }) async {
+    try {
+      final uid = _supabase.auth.currentUser?.id;
+      if (uid == null) return null;
+      final bytes = await _compress(file);
+      if (bytes == null) return null;
+
+      final fileName =
+          '$uid/$orderId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await _supabase.storage.from('litiges').uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+
+      return _supabase.storage.from('litiges').getPublicUrl(fileName);
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Supprime un fichier de Storage à partir de son URL publique complète.
   /// On doit d'abord retrouver le chemin relatif à l'intérieur du bucket
   /// (Storage.remove() attend un chemin, pas une URL) via _extractPath.
