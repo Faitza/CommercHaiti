@@ -86,11 +86,10 @@ class ReceiptService {
                   style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
             ),
             pw.SizedBox(height: 8),
-            // Mode de paiement fixe : l'app ne gère que le paiement à la
-            // livraison (cash), donc pas besoin de champ dynamique ici.
+            // Mode de paiement : à la livraison ou MonCash (avec réf.).
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text('Mode de paiement : Paiement à la livraison',
+              child: pw.Text('Mode de paiement : ${order.modePaiementLabel}',
                   style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
             ),
             pw.SizedBox(height: 24),

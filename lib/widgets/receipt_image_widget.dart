@@ -117,12 +117,11 @@ class ReceiptImageWidget extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            // Mode de paiement fixe (l'app ne gère que le paiement cash à
-            // la livraison, comme dans receipt_service.dart).
-            const Align(
+            // Mode de paiement : à la livraison ou MonCash (avec réf.).
+            Align(
               alignment: Alignment.centerRight,
-              child: Text('Paiement à la livraison',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF999999))),
+              child: Text(order.modePaiementLabel,
+                  style: const TextStyle(fontSize: 10, color: Color(0xFF999999))),
             ),
             const SizedBox(height: 16),
             // ── Pied de page : message de remerciement ──

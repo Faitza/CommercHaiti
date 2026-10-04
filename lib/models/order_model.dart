@@ -47,6 +47,11 @@ class OrderModel {
   /// null (paiement à la livraison) | 'en_attente' | 'confirme' | 'refuse'.
   final String? paiementStatut;
 
+  /// Libellé du mode de paiement pour les reçus.
+  String get modePaiementLabel => modePaiement == 'moncash'
+      ? 'MonCash${moncashReference != null ? ' (réf. $moncashReference)' : ''}'
+      : 'Paiement à la livraison';
+
   /// Constructeur constant — tous les champs sont requis sauf noteVendeur
   /// et receiptUrl qui ne sont pas toujours renseignés.
   const OrderModel({
