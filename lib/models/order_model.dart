@@ -40,6 +40,9 @@ class OrderModel {
   final String? receiptUrl;
   /// Date/heure de création de la commande.
   final DateTime createdAt;
+  /// Frais de livraison (déjà inclus dans `total`), fixés par le serveur
+  /// selon la zone (migration_frais_livraison.sql).
+  final double fraisLivraison;
   /// 'livraison' (paiement à la livraison) ou 'moncash'.
   final String modePaiement;
   /// Numéro de transaction MonCash saisi par le client.
@@ -68,6 +71,7 @@ class OrderModel {
     this.noteVendeur,
     this.receiptUrl,
     required this.createdAt,
+    this.fraisLivraison = 0,
     this.modePaiement = 'livraison',
     this.moncashReference,
     this.paiementStatut,
@@ -117,6 +121,7 @@ class OrderModel {
       telephoneClient:  map['telephone_client'] ?? '',
       noteVendeur:      map['note_vendeur'],
       receiptUrl:       map['receipt_url'],
+      fraisLivraison:   (map['frais_livraison'] ?? 0).toDouble(),
       modePaiement:     map['mode_paiement'] ?? 'livraison',
       moncashReference: map['moncash_reference'],
       paiementStatut:   map['paiement_statut'],

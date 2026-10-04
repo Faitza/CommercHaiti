@@ -79,7 +79,14 @@ class ReceiptService {
               ],
             ),
             pw.SizedBox(height: 16),
-            // ── Total de la commande, aligné à droite ──
+            // ── Livraison (déjà incluse dans le total) puis total ──
+            if (order.fraisLivraison > 0)
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Text(
+                    'Livraison : ${order.fraisLivraison.toStringAsFixed(0)} HTG',
+                    style: const pw.TextStyle(fontSize: 11)),
+              ),
             pw.Align(
               alignment: pw.Alignment.centerRight,
               child: pw.Text('Total : ${order.total.toStringAsFixed(0)} HTG',

@@ -88,6 +88,10 @@ class VendorOrderDetailScreen extends StatelessWidget {
               _row('Téléphone', order.telephoneClient, isDark: isDark),
               _row('Adresse', order.adresseLivraison, isDark: isDark),
               _row('Zone', order.zone, isDark: isDark),
+              if (order.fraisLivraison > 0)
+                _row('Livraison',
+                    '${order.fraisLivraison.toStringAsFixed(0)} HTG',
+                    isDark: isDark),
               _row('Total', '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
               if (order.noteVendeur != null)
                 _row('Note client', order.noteVendeur!, isDark: isDark),
