@@ -8,6 +8,8 @@ import '../../widgets/shop_logo_widget.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/bottom_nav_item.dart';
+import '../../providers/cart_provider.dart';
 
 /// Boutiques Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/boutiques_screen.dart
@@ -281,18 +283,21 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(icon: Icons.home_outlined, label: 'Accueil',
+                BottomNavItem(icon: Icons.home_outlined, label: 'Accueil',
                     // Retour à l'accueil : on utilise go() car l'accueil
                     // doit redevenir la racine de la navigation (pas
                     // d'empilement de pages d'accueil successives).
                     onTap: () =>
                         context.go(isGuest ? '/guest' : '/client/home')),
-                _NavItem(icon: Icons.shopping_cart_outlined,
+                BottomNavItem(icon: Icons.shopping_cart_outlined,
                     label: 'Panier',
+                    badge: isGuest
+                        ? 0
+                        : context.watch<CartProvider>().totalArticles,
                     onTap: () => isGuest
                         ? GuestHomeScreen.showInscriptionSheet(context)
                         : context.go('/cart')),
-                _NavItem(icon: Icons.inventory_2_outlined,
+                BottomNavItem(icon: Icons.inventory_2_outlined,
                     label: 'Commandes',
                     onTap: () => isGuest
                         ? GuestHomeScreen.showInscriptionSheet(context)
@@ -435,37 +440,3 @@ class _ShopCard extends StatelessWidget {
   }
 }
 
-/// Élément individuel de la barre de navigation basse : une icône +
-/// un libellé, avec une couleur qui change selon l'état "active"
-/// (actuellement jamais mis à true explicitement dans cet écran, donc
-/// visuellement toujours affiché en gris "inactif").
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon, required this.label,
-    this.active = false, required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon,
-            color: active
-                ? AppColors.accentFor(isDark)
-                : AppColors.textSecondaryFor(isDark),
-            size: 22),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(
-            fontSize: 10,
-            color: active
-                ? AppColors.accentFor(isDark)
-                : AppColors.textSecondaryFor(isDark))),
-      ]),
-    );
-  }
-}

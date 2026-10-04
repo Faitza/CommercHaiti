@@ -11,6 +11,8 @@ import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/app_drawer_widget.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/bottom_nav_item.dart';
+import '../../providers/cart_provider.dart';
 
 /// Client Home Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/client_home_screen.dart
@@ -154,6 +156,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           .from('products')
           .select()
           .eq('disponible', true)
+          // Pas de produit en rupture dans la vitrine de l'accueil.
+          .gt('stock', 0)
           .order('total_commandes', ascending: false)
           .limit(10);
       // Requête 2 : produits en promotion.
@@ -552,11 +556,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(icon: Icons.home, label: 'Accueil', active: true,
+                BottomNavItem(icon: Icons.home, label: 'Accueil', active: true,
                     onTap: () {}),
-                _NavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                BottomNavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                    badge: context.watch<CartProvider>().totalArticles,
                     onTap: () => context.go('/cart')),
-                _NavItem(icon: Icons.inventory_2_outlined, label: 'Commandes',
+                BottomNavItem(icon: Icons.inventory_2_outlined, label: 'Commandes',
                     onTap: () => context.go('/order-history')),
               ],
             ),
@@ -583,7 +588,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     if (boutiquesTrouvees.isEmpty && _searchProduits.isEmpty) {
       return Center(
         child: Text('Aucun résultat pour « ${_searchCtrl.text} »',
-            style: const TextStyle(color: Color(0xFF999999))),
+            style: TextStyle(
+                color: AppColors.textSecondaryFor(
+                    context.watch<ThemeProvider>().isDarkMode))),
       );
     }
     return ListView(
@@ -623,23 +630,29 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
   /// Titre de section réutilisé avec un lien optionnel "Voir tout" à
   /// droite (affiché seulement si un callback [onTap] est fourni).
-  Widget _sectionTitle(String t, {VoidCallback? onTap}) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(t, style: const TextStyle(
-            fontSize: 15, fontWeight: FontWeight.bold,
-            color: Color(0xFF1A1F36))),
-        if (onTap != null)
-          GestureDetector(
-            onTap: onTap,
-            child: const Text('Voir tout',
-                style: TextStyle(fontSize: 12, color: Color(0xFF0D2B5E))),
-          ),
-      ],
-    ),
-  );
+  // Couleurs suivant le thème : en mode sombre, un titre bleu nuit
+  // posé sur le fond sombre devenait illisible.
+  Widget _sectionTitle(String t, {VoidCallback? onTap}) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(t, style: TextStyle(
+              fontSize: 15, fontWeight: FontWeight.bold,
+              color: AppColors.textPrimaryFor(isDark))),
+          if (onTap != null)
+            GestureDetector(
+              onTap: onTap,
+              child: Text('Voir tout',
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.accentFor(isDark))),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Carte produit compacte utilisée dans les carrousels horizontaux
@@ -740,7 +753,7 @@ class _ProduitCard extends StatelessWidget {
                               size: 14,
                               color: estFavori
                                   ? const Color(0xFFE63946)
-                                  : const Color(0xFF999999)),
+                                  : const Color(0xFF666666)),
                         ),
                       );
                     },
@@ -861,45 +874,3 @@ class _BoutiqueCard extends StatelessWidget {
   }
 }
 
-/// Élément de la barre de navigation basse (icône + libellé), dont la
-/// couleur change selon l'état [active] (ici, seul "Accueil" est
-/// marqué actif en dur, puisque cet écran EST l'accueil).
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon,
-              color: active
-                  ? const Color(0xFF0D2B5E)
-                  : const Color(0xFF999999),
-              size: 22),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: active
-                      ? const Color(0xFF0D2B5E)
-                      : const Color(0xFF999999),
-                  fontWeight: active
-                      ? FontWeight.bold
-                      : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-}

@@ -8,6 +8,7 @@ import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
+import '../../widgets/bottom_nav_item.dart';
 
 /// Accueil Visiteur — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -153,6 +154,8 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
           .from('products')
           .select()
           .eq('disponible', true)
+          // Pas de produit en rupture dans la vitrine de l'accueil.
+          .gt('stock', 0)
           .order('total_commandes', ascending: false)
           .limit(10);
       if (mounted) {
@@ -388,11 +391,11 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(icon: Icons.home, label: 'Accueil', active: true,
+                BottomNavItem(icon: Icons.home, label: 'Accueil', active: true,
                     onTap: () {}),
-                _NavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                BottomNavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
                     onTap: () => GuestHomeScreen.showInscriptionSheet(context)),
-                _NavItem(icon: Icons.inventory_2_outlined, label: 'Commande',
+                BottomNavItem(icon: Icons.inventory_2_outlined, label: 'Commande',
                     onTap: () => GuestHomeScreen.showInscriptionSheet(context)),
               ],
             ),
@@ -579,45 +582,3 @@ class _GuestBoutiqueCard extends StatelessWidget {
   }
 }
 
-// Élément de la barre de navigation basse (icône + libellé). `active`
-// détermine la couleur (bleu marine si actif, gris sinon).
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon,
-              color: active
-                  ? AppColors.accentFor(isDark)
-                  : AppColors.textSecondaryFor(isDark),
-              size: 22),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: active
-                      ? AppColors.accentFor(isDark)
-                      : AppColors.textSecondaryFor(isDark),
-                  fontWeight: active
-                      ? FontWeight.bold
-                      : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-}

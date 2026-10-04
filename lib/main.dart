@@ -170,7 +170,10 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
               colorScheme: ColorScheme.fromSeed(
                 seedColor: AppColors.navy,
                 brightness: Brightness.dark,
-                primary: AppColors.navy,
+                // Bleu clair : le navy est presque invisible sur fond
+                // sombre (liens, interrupteurs, champ actif, chargement).
+                // Les ElevatedButton gardent le navy (voir plus bas).
+                primary: const Color(0xFF6FA8DC),
               ),
               useMaterial3: true,
               fontFamily: 'Roboto',

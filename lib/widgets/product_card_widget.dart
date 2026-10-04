@@ -167,13 +167,18 @@ class ProductCardWidget extends StatelessWidget {
                   // N'apparaît que si le statut calculé du stock est
                   // "faible" (quelques unités restantes mais pas épuisé) —
                   // incite le client à commander rapidement.
-                  if (product.stockStatus == StockStatus.faible)
+                  // Pas affiché sur un produit désactivé : il porte déjà
+                  // « Non disponible ».
+                  if (product.disponible &&
+                      product.stockStatus == StockStatus.faible)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         'Plus que ${product.stock} en stock !',
-                        style: const TextStyle(
-                            color: Color(0xFFF5A623),
+                        style: TextStyle(
+                            color: isDark
+                                ? AppColors.amber
+                                : AppColors.amberText,
                             fontSize: 10,
                             fontWeight: FontWeight.w600),
                       ),
