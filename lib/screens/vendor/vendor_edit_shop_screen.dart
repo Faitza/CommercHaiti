@@ -35,6 +35,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
 
   final _nomCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
+  // Numéro MonCash où les clients envoient leur paiement (optionnel).
+  final _moncashCtrl = TextEditingController();
 
   // Modèle de la boutique chargé depuis Supabase, conservé pour connaître
   // son id (`_shop!.id`) et son `proprietaireId` lors des mises à jour.
@@ -87,6 +89,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         _shop = row;
         _nomCtrl.text = row.nom;
         _descriptionCtrl.text = row.description;
+        _moncashCtrl.text = row.moncashNumero ?? '';
         _logoUrl = row.logoUrl;
         _isOpen = row.isOpen;
         // Reconstruit la liste des zones sélectionnées à partir des
@@ -150,7 +153,12 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       // reconstruites en objets {zone, delai_min, delai_max} — les délais
       // sont ici fixés à des valeurs par défaut (20-45 min) car ce
       // formulaire ne permet pas encore de les personnaliser par zone.
+      final moncash = _moncashCtrl.text.trim();
       await _db.updateShop(_shop!.id, {
+        // Envoyé seulement s'il a changé : ce formulaire continue de
+        // marcher tant que migration_moncash.sql n'a pas été exécutée.
+        if (moncash != (_shop!.moncashNumero ?? ''))
+          'moncash_numero': moncash.isEmpty ? null : moncash,
         'nom': _nomCtrl.text.trim(),
         'description': _descriptionCtrl.text.trim(),
         'logo_url': _logoUrl,
@@ -274,6 +282,32 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                               : null,
                         ),
                         const SizedBox(height: 16),
+                        // Numéro MonCash (optionnel) : s'il est rempli, les
+                        // clients peuvent choisir de payer par MonCash.
+                        const Text('Numéro MonCash (optionnel)',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _moncashCtrl,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            hintText: 'Ex : 3712 3456',
+                            helperText:
+                                'Les clients pourront payer par MonCash à ce numéro',
+                          ),
+                          validator: (v) {
+                            final chiffres =
+                                (v ?? '').replaceAll(RegExp(r'[^\d]'), '');
+                            if (chiffres.isEmpty) return null;
+                            if (chiffres.length == 8 ||
+                                (chiffres.length == 11 &&
+                                    chiffres.startsWith('509'))) {
+                              return null;
+                            }
+                            return 'Numéro invalide (8 chiffres)';
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         // Interrupteur "Boutique ouverte" : ne modifie que
                         // l'état local `_isOpen` — l'enregistrement réel en
                         // base ne se fait qu'au clic sur "Enregistrer" (via
@@ -353,6 +387,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   void dispose() {
     _nomCtrl.dispose();
     _descriptionCtrl.dispose();
+    _moncashCtrl.dispose();
     super.dispose();
   }
 }

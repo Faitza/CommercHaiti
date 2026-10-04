@@ -40,6 +40,12 @@ class OrderModel {
   final String? receiptUrl;
   /// Date/heure de création de la commande.
   final DateTime createdAt;
+  /// 'livraison' (paiement à la livraison) ou 'moncash'.
+  final String modePaiement;
+  /// Numéro de transaction MonCash saisi par le client.
+  final String? moncashReference;
+  /// null (paiement à la livraison) | 'en_attente' | 'confirme' | 'refuse'.
+  final String? paiementStatut;
 
   /// Constructeur constant — tous les champs sont requis sauf noteVendeur
   /// et receiptUrl qui ne sont pas toujours renseignés.
@@ -57,6 +63,9 @@ class OrderModel {
     this.noteVendeur,
     this.receiptUrl,
     required this.createdAt,
+    this.modePaiement = 'livraison',
+    this.moncashReference,
+    this.paiementStatut,
   });
 
   /// Annulation seulement si statut = nouvelle
@@ -103,6 +112,9 @@ class OrderModel {
       telephoneClient:  map['telephone_client'] ?? '',
       noteVendeur:      map['note_vendeur'],
       receiptUrl:       map['receipt_url'],
+      modePaiement:     map['mode_paiement'] ?? 'livraison',
+      moncashReference: map['moncash_reference'],
+      paiementStatut:   map['paiement_statut'],
       // Si created_at est absent (nouvelle commande pas encore relue
       // depuis la base), on utilise l'heure actuelle comme repli.
       createdAt:        map['created_at'] != null

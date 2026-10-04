@@ -6,6 +6,7 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../widgets/moncash_widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -123,6 +124,11 @@ class OrderTrackingScreen extends StatelessWidget {
                 String adresse = '';
                 String zone = '';
                 String telephoneClient = '';
+                // Paiement (migration_moncash.sql).
+                String shopId = '';
+                String modePaiement = 'livraison';
+                String? moncashReference;
+                String? paiementStatut;
                 if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   // Le flux renvoie une liste de lignes correspondant au
                   // filtre ; ici il ne peut y avoir qu'une seule commande
@@ -133,6 +139,10 @@ class OrderTrackingScreen extends StatelessWidget {
                   adresse = row['adresse_livraison'] ?? '';
                   zone = row['zone'] ?? '';
                   telephoneClient = row['telephone_client'] ?? '';
+                  shopId = row['shop_id'] ?? '';
+                  modePaiement = row['mode_paiement'] ?? 'livraison';
+                  moncashReference = row['moncash_reference'];
+                  paiementStatut = row['paiement_statut'];
                 }
 
                 // On retrouve l'index de l'étape courante dans `_etapes`
@@ -308,6 +318,22 @@ class OrderTrackingScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 14),
+
+                      // Paiement MonCash : état (en attente / confirmé /
+                      // refusé) ou proposition de payer avec MonCash.
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) ...[
+                        MoncashSuiviWidget(
+                          orderId: orderId,
+                          shopId: shopId,
+                          statut: statut,
+                          total: total,
+                          modePaiement: modePaiement,
+                          reference: moncashReference,
+                          paiementStatut: paiementStatut,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Reçu PDF — BF-030
                       // Le bouton de génération/partage du reçu PDF n'est

@@ -5,6 +5,7 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../widgets/moncash_widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -90,6 +91,19 @@ class VendorOrderDetailScreen extends StatelessWidget {
               _row('Total', '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
               if (order.noteVendeur != null)
                 _row('Note client', order.noteVendeur!, isDark: isDark),
+            ]),
+            const SizedBox(height: 16),
+
+            // Paiement : à la livraison, ou MonCash avec les boutons
+            // « Paiement reçu » / « Pas reçu » (migration_moncash.sql).
+            _card(isDark: isDark, children: [
+              MoncashVendeurWidget(
+                orderId: order.id,
+                modePaiement: order.modePaiement,
+                reference: order.moncashReference,
+                paiementStatut: order.paiementStatut,
+                total: order.total,
+              ),
             ]),
             const SizedBox(height: 16),
 

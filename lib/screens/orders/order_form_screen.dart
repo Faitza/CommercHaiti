@@ -8,6 +8,7 @@ import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/moncash_widgets.dart';
 
 /// Order Form Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_form_screen.dart
@@ -41,12 +42,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // Zone de livraison choisie parmi `_zones` (chaîne vide = rien de
   // sélectionné, ce qui bloque la validation dans `_valider()`).
   String _zone = '';
-  // Mode de paiement choisi. Seul 'livraison' (paiement à la livraison,
-  // COD) est réellement sélectionnable actuellement : voir la section
-  // "Paiement" plus bas dans `build()`, où l'option MonCash est affichée
-  // mais désactivée (`onChanged: null`) car ce mode n'est pas encore
-  // implémenté côté projet.
+  // Mode de paiement choisi : 'livraison' (paiement à la livraison, COD)
+  // ou 'moncash' (seulement si la boutique a renseigné son numéro
+  // MonCash, voir `_moncashNumero`).
   String _modePaiement = 'livraison';
+  // Numéro MonCash de la boutique du panier (null = MonCash non proposé).
+  String? _moncashNumero;
+  // Numéro de transaction MonCash saisi par le client.
+  final _moncashRefCtrl = TextEditingController();
   // Bascule à `true` pendant l'appel réseau de création de commande, pour
   // désactiver le bouton "Confirmer" et afficher un indicateur de
   // chargement (évite les doubles soumissions).
@@ -67,6 +70,26 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // modifiable, voir le texte d'aide affiché sous le champ dans build()).
     final auth = context.read<AuthProvider>();
     _telephoneCtrl.text = auth.currentUser?.telephone ?? '';
+    _chargerMoncash();
+  }
+
+  // Récupère le numéro MonCash de la boutique du panier. `select()` sans
+  // liste de colonnes : ne plante pas si migration_moncash.sql n'a pas
+  // encore été exécutée (la colonne est alors simplement absente).
+  Future<void> _chargerMoncash() async {
+    final cart = context.read<CartProvider>();
+    if (cart.items.isEmpty) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('shops')
+          .select()
+          .eq('id', cart.items.first.product.shopId)
+          .maybeSingle();
+      final numero = (row?['moncash_numero'] as String?)?.trim();
+      if (mounted && numero != null && numero.isNotEmpty) {
+        setState(() => _moncashNumero = numero);
+      }
+    } catch (_) {}
   }
 
   // Validateur du champ téléphone : format haïtien, 8 chiffres une fois
@@ -230,6 +253,21 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // insuffisant, toute la RPC échoue (rien n'est décrémenté) et
     // orderProvider expose un message d'erreur adapté.
     final orderId = await orderProvider.createOrder(order: order, items: items);
+
+    // MonCash : la commande est créée, on y enregistre le numéro de
+    // transaction. En cas d'échec, la commande reste valable et le client
+    // peut renvoyer le numéro depuis l'écran de suivi.
+    if (orderId != null && _modePaiement == 'moncash') {
+      try {
+        await Supabase.instance.client.rpc('declarer_paiement_moncash',
+            params: {
+              'p_order_id': orderId,
+              'p_reference': _moncashRefCtrl.text.trim(),
+            });
+      } catch (e) {
+        debugPrint('declarer_paiement_moncash: $e');
+      }
+    }
 
     setState(() => _isLoading = false);
 
@@ -418,23 +456,17 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     ]),
                     const SizedBox(height: 12),
 
-                    // Paiement — jan maket la (COD sèlman, MonCash pa la ankò)
-                    // Section "Mode de paiement". Actuellement, un seul
-                    // mode est réellement utilisable : le paiement à la
-                    // livraison (COD, "Cash On Delivery" — le client paie
-                    // en espèces au livreur). L'option MonCash (portefeuille
-                    // mobile très utilisé en Haïti) est affichée pour
-                    // montrer que le produit est prévu pour l'accueillir,
-                    // mais elle est désactivée (`onChanged: null` rend le
-                    // RadioListTile non cliquable, et son texte est grisé)
-                    // car son intégration (paiement en ligne réel) n'est
-                    // pas encore implémentée dans ce projet étudiant.
+                    // Section "Mode de paiement" : paiement à la livraison
+                    // (COD, "Cash On Delivery" — le client paie en espèces
+                    // au livreur) ou MonCash. MonCash n'est sélectionnable
+                    // que si la boutique a renseigné son numéro MonCash :
+                    // le client envoie l'argent à ce numéro puis saisit le
+                    // numéro de transaction, que le vendeur confirme
+                    // ensuite (pas d'API MonCash, voir migration_moncash.sql).
                     _sectionCard(isDark, children: [
                       _label(Icons.payments_outlined, 'PAIEMENT', isDark),
                       const SizedBox(height: 4),
-                      // Option active : paiement à la livraison. C'est la
-                      // seule valeur que `_modePaiement` peut réellement
-                      // prendre pour l'instant (sa valeur par défaut).
+                      // Paiement à la livraison (valeur par défaut).
                       RadioListTile<String>(
                         value: 'livraison',
                         groupValue: _modePaiement,
@@ -450,26 +482,54 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               style: TextStyle(fontSize: 14)),
                         ]),
                       ),
-                      // Option MonCash désactivée : `onChanged: null`
-                      // empêche toute sélection (le bouton radio ne réagit
-                      // pas au tap), et les couleurs grisées communiquent
-                      // visuellement que l'option n'est "pas encore
-                      // disponible" (voir le label "Bientôt dispo").
+                      // MonCash : désactivé (`onChanged: null`, texte
+                      // grisé) si la boutique n'a pas de numéro MonCash.
                       RadioListTile<String>(
                         value: 'moncash',
                         groupValue: _modePaiement,
-                        onChanged: null,
+                        onChanged: _moncashNumero == null
+                            ? null
+                            : (v) => setState(
+                                () => _modePaiement = v ?? 'livraison'),
+                        activeColor: const Color(0xFF0D2B5E),
                         contentPadding: EdgeInsets.zero,
                         dense: true,
                         title: Row(children: [
                           Icon(Icons.phone_android,
-                              size: 16, color: AppColors.textSecondaryFor(isDark)),
+                              size: 16,
+                              color: _moncashNumero == null
+                                  ? AppColors.textSecondaryFor(isDark)
+                                  : const Color(0xFFD71920)),
                           const SizedBox(width: 6),
-                          Text('MonCash — Bientôt dispo',
-                              style: TextStyle(
-                                  fontSize: 14, color: AppColors.textSecondaryFor(isDark))),
+                          Flexible(
+                            child: Text(
+                                _moncashNumero == null
+                                    ? 'MonCash — non proposé par cette boutique'
+                                    : 'MonCash',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: _moncashNumero == null
+                                        ? AppColors.textSecondaryFor(isDark)
+                                        : null)),
+                          ),
                         ]),
                       ),
+                      // Instructions + numéro de transaction (obligatoire
+                      // quand MonCash est choisi).
+                      if (_modePaiement == 'moncash' &&
+                          _moncashNumero != null) ...[
+                        const SizedBox(height: 4),
+                        MoncashInstructions(
+                            numero: _moncashNumero!,
+                            total: cart.totalAvecPromo),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _moncashRefCtrl,
+                          validator: validerReferenceMoncash,
+                          decoration: _deco(
+                              'Numéro de transaction MonCash', isDark),
+                        ),
+                      ],
                     ]),
                     const SizedBox(height: 12),
 
@@ -646,6 +706,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // recommandé par Flutter, pour éviter les fuites mémoire.
   @override
   void dispose() {
+    _moncashRefCtrl.dispose();
     _adresseCtrl.dispose();
     _telephoneCtrl.dispose();
     _confirmTelCtrl.dispose();
