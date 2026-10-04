@@ -85,6 +85,13 @@ class OrderModel {
     this.paiementStatut,
   });
 
+  /// Valeur de `zone` (et d'`adresseLivraison`) quand le client vient
+  /// chercher sa commande à la boutique (« M ap vin chèche l ») : pas de
+  /// frais de livraison, pas de livreur.
+  static const String retraitBoutique = 'Retrait en boutique';
+
+  bool get estRetrait => zone == retraitBoutique;
+
   /// Annulation seulement si statut = nouvelle
   /// Une commande ne peut être annulée par le client que tant que le
   /// vendeur ne l'a pas encore acceptée (sinon la préparation a déjà

@@ -43,6 +43,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // Zone de livraison choisie parmi `_zones` (chaîne vide = rien de
   // sélectionné, ce qui bloque la validation dans `_valider()`).
   String _zone = '';
+  // true = le client vient chercher sa commande à la boutique : pas
+  // d'adresse, pas de zone, pas de frais de livraison.
+  bool _retrait = false;
   // Mode de paiement choisi : 'livraison' (paiement à la livraison, COD)
   // ou 'moncash' (seulement si la boutique a renseigné son numéro
   // MonCash, voir `_moncashNumero`).
@@ -59,7 +62,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
   // Prix de livraison de la zone choisie. Le serveur recalcule le même
   // montant à la création de la commande (migration_frais_livraison.sql).
-  double get _fraisLivraison => _fraisParZone[_zone] ?? 0;
+  double get _fraisLivraison => _retrait ? 0 : _fraisParZone[_zone] ?? 0;
   // Numéro de transaction MonCash saisi par le client.
   final _moncashRefCtrl = TextEditingController();
   // Bascule à `true` pendant l'appel réseau de création de commande, pour
@@ -145,7 +148,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // 2) La zone de livraison n'est pas un TextFormField mais une sélection
     // par "chips" (Wrap de GestureDetector plus bas) : on la valide donc
     // manuellement ici, hors du mécanisme de Form.
-    if (_zone.isEmpty) {
+    if (!_retrait && _zone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Sélectionnez une zone de livraison'),
         backgroundColor: Color(0xFFE63946),
@@ -240,8 +243,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       shopId: item.product.shopId, sellerId: sellerId,
       items: [], total: cart.totalAvecPromo,
       statut: 'nouvelle',
-      adresseLivraison: _adresseCtrl.text.trim(),
-      zone: _zone,
+      adresseLivraison:
+          _retrait ? OrderModel.retraitBoutique : _adresseCtrl.text.trim(),
+      zone: _retrait ? OrderModel.retraitBoutique : _zone,
       telephoneClient: _telephoneCtrl.text.trim(),
       noteVendeur: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
       createdAt: DateTime.now(),
@@ -384,6 +388,33 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // l'adresse précise, plus une sélection de zone parmi
                     // une liste fixe de quartiers desservis (`_zones`).
                     _sectionCard(isDark, children: [
+                      // Livraison ou « M ap vin chèche l » (retrait à la
+                      // boutique : ni adresse, ni zone, ni frais).
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(
+                              value: false,
+                              icon: Icon(Icons.local_shipping_outlined, size: 16),
+                              label: Text('Livraison')),
+                          ButtonSegment(
+                              value: true,
+                              icon: Icon(Icons.storefront_outlined, size: 16),
+                              label: Text('Je viens chercher')),
+                        ],
+                        selected: {_retrait},
+                        onSelectionChanged: (s) =>
+                            setState(() => _retrait = s.first),
+                        showSelectedIcon: false,
+                      ),
+                      const SizedBox(height: 12),
+                      if (_retrait)
+                        Text(
+                            'Vous récupérez la commande à la boutique quand '
+                            'le vendeur vous prévient. Pas de frais de livraison.',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondaryFor(isDark)))
+                      else ...[
                       _label(Icons.location_on_outlined, 'Adresse de livraison', isDark),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -442,6 +473,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           );
                         }).toList(),
                       ),
+                      ],
                     ]),
                     const SizedBox(height: 12),
 
@@ -623,7 +655,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           ),
                         // Livraison : prix de la zone choisie (le serveur
                         // l'ajoute au total de la commande).
-                        if (_zone.isNotEmpty)
+                        if (_zone.isNotEmpty || _retrait)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Row(
@@ -632,9 +664,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                 const Text('Livraison',
                                     style: TextStyle(fontSize: 13)),
                                 Text(
-                                    _fraisLivraison > 0
-                                        ? '${_fraisLivraison.toStringAsFixed(0)} HTG'
-                                        : 'Gratuite',
+                                    _retrait
+                                        ? 'Retrait en boutique'
+                                        : _fraisLivraison > 0
+                                            ? '${_fraisLivraison.toStringAsFixed(0)} HTG'
+                                            : 'Gratuite',
                                     style: const TextStyle(fontSize: 13)),
                               ],
                             ),

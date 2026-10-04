@@ -100,7 +100,9 @@ class VendorOrderDetailScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Livreur : choix parmi « Mes livreurs » + envoi WhatsApp.
-            if (order.statut != 'annulee' && order.statut != 'livree') ...[
+            if (!order.estRetrait &&
+                order.statut != 'annulee' &&
+                order.statut != 'livree') ...[
               _card(isDark: isDark, children: [
                 LivreurVendeurWidget(order: order),
               ]),
