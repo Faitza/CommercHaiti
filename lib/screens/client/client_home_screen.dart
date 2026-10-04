@@ -11,6 +11,7 @@ import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/app_drawer_widget.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/image_reseau_widget.dart';
 
 /// Client Home Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/client_home_screen.dart
@@ -681,7 +682,7 @@ class _ProduitCard extends StatelessWidget {
                   child: SizedBox(
                     height: 100, width: double.infinity,
                     child: product.vignette != null
-                        ? Image.network(product.vignette!, fit: BoxFit.cover)
+                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFFEEF3FB),
                             child: const Icon(Icons.image_outlined,

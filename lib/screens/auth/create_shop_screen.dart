@@ -8,6 +8,7 @@ import '../../constants/app_colors.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Créer boutique — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -64,7 +65,14 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // de stockage (Supabase Storage) associée à l'ID de l'utilisateur
   // courant. Met à jour `_logoUrl` avec l'URL retournée.
   Future<void> _uploadLogo() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     // Si l'utilisateur annule la sélection, `file` est null : on arrête là.
     if (file == null) return;
 
@@ -74,10 +82,20 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       file: file,
       shopId: auth.currentUser!.id,
     );
+    if (!mounted) return;
     setState(() {
-      _logoUrl = url;
+      // Checklist production (point 15) : on garde l'ancien logo si
+      // l'envoi a échoué, et on dit pourquoi.
+      if (url != null) _logoUrl = url;
       _isLoading = false;
     });
+    if (url == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement du logo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
+      ));
+    }
   }
 
   // Valide le formulaire, s'assure qu'au moins une zone de livraison est
@@ -197,7 +215,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                       border: Border.all(color: AppColors.borderColor(_isDark), width: 2),
                       image: _logoUrl != null
                           ? DecorationImage(
-                              image: NetworkImage(_logoUrl!),
+                              image: CachedNetworkImageProvider(_logoUrl!),
                               fit: BoxFit.cover)
                           : null,
                     ),

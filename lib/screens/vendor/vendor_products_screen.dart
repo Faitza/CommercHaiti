@@ -7,6 +7,7 @@ import '../../services/database_service.dart';
 import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/image_reseau_widget.dart';
 
 /// Liste produits Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -263,7 +264,7 @@ class _ProductListTile extends StatelessWidget {
                 child: SizedBox(
                   width: 64, height: 64,
                   child: product.vignette != null
-                      ? Image.network(product.vignette!, fit: BoxFit.cover)
+                      ? ImageReseau(product.vignette!, fit: BoxFit.cover)
                       : Container(
                           color: const Color(0xFFEEF3FB),
                           child: const Icon(Icons.image_outlined,

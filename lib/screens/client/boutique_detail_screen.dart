@@ -11,6 +11,7 @@ import '../../providers/favorite_provider.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/image_reseau_widget.dart';
 
 /// Détail boutique — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -461,7 +462,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                     borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(12)),
                                     child: p.vignette != null
-                                        ? Image.network(p.vignette!,
+                                        ? ImageReseau(p.vignette!,
                                             fit: BoxFit.cover,
                                             width: double.infinity)
                                         : Container(

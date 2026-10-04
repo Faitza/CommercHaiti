@@ -7,6 +7,7 @@ import '../../services/storage_service.dart';
 import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -65,7 +66,14 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     // sur Flutter Web, où `dart:io` et `path_provider` ne sont pas
     // disponibles — XFile/Uint8List fonctionnent aussi bien en web qu'en
     // mobile/desktop.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
 
     setState(() => _isLoading = true);
@@ -92,9 +100,10 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     if (url != null) {
       setState(() => _photoUrls.add(url));
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Échec du téléversement de la photo — réessayez'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement de la photo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
       ));
     }
     setState(() => _isLoading = false);
@@ -183,7 +192,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         image: DecorationImage(
-                            image: NetworkImage(url), fit: BoxFit.cover),
+                            image: CachedNetworkImageProvider(url), fit: BoxFit.cover),
                       ),
                     )),
                     if (_photoUrls.length < 4)

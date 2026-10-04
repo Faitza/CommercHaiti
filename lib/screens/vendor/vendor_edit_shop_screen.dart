@@ -7,6 +7,7 @@ import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
 /// Path : lib/screens/vendor/vendor_edit_shop_screen.dart
@@ -112,7 +113,14 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
     // `pickImage` retourne un `XFile` (type multiplateforme de
     // image_picker) et non un `dart:io.File`, car dart:io n'existe pas
     // sur Flutter Web — cette app doit fonctionner en web comme en mobile.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
     setState(() => _isSaving = true);
     // `StorageService.uploadShopLogo` lit le fichier en `Uint8List`
@@ -124,10 +132,20 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       file: file,
       shopId: _shop!.proprietaireId,
     );
+    if (!mounted) return;
     setState(() {
-      _logoUrl = url;
+      // Checklist production (point 15) : on garde l'ancien logo si
+      // l'envoi a échoué, et on dit pourquoi.
+      if (url != null) _logoUrl = url;
       _isSaving = false;
     });
+    if (url == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement du logo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
+      ));
+    }
   }
 
   /// Valide le formulaire puis enregistre les modifications de la
@@ -239,7 +257,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                     color: AppColors.borderColor(isDark), width: 2),
                                 image: _logoUrl != null
                                     ? DecorationImage(
-                                        image: NetworkImage(_logoUrl!),
+                                        image: CachedNetworkImageProvider(_logoUrl!),
                                         fit: BoxFit.cover)
                                     : null,
                               ),

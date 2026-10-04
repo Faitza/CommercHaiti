@@ -11,6 +11,8 @@ import 'providers/order_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/favorite_provider.dart';
 import 'router/app_router.dart';
+import 'services/erreur_service.dart';
+import 'services/reseau_service.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
 /// Branch : feature/supabase-core
@@ -24,12 +26,21 @@ void main() async {
   // runApp().
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Checklist production (points 04 et 18) : toute erreur non prévue est
+  // journalisée et affichée sous forme de message clair (voir
+  // services/erreur_service.dart).
+  ErreurService.installer();
+
   // Initialise le client Supabase (backend-as-a-service utilisé pour
   // l'authentification, la base de données et le stockage de fichiers).
   // Les identifiants (URL + clé publique) viennent de SupabaseConfig.
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.publishableKey,
+    // Checklist production (point 08) : une requête qui ne répond pas
+    // est abandonnée après un délai au lieu de bloquer l'écran
+    // (voir services/reseau_service.dart).
+    httpClient: TimeoutHttpClient(),
   );
 
   // Démarre l'application Flutter une fois Supabase prêt.
@@ -136,6 +147,9 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
           // GoRouter.
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
+            // Permet à ErreurService d'afficher un message d'erreur
+            // depuis n'importe où (point 04).
+            scaffoldMessengerKey: ErreurService.messengerKey,
             title: 'CommercHaiti',
             // Bascule automatiquement entre `theme` et `darkTheme` selon
             // la préférence stockée dans ThemeProvider.

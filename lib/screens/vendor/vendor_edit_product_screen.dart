@@ -7,6 +7,7 @@ import '../../services/storage_service.dart';
 import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modifier produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -111,7 +112,14 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
     if (_photoUrls.length >= 4 || _product == null) return;
     // `XFile` (pas `dart:io.File`) car cette app tourne aussi sur Flutter
     // Web, où dart:io/path_provider ne sont pas disponibles.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
 
     setState(() => _isSaving = true);
@@ -126,9 +134,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
     if (url != null) {
       setState(() => _photoUrls.add(url));
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Échec du téléversement de la photo — réessayez'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement de la photo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
       ));
     }
     if (mounted) setState(() => _isSaving = false);
@@ -244,7 +253,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(10),
                                           image: DecorationImage(
-                                              image: NetworkImage(url),
+                                              image: CachedNetworkImageProvider(url),
                                               fit: BoxFit.cover),
                                         ),
                                       ),

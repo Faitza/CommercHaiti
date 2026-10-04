@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'image_reseau_widget.dart';
 
 /// Logo boutique — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -66,10 +67,10 @@ class ShopLogoWidget extends StatelessWidget {
       // si le chargement échoue (URL invalide, pas de connexion...).
       // Sinon (pas d'URL), on affiche directement les initiales.
       child: logoURL != null && logoURL!.isNotEmpty
-          ? Image.network(
+          ? ImageReseau(
               logoURL!,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _initialesWidget(),
+              siErreur: _initialesWidget(),
             )
           : _initialesWidget(),
     );
