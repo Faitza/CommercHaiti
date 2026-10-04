@@ -6,6 +6,7 @@ import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/moncash_widgets.dart';
+import '../../widgets/livreur_widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -97,6 +98,14 @@ class VendorOrderDetailScreen extends StatelessWidget {
                 _row('Note client', order.noteVendeur!, isDark: isDark),
             ]),
             const SizedBox(height: 16),
+
+            // Livreur : choix parmi « Mes livreurs » + envoi WhatsApp.
+            if (order.statut != 'annulee' && order.statut != 'livree') ...[
+              _card(isDark: isDark, children: [
+                LivreurVendeurWidget(order: order),
+              ]),
+              const SizedBox(height: 16),
+            ],
 
             // Paiement : à la livraison, ou MonCash avec les boutons
             // « Paiement reçu » / « Pas reçu » (migration_moncash.sql).
