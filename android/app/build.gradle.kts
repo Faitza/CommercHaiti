@@ -42,3 +42,12 @@ android {
 flutter {
     source = "../.."
 }
+
+// Notifications push : le plugin Google Services lit google-services.json
+// (téléchargé depuis la console Firebase, non versionné — voir
+// supabase/NOTIFICATIONS.md). Sans ce fichier, l'app compile et
+// fonctionne normalement, seules les notifications push sont désactivées
+// (les notifications restent visibles dans l'app).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}

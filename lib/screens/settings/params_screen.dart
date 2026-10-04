@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
@@ -30,6 +31,10 @@ class _ParamsScreenState extends State<ParamsScreen> {
   // du suivi de ses commandes, et des promotions/offres.
   bool _notifCommande = true;
   bool _notifPromos = true;
+  // Nouveaux produits des boutiques favorites (stocké sur le serveur,
+  // colonne users.notif_nouveaux_produits, car c'est le serveur qui
+  // décide d'envoyer la notification).
+  bool _notifNouveauxProduits = true;
   // Indique si le chargement initial des préférences est en cours.
   bool _isLoading = true;
 
@@ -51,6 +56,45 @@ class _ParamsScreenState extends State<ParamsScreen> {
         _notifPromos = prefs.getBool('notif_promos') ?? true;
         _isLoading = false;
       });
+    }
+    _chargerPrefsServeur();
+  }
+
+  // Les préférences qui pilotent les notifications envoyées par le
+  // serveur (suivi de commande, nouveaux produits) sont aussi stockées
+  // dans la table users : on affiche la valeur du serveur si elle existe.
+  Future<void> _chargerPrefsServeur() async {
+    final uid = context.read<AuthProvider>().currentUser?.id;
+    if (uid == null) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('users')
+          .select('notif_commandes, notif_nouveaux_produits')
+          .eq('id', uid)
+          .maybeSingle();
+      if (row == null || !mounted) return;
+      setState(() {
+        _notifCommande = row['notif_commandes'] ?? _notifCommande;
+        _notifNouveauxProduits =
+            row['notif_nouveaux_produits'] ?? _notifNouveauxProduits;
+      });
+    } catch (e) {
+      // Migration notifications pas encore exécutée : on garde les
+      // valeurs locales.
+      debugPrint('ParamsScreen: préférences serveur indisponibles ($e)');
+    }
+  }
+
+  Future<void> _enregistrerPrefServeur(String colonne, bool value) async {
+    final uid = context.read<AuthProvider>().currentUser?.id;
+    if (uid == null) return;
+    try {
+      await Supabase.instance.client
+          .from('users')
+          .update({colonne: value})
+          .eq('id', uid);
+    } catch (e) {
+      debugPrint('ParamsScreen: enregistrement de $colonne impossible ($e)');
     }
   }
 
@@ -224,14 +268,22 @@ class _ParamsScreenState extends State<ParamsScreen> {
                 const Divider(),
 
                 _sectionTitle('Notifications', isDark),
-                // Ces switches ne touchent que le stockage local
-                // (SharedPreferences), donc mise à jour instantanée, sans
-                // requête serveur.
+                // "Suivi de commande" et "Nouveaux produits" sont aussi
+                // enregistrés sur le serveur (table users) : ce sont eux
+                // qui décident si une notification est envoyée.
+                // "Promotions" reste local (SharedPreferences).
                 _switchItem(Icons.local_shipping_outlined,
                     'Suivi de commande', 'Statut, livraison',
                     _notifCommande, (v) {
                   setState(() => _notifCommande = v);
                   _toggleNotifPref('notif_suivi_commande', v);
+                  _enregistrerPrefServeur('notif_commandes', v);
+                }, isDark),
+                _switchItem(Icons.new_releases_outlined,
+                    'Nouveaux produits', 'De mes boutiques favorites',
+                    _notifNouveauxProduits, (v) {
+                  setState(() => _notifNouveauxProduits = v);
+                  _enregistrerPrefServeur('notif_nouveaux_produits', v);
                 }, isDark),
                 _switchItem(Icons.local_offer_outlined,
                     'Promotions', 'Nouvelles offres et réductions',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
 
 /// Provider authentification — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -263,6 +264,10 @@ class AuthProvider extends ChangeNotifier {
   // ── Déconnexion ──
   /// Déconnecte l'utilisateur courant et réinitialise l'état local.
   Future<void> signOut() async {
+    // Retire le jeton push de ce téléphone AVANT de se déconnecter (la
+    // suppression a besoin de la session à cause de RLS) : sinon ce
+    // téléphone continuerait à recevoir les notifications de ce compte.
+    await PushService.instance.retirerJeton();
     await _authService.signOut();
     _currentUser = null;
     notifyListeners();

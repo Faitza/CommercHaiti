@@ -10,6 +10,7 @@ import '../../models/product_model.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/app_drawer_widget.dart';
+import '../../widgets/notification_bell_widget.dart';
 import '../../constants/app_colors.dart';
 
 /// Client Home Screen — Claudimyr CASSIGNOL
@@ -286,6 +287,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         ],
                       ),
                     ),
+                    // Notifications (commandes, nouveaux produits des
+                    // boutiques favorites) avec badge des non lues.
+                    const NotificationBellWidget(),
+                    const SizedBox(width: 8),
                     // Panier
                     // context.go() remplace toute la pile de navigation
                     // par l'écran Panier : depuis l'accueil, on

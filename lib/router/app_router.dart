@@ -43,6 +43,7 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/settings/params_screen.dart';
 
 import '../models/order_model.dart';
+import '../screens/notifications/notifications_screen.dart';
 import '../models/shop_model.dart';
 import '../models/product_model.dart';
 
@@ -76,6 +77,7 @@ import '../models/product_model.dart';
 /// /order-history       → OrderHistoryScreen
 /// /settings            → SettingsScreen (vendeur)
 /// /params              → ParamsScreen (client)
+/// /notifications       → NotificationsScreen (client et vendeur)
 
 // Cette classe centralise TOUTE la configuration de navigation de
 // l'application : la table des routes (quel widget afficher pour quel
@@ -162,6 +164,7 @@ class AppRouter {
             if (path == '/create-shop') return '/role-selection';
             if (path == '/settings') return '/role-selection';
             if (path == '/params') return '/role-selection';
+            if (path == '/notifications') return '/role-selection';
           }
 
           // Client → pa ka al sou pages vendeur
@@ -404,6 +407,12 @@ class AppRouter {
           GoRoute(
             path: '/params',
             builder: (_, __) => const ParamsScreen(),
+          ),
+
+          // Notifications (client et vendeur), voir NotificationsScreen.
+          GoRoute(
+            path: '/notifications',
+            builder: (_, __) => const NotificationsScreen(),
           ),
         ],
 
