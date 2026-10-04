@@ -34,3 +34,6 @@ ios/Flutter/Flutter.podspec
 # Divers
 *.log
 coverage/
+
+# Sauvegardes de la base (données clients) — jamais sur GitHub
+sauvegardes/
