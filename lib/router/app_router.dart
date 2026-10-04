@@ -20,6 +20,7 @@ import '../screens/vendor/vendor_edit_product_screen.dart';
 import '../screens/vendor/vendor_stats_screen.dart';
 import '../screens/vendor/vendor_reviews_screen.dart';
 import '../screens/vendor/vendor_edit_shop_screen.dart';
+import '../screens/vendor/vendor_livreurs_screen.dart';
 
 // Client screens
 import '../screens/client/client_home_screen.dart';
@@ -291,6 +292,11 @@ class AppRouter {
           GoRoute(
             path: '/vendor/edit-shop',
             builder: (_, __) => const VendorEditShopScreen(),
+          ),
+          // Liste des livreurs de la boutique (migration_livreurs.sql).
+          GoRoute(
+            path: '/vendor/livreurs',
+            builder: (_, __) => const VendorLivreursScreen(),
           ),
 
           // ══════════════════════════════

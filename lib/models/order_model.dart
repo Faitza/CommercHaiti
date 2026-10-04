@@ -43,6 +43,11 @@ class OrderModel {
   /// Frais de livraison (déjà inclus dans `total`), fixés par le serveur
   /// selon la zone (migration_frais_livraison.sql).
   final double fraisLivraison;
+  /// Livreur choisi par le vendeur (migration_livreurs.sql) : nom et
+  /// téléphone copiés sur la commande, visibles par le client.
+  final String? livreurId;
+  final String? livreurNom;
+  final String? livreurTelephone;
   /// 'livraison' (paiement à la livraison) ou 'moncash'.
   final String modePaiement;
   /// Numéro de transaction MonCash saisi par le client.
@@ -72,6 +77,9 @@ class OrderModel {
     this.receiptUrl,
     required this.createdAt,
     this.fraisLivraison = 0,
+    this.livreurId,
+    this.livreurNom,
+    this.livreurTelephone,
     this.modePaiement = 'livraison',
     this.moncashReference,
     this.paiementStatut,
@@ -122,6 +130,9 @@ class OrderModel {
       noteVendeur:      map['note_vendeur'],
       receiptUrl:       map['receipt_url'],
       fraisLivraison:   (map['frais_livraison'] ?? 0).toDouble(),
+      livreurId:        map['livreur_id'],
+      livreurNom:       map['livreur_nom'],
+      livreurTelephone: map['livreur_telephone'],
       modePaiement:     map['mode_paiement'] ?? 'livraison',
       moncashReference: map['moncash_reference'],
       paiementStatut:   map['paiement_statut'],

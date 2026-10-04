@@ -7,6 +7,7 @@ import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/moncash_widgets.dart';
+import '../../widgets/livreur_widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -129,6 +130,9 @@ class OrderTrackingScreen extends StatelessWidget {
                 String modePaiement = 'livraison';
                 String? moncashReference;
                 String? paiementStatut;
+                // Livreur choisi par le vendeur (migration_livreurs.sql).
+                String? livreurNom;
+                String? livreurTelephone;
                 if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   // Le flux renvoie une liste de lignes correspondant au
                   // filtre ; ici il ne peut y avoir qu'une seule commande
@@ -143,6 +147,8 @@ class OrderTrackingScreen extends StatelessWidget {
                   modePaiement = row['mode_paiement'] ?? 'livraison';
                   moncashReference = row['moncash_reference'];
                   paiementStatut = row['paiement_statut'];
+                  livreurNom = row['livreur_nom'];
+                  livreurTelephone = row['livreur_telephone'];
                 }
 
                 // On retrouve l'index de l'étape courante dans `_etapes`
@@ -318,6 +324,20 @@ class OrderTrackingScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 14),
+
+                      // Livreur assigné par le vendeur (appel / WhatsApp),
+                      // tant que la commande n'est pas terminée.
+                      if (livreurNom != null &&
+                          livreurTelephone != null &&
+                          statut != 'livree' &&
+                          statut != 'annulee') ...[
+                        LivreurClientWidget(
+                          nom: livreurNom,
+                          telephone: livreurTelephone,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Paiement MonCash : état (en attente / confirmé /
                       // refusé) ou proposition de payer avec MonCash.

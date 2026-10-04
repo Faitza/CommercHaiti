@@ -266,6 +266,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _item(Icons.location_on_outlined, 'Zones de livraison',
                     _shop?.zonesLivraison.map((z) => z.zone).join(', ') ?? '',
                     () => context.push('/vendor/edit-shop'), isDark),
+                _item(Icons.delivery_dining_outlined, 'Mes livreurs',
+                    'Personnes qui livrent vos commandes',
+                    () => context.push('/vendor/livreurs'), isDark),
                 // Switch "Suspendre la boutique" : bascule `is_open` en
                 // base immédiatement au changement (voir _toggleSuspendre).
                 _switchItem(Icons.storefront_outlined, 'Suspendre la boutique',
