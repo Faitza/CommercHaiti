@@ -6,6 +6,8 @@ import '../../models/product_model.dart';
 import '../../widgets/product_card_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Tous les produits — catalogue complet, toutes boutiques confondues.
 /// Accessible sans compte (BF-010 — navigation libre).
@@ -48,10 +50,21 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   String _categorieSelectionnee = '';
   bool _isLoading = true;
 
+  // ── Checklist production (points 07 et 13) ──
+  // Les produits sont chargés par pages de [_taillePage] : la page
+  // suivante est demandée automatiquement quand on arrive en bas de la
+  // grille (avant : 100 produits d'un coup, et rien au-delà).
+  static const _taillePage = 30;
+  bool _plusDisponible = true;
+  bool _chargementSuite = false;
+  String? _erreur;
+
   @override
   void initState() {
     super.initState();
-    _charger();
+    // Après le premier affichage : _charger() appelle setState(),
+    // interdit pendant initState().
+    WidgetsBinding.instance.addPostFrameCallback((_) => _charger());
     // Le listener force un rebuild (setState vide) à chaque frappe
     // dans le champ de recherche, ce qui recalcule automatiquement le
     // getter _produitsAffiches ci-dessous et met à jour la grille
@@ -62,8 +75,17 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   /// Charge (ou recharge) jusqu'à 100 produits disponibles depuis
   /// Supabase, triés par popularité (nombre total de commandes),
   /// filtrés par catégorie si une est sélectionnée.
-  Future<void> _charger() async {
-    setState(() => _isLoading = true);
+  Future<void> _charger({bool suite = false}) async {
+    if (suite && (_chargementSuite || !_plusDisponible)) return;
+    setState(() {
+      if (suite) {
+        _chargementSuite = true;
+      } else {
+        _isLoading = true;
+        _erreur = null;
+      }
+    });
+    final debut = suite ? _produits.length : 0;
     try {
       // Requête Supabase (Postgres) sur la table "products" :
       // - .eq('disponible', true) : uniquement les produits en vente.
@@ -87,16 +109,22 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
       // pas toute seule ; RefreshIndicator plus bas permet à
       // l'utilisateur de relancer _charger() manuellement (tirer pour
       // rafraîchir).
+      // .range(debut, fin) : une page de produits (pagination).
+      // Tri secondaire par id : ordre stable d'une page à l'autre quand
+      // plusieurs produits ont le même nombre de commandes.
       final rows = await query
           .order('total_commandes', ascending: false)
-          .limit(100);
+          .order('id')
+          .range(debut, debut + _taillePage - 1);
 
       final produits =
           rows.map((r) => ProductModel.fromMap(r, r['id'])).toList();
 
       if (mounted) {
         setState(() {
-          _produits = produits;
+          _produits = suite ? [..._produits, ...produits] : produits;
+          _plusDisponible = produits.length == _taillePage;
+          _chargementSuite = false;
           // On ne recalcule la liste des catégories (pour les chips
           // de filtre) QUE lorsque aucun filtre n'est actif :
           // sinon, si un filtre de catégorie est déjà sélectionné, la
@@ -104,14 +132,32 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           // sélectionnée et les autres chips disparaîtraient de
           // l'écran après un premier clic.
           if (_categorieSelectionnee.isEmpty) {
-            _categories = produits.map((p) => p.categorie).toSet().toList()
+            // Avec la pagination, on cumule les catégories de toutes les
+            // pages déjà chargées.
+            _categories = {
+              if (suite) ..._categories,
+              ...produits.map((p) => p.categorie),
+            }.toList()
               ..sort();
           }
           _isLoading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      final message =
+          messageErreur(e, parDefaut: 'Impossible de charger les produits.');
+      setState(() {
+        _isLoading = false;
+        _chargementSuite = false;
+        if (!suite) _erreur = message;
+      });
+      if (suite) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFE63946),
+        ));
+      }
     }
   }
 
@@ -204,6 +250,8 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
+                : _erreur != null
+                ? EtatErreurWidget(message: _erreur!, onReessayer: _charger)
                 : _produitsAffiches.isEmpty
                     ? Center(
                         child: Text('Aucun produit trouvé',
@@ -220,16 +268,26 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                             childAspectRatio: 0.72,
                           ),
                           itemCount: _produitsAffiches.length,
-                          itemBuilder: (_, i) => ProductCardWidget(
+                          itemBuilder: (_, i) {
+                            // Dernière carte affichée → page suivante.
+                            if (i == _produitsAffiches.length - 1 &&
+                                _plusDisponible &&
+                                !_chargementSuite) {
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                  (_) => _charger(suite: true));
+                            }
+                            return ProductCardWidget(
                             product: _produitsAffiches[i],
                             // push() : ouvre le détail produit,
                             // retour possible vers ce catalogue.
                             onTap: () => context.push('/client/product',
                                 extra: _produitsAffiches[i]),
-                          ),
+                          );
+                          },
                         ),
                       ),
           ),
+          if (_chargementSuite) const LinearProgressIndicator(minHeight: 3),
         ],
       ),
     );

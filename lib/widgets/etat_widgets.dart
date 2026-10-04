@@ -45,23 +45,26 @@ class EtatVideWidget extends StatelessWidget {
   final IconData icone;
   final String message;
   final String? detail;
+  /// Version réduite, pour une petite zone (ex. carrousel horizontal).
+  final bool compact;
   const EtatVideWidget({
     super.key,
     required this.message,
     this.icone = Icons.inbox_outlined,
     this.detail,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(compact ? 8 : 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icone, size: 56, color: AppColors.textHint),
-            const SizedBox(height: 12),
+            Icon(icone, size: compact ? 32 : 56, color: AppColors.textHint),
+            SizedBox(height: compact ? 6 : 12),
             Text(message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -87,29 +90,32 @@ class EtatVideWidget extends StatelessWidget {
 class EtatErreurWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onReessayer;
+  /// Version réduite, pour une petite zone (ex. carrousel horizontal).
+  final bool compact;
   const EtatErreurWidget({
     super.key,
     required this.message,
     this.onReessayer,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(compact ? 8 : 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined,
-                size: 56, color: AppColors.red),
-            const SizedBox(height: 12),
+            Icon(Icons.cloud_off_outlined,
+                size: compact ? 32 : 56, color: AppColors.red),
+            SizedBox(height: compact ? 6 : 12),
             Text(message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontSize: 14, color: AppColors.textSecondary)),
             if (onReessayer != null) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: compact ? 6 : 14),
               ElevatedButton.icon(
                 onPressed: onReessayer,
                 icon: const Icon(Icons.refresh, size: 18),

@@ -8,6 +8,8 @@ import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Order Tracking Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_tracking_screen.dart
@@ -99,7 +101,9 @@ class OrderTrackingScreen extends StatelessWidget {
           // Kontni Realtime
           // Contenu principal, mis à jour en temps réel.
           Expanded(
-            child: StreamBuilder(
+            // StatefulBuilder : permet au bouton « Réessayer » de recréer
+            // le stream (checklist production, point 07).
+            child: StatefulBuilder(builder: (context, relancer) => StreamBuilder(
               // `.stream(primaryKey: ['id'])` ouvre un flux Supabase
               // Realtime sur la table `orders`, filtré avec `.eq('id',
               // orderId)` pour ne recevoir que les changements concernant
@@ -111,6 +115,27 @@ class OrderTrackingScreen extends StatelessWidget {
                   .stream(primaryKey: ['id'])
                   .eq('id', orderId),
               builder: (context, snapshot) {
+                // Checklist production (points 05, 06, 07) : avant, l'écran
+                // affichait « nouvelle » par défaut pendant le chargement,
+                // et rien de clair si la requête échouait.
+                if (snapshot.hasError && !snapshot.hasData) {
+                  return EtatErreurWidget(
+                    message: messageErreur(snapshot.error!,
+                        parDefaut: 'Impossible de charger la commande.'),
+                    onReessayer: () => relancer(() {}),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const ChargementWidget(
+                      message: 'Chargement de la commande…');
+                }
+                if (snapshot.data!.isEmpty) {
+                  return const EtatVideWidget(
+                    message: 'Commande introuvable',
+                    icone: Icons.search_off,
+                    detail: 'Elle a peut-être été supprimée.',
+                  );
+                }
                 // Valeurs par défaut tant que le flux n'a pas encore livré
                 // de donnée (premier chargement).
                 String statut = 'nouvelle';
@@ -392,7 +417,7 @@ class OrderTrackingScreen extends StatelessWidget {
                   ),
                 );
               },
-            ),
+            )),
           ),
         ],
       ),

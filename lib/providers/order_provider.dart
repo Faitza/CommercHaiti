@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
+import '../services/reseau_service.dart';
 
 /// Provider commandes — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
@@ -45,29 +48,71 @@ class OrderProvider extends ChangeNotifier {
   List<OrderModel> get enAttente =>
       _ordresVendeur.where((o) => o.statut == 'nouvelle').toList();
 
+  // ── Checklist production (points 02, 05, 07) ──
+  // Un seul abonnement temps réel par liste (avant, chaque visite d'un
+  // écran en ouvrait un nouveau sans fermer l'ancien), un état
+  // « chargement » jusqu'à la première réponse, et un message d'erreur
+  // au lieu d'une liste vide quand le réseau ou le serveur échoue.
+  StreamSubscription<List<Map<String, dynamic>>>? _clientSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _vendeurSub;
+  String? _clientIdEcoute;
+  String? _vendeurIdEcoute;
+  bool _chargementClient = true;
+  bool _chargementVendeur = true;
+  String? _erreurClient;
+  String? _erreurVendeur;
+  // Numéro de la dernière réponse reçue : si deux réponses du stream
+  // arrivent rapprochées, on ignore l'ancienne si elle finit après.
+  int _versionClient = 0;
+  int _versionVendeur = 0;
+
+  /// Vrai tant que la première liste de commandes du client n'est pas
+  /// arrivée.
+  bool get chargementClient => _chargementClient;
+  bool get chargementVendeur => _chargementVendeur;
+  /// Message à afficher si les commandes n'ont pas pu être chargées.
+  String? get erreurClient => _erreurClient;
+  String? get erreurVendeur => _erreurVendeur;
+
   /// Écouter commandes client en temps réel
   /// Ouvre un flux (stream) Supabase sur la table orders filtré par
   /// client_id : chaque fois qu'une commande de ce client est créée ou
   /// modifiée côté serveur, ce callback est redéclenché automatiquement
   /// (grâce à Supabase Realtime), sans qu'on ait besoin de rafraîchir
-  /// manuellement.
-  void listenClientOrders(String clientId) {
-    _supabase
+  /// manuellement. [forcer] = relancer l'écoute (bouton Réessayer).
+  void listenClientOrders(String clientId, {bool forcer = false}) {
+    if (_clientSub != null && _clientIdEcoute == clientId && !forcer) return;
+    _clientSub?.cancel();
+    if (_clientIdEcoute != clientId) _ordresClient = [];
+    _clientIdEcoute = clientId;
+    // Pas de notifyListeners() ici : appelé depuis initState().
+    _chargementClient = _ordresClient.isEmpty;
+    _erreurClient = null;
+    _clientSub = _supabase
         .from('orders')
         .stream(primaryKey: ['id'])
         .eq('client_id', clientId)
         .order('created_at', ascending: false)
         .listen((data) async {
-          final orders = <OrderModel>[];
-          // Pour chaque commande reçue, on va chercher séparément ses
-          // articles (order_items) car le stream Supabase ne fait pas
-          // de jointure automatique — chaque commande doit donc être
-          // enrichie manuellement avec ses items avant d'être ajoutée.
-          for (final row in data) {
-            final items = await _getOrderItems(row['id']);
-            orders.add(OrderModel.fromMap(row, row['id'], items: items));
+          final version = ++_versionClient;
+          try {
+            final orders = await _avecItems(data);
+            if (version != _versionClient) return;
+            _ordresClient = orders;
+            _erreurClient = null;
+          } catch (e) {
+            if (version != _versionClient) return;
+            _erreurClient = messageErreur(e,
+                parDefaut: 'Impossible de charger vos commandes.');
           }
-          _ordresClient = orders;
+          _chargementClient = false;
+          notifyListeners();
+        }, onError: (Object e) {
+          _chargementClient = false;
+          _erreurClient = messageErreur(e,
+              parDefaut: 'Impossible de charger vos commandes.');
+          _clientSub?.cancel();
+          _clientSub = null;
           notifyListeners();
         });
   }
@@ -76,38 +121,78 @@ class OrderProvider extends ChangeNotifier {
   /// Même principe que listenClientOrders, mais filtré sur seller_id :
   /// permet au vendeur de voir apparaître les nouvelles commandes de sa
   /// boutique en direct, sans rafraîchissement manuel.
-  void listenVendorOrders(String sellerId) {
-    _supabase
+  void listenVendorOrders(String sellerId, {bool forcer = false}) {
+    if (_vendeurSub != null && _vendeurIdEcoute == sellerId && !forcer) {
+      return;
+    }
+    _vendeurSub?.cancel();
+    if (_vendeurIdEcoute != sellerId) _ordresVendeur = [];
+    _vendeurIdEcoute = sellerId;
+    _chargementVendeur = _ordresVendeur.isEmpty;
+    _erreurVendeur = null;
+    _vendeurSub = _supabase
         .from('orders')
         .stream(primaryKey: ['id'])
         .eq('seller_id', sellerId)
         .order('created_at', ascending: false)
         .listen((data) async {
-          final orders = <OrderModel>[];
-          for (final row in data) {
-            final items = await _getOrderItems(row['id']);
-            orders.add(OrderModel.fromMap(row, row['id'], items: items));
+          final version = ++_versionVendeur;
+          try {
+            final orders = await _avecItems(data);
+            if (version != _versionVendeur) return;
+            _ordresVendeur = orders;
+            _erreurVendeur = null;
+          } catch (e) {
+            if (version != _versionVendeur) return;
+            _erreurVendeur = messageErreur(e,
+                parDefaut: 'Impossible de charger les commandes.');
           }
-          _ordresVendeur = orders;
+          _chargementVendeur = false;
+          notifyListeners();
+        }, onError: (Object e) {
+          _chargementVendeur = false;
+          _erreurVendeur = messageErreur(e,
+              parDefaut: 'Impossible de charger les commandes.');
+          _vendeurSub?.cancel();
+          _vendeurSub = null;
           notifyListeners();
         });
   }
 
-  /// Récupérer items d'une commande
-  /// Requête ponctuelle (pas un stream) sur order_items filtrée par
-  /// order_id, utilisée pour enrichir chaque commande avec la liste de
-  /// ses articles. En cas d'erreur réseau/DB, on retourne une liste
-  /// vide plutôt que de faire planter tout le flux de commandes.
-  Future<List<OrderItem>> _getOrderItems(String orderId) async {
-    try {
-      final data = await _supabase
+  /// Ajoute leurs articles (order_items) aux commandes reçues du stream.
+  ///
+  /// Checklist production (point 02) : avant, on faisait UNE requête
+  /// order_items PAR commande, et ce à chaque changement d'une seule
+  /// commande (100 commandes = 100 requêtes à chaque mise à jour). On
+  /// récupère maintenant les articles de toutes les commandes en une
+  /// requête (par paquets de 100 ids pour garder une URL courte).
+  Future<List<OrderModel>> _avecItems(List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return [];
+    final ids = rows.map((r) => r['id'] as String).toList();
+    final parCommande = <String, List<OrderItem>>{};
+    for (var i = 0; i < ids.length; i += 100) {
+      final paquet = ids.sublist(i, i + 100 > ids.length ? ids.length : i + 100);
+      final items = await _supabase
           .from('order_items')
           .select()
-          .eq('order_id', orderId);
-      return data.map((row) => OrderItem.fromMap(row)).toList();
-    } catch (e) {
-      return [];
+          .inFilter('order_id', paquet);
+      for (final row in items) {
+        parCommande
+            .putIfAbsent(row['order_id'] as String, () => [])
+            .add(OrderItem.fromMap(row));
+      }
     }
+    return rows
+        .map((row) => OrderModel.fromMap(row, row['id'],
+            items: parCommande[row['id']] ?? []))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _clientSub?.cancel();
+    _vendeurSub?.cancel();
+    super.dispose();
   }
 
   /// Créer commande — Transaction atomique via RPC Supabase

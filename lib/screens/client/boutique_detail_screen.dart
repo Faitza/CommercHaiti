@@ -12,6 +12,8 @@ import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/image_reseau_widget.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Détail boutique — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -56,6 +58,8 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
   // Indique si le chargement initial (produits + catégories +
   // téléphone) est en cours.
   bool _isLoading = true;
+  // Checklist production (point 07).
+  String? _erreur;
 
   /// Icône selon le nom de la catégorie (mots-clés) — au lieu d'un
   /// cycle par position qui donnait des icônes sans rapport (ex. une
@@ -160,16 +164,24 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
         // (_telephoneVendeur.isNotEmpty)").
       }
 
+      if (!mounted) return;
       setState(() {
         _produits = produits;
         _categories = cats;
         _telephoneVendeur = telephone;
         _isLoading = false;
+        _erreur = null;
       });
     } catch (e) {
       // Erreur sur le chargement principal (produits) : on arrête le
-      // loader, les listes restent vides.
-      setState(() => _isLoading = false);
+      // loader et on affiche un message avec « Réessayer » (checklist
+      // production, point 07) au lieu d'une boutique qui paraît vide.
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _erreur = messageErreur(e,
+            parDefaut: 'Impossible de charger les produits de la boutique.');
+      });
     }
   }
 
@@ -343,6 +355,19 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                 // puis les produits populaires puis les avis clients.
                 if (_isLoading)
                   const Center(child: CircularProgressIndicator())
+                else if (_erreur != null)
+                  EtatErreurWidget(
+                    message: _erreur!,
+                    onReessayer: () {
+                      setState(() => _isLoading = true);
+                      _loadData();
+                    },
+                  )
+                else if (_produits.isEmpty)
+                  const EtatVideWidget(
+                    message: 'Cette boutique n\'a pas encore de produit disponible',
+                    icone: Icons.shopping_bag_outlined,
+                  )
                 else ...[
                   if (_categories.isNotEmpty) ...[
                     _sectionTitle('Catégories'),

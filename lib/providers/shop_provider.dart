@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/shop_model.dart';
+import '../services/reseau_service.dart';
 
 /// Provider boutiques — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -62,7 +65,8 @@ class ShopProvider extends ChangeNotifier {
           .toList();
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Erreur chargement boutiques';
+      _errorMessage =
+          messageErreur(e, parDefaut: 'Erreur chargement boutiques');
     } finally {
       // Toujours désactiver l'indicateur de chargement, que la requête
       // ait réussi ou échoué.
@@ -76,8 +80,24 @@ class ShopProvider extends ChangeNotifier {
   /// ouvre un stream Supabase Realtime sur les boutiques ouvertes, pour
   /// que la liste se mette à jour automatiquement si une boutique
   /// ouvre/ferme ou si une nouvelle boutique est créée.
-  void listenShops() {
-    _supabase
+  ///
+  /// Checklist production :
+  /// - point 02 : avant, chaque écran qui appelait listenShops() ouvrait
+  ///   un NOUVEL abonnement temps réel sans fermer l'ancien (ils
+  ///   s'accumulaient à chaque visite de l'accueil). Un seul abonnement
+  ///   est maintenant gardé ; un nouvel appel ne fait rien s'il tourne.
+  /// - points 05 et 07 : isLoading reste vrai jusqu'à la première
+  ///   réponse, et une erreur (réseau, serveur) remplit errorMessage au
+  ///   lieu de passer inaperçue — l'écran peut proposer « Réessayer ».
+  void listenShops({bool forcer = false}) {
+    if (_shopsSub != null && !forcer) return;
+    _shopsSub?.cancel();
+    // Pas de notifyListeners() ici : listenShops() est appelé depuis des
+    // initState(), où notifier déclencherait l'erreur « markNeedsBuild
+    // called during build ». L'écran lit isLoading à son premier build.
+    _isLoading = _shops.isEmpty;
+    _errorMessage = null;
+    _shopsSub = _supabase
         .from('shops')
         .stream(primaryKey: ['id'])
         .eq('is_open', true)
@@ -85,8 +105,28 @@ class ShopProvider extends ChangeNotifier {
           _shops = data
               .map((row) => ShopModel.fromMap(row, row['id']))
               .toList();
+          _isLoading = false;
+          _errorMessage = null;
+          notifyListeners();
+        }, onError: (Object e) {
+          _isLoading = false;
+          _errorMessage = messageErreur(e,
+              parDefaut: 'Impossible de charger les boutiques.');
+          // On libère l'abonnement en erreur : le prochain appel à
+          // listenShops() (bouton Réessayer) en ouvrira un nouveau.
+          _shopsSub?.cancel();
+          _shopsSub = null;
           notifyListeners();
         });
+  }
+
+  /// Abonnement temps réel en cours (null = aucun).
+  StreamSubscription<List<Map<String, dynamic>>>? _shopsSub;
+
+  @override
+  void dispose() {
+    _shopsSub?.cancel();
+    super.dispose();
   }
 
   /// Top boutiques par rating
