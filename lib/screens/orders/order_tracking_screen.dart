@@ -8,6 +8,7 @@ import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/moncash_widgets.dart';
 import '../../widgets/livreur_widgets.dart';
+import '../../models/order_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -306,7 +307,15 @@ class OrderTrackingScreen extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(
-                                    etape['label'] as String,
+                                    // Retrait à la boutique : les deux
+                                    // dernières étapes changent de nom.
+                                    zone == OrderModel.retraitBoutique &&
+                                            etape['statut'] == 'livraison'
+                                        ? 'Prête à récupérer'
+                                        : zone == OrderModel.retraitBoutique &&
+                                                etape['statut'] == 'livree'
+                                            ? 'Récupérée'
+                                            : etape['label'] as String,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: estActuel

@@ -9,6 +9,7 @@ import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/review_dialog_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/recommander_service.dart';
 
 /// Historique commandes — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
@@ -140,6 +141,17 @@ class _OrderCard extends StatelessWidget {
             // Une fois la commande livrée, on propose deux actions
             // supplémentaires : laisser un avis sur la boutique et
             // télécharger/partager le reçu PDF.
+            // Recommander : remet les mêmes articles dans le panier
+            // (commande terminée, livrée ou annulée).
+            if ((order.statut == 'livree' || order.statut == 'annulee') &&
+                order.items.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => recommander(context, order),
+                icon: const Icon(Icons.replay, size: 16),
+                label: const Text('Recommander'),
+              ),
+            ],
             if (order.statut == 'livree') ...[
               const SizedBox(height: 8),
               TextButton.icon(
