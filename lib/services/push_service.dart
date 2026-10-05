@@ -1,3 +1,4 @@
+import 'erreur_service.dart';
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -31,7 +32,9 @@ class PushService {
 
   /// Clé du ScaffoldMessenger global (branchée sur MaterialApp.router),
   /// pour afficher un SnackBar quand un push arrive app ouverte.
-  final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  // Même clé que ErreurService (MaterialApp n'en accepte qu'une).
+  GlobalKey<ScaffoldMessengerState> get scaffoldMessengerKey =>
+      ErreurService.messengerKey;
 
   bool _disponible = false;
   GoRouter? _router;

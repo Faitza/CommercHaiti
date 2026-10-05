@@ -186,11 +186,10 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             // Permet à ErreurService d'afficher un message d'erreur
-            // depuis n'importe où (point 04).
+            // depuis n'importe où (point 04), et à PushService d'afficher un
+            // bandeau quand un push arrive app ouverte (même clé).
             scaffoldMessengerKey: ErreurService.messengerKey,
             title: 'CommercHaiti',
-            // Permet d'afficher un bandeau quand un push arrive app ouverte.
-            scaffoldMessengerKey: PushService.instance.scaffoldMessengerKey,
             // Bascule automatiquement entre `theme` et `darkTheme` selon
             // la préférence stockée dans ThemeProvider.
             themeMode: themeProvider.themeMode,
