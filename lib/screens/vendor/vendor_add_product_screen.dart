@@ -10,6 +10,7 @@ import '../../constants/app_colors.dart';
 import '../../widgets/whatsapp_share_product_widget.dart';
 import '../../constants/categories.dart';
 import '../../widgets/categorie_dropdowns_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -83,13 +84,24 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   /// Ouvre la galerie, sélectionne une photo (max 4 au total) et
   /// l'envoie à Supabase Storage.
   Future<void> _ajouterPhoto() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     if (_photoUrls.length >= 4) return;
     // `pickImage` renvoie un `XFile` (type multiplateforme d'image_picker)
     // plutôt qu'un `dart:io.File`, car cette app doit aussi fonctionner
     // sur Flutter Web, où `dart:io` et `path_provider` ne sont pas
     // disponibles — XFile/Uint8List fonctionnent aussi bien en web qu'en
     // mobile/desktop.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
 
     setState(() => _isLoading = true);
@@ -116,9 +128,10 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     if (url != null) {
       setState(() => _photoUrls.add(url));
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Échec du téléversement de la photo — réessayez'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement de la photo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
       ));
     }
     setState(() => _isLoading = false);
@@ -128,6 +141,10 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   /// saisis, puis l'insère en base via `DatabaseService.createProduct`
   /// (INSERT Supabase dans la table `products`).
   Future<void> _sauvegarder() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
@@ -240,7 +257,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         image: DecorationImage(
-                            image: NetworkImage(url), fit: BoxFit.cover),
+                            image: CachedNetworkImageProvider(url), fit: BoxFit.cover),
                       ),
                     )),
                     if (_photoUrls.length < 4)

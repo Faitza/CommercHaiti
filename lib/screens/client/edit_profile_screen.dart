@@ -102,6 +102,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   /// profil en base de données, avant de rafraîchir l'utilisateur en
   /// mémoire et de fermer l'écran.
   Future<void> _enregistrer() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     // Déclenche les validateurs de chaque TextFormField ; si un champ
     // requis est vide, on arrête ici sans rien enregistrer.
     if (!_formKey.currentState!.validate()) return;

@@ -6,6 +6,8 @@ import '../../models/product_model.dart';
 import '../../widgets/product_card_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Sous-catégories & produits — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -53,17 +55,38 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
   // Indique si la requête réseau est en cours.
   bool _isLoading = true;
 
+  // ── Checklist production (points 07 et 13) ──
+  // Pagination : pages de [_taillePage] produits, la suivante est
+  // chargée en arrivant en bas de la grille (avant : TOUS les produits
+  // de la catégorie d'un coup).
+  static const _taillePage = 30;
+  bool _plusDisponible = true;
+  bool _chargementSuite = false;
+  String? _erreur;
+
   @override
   void initState() {
     super.initState();
-    _loadProduits();
+    // Après le premier affichage : _loadProduits() appelle setState(),
+    // interdit pendant initState().
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProduits());
   }
 
   /// Charge depuis Supabase les produits de la boutique correspondant à
   /// la catégorie (et, si sélectionnée, à la sous-catégorie), puis
   /// reconstruit dynamiquement la liste des sous-catégories disponibles
   /// à partir des résultats.
-  Future<void> _loadProduits() async {
+  Future<void> _loadProduits({bool suite = false}) async {
+    if (suite && (_chargementSuite || !_plusDisponible)) return;
+    setState(() {
+      if (suite) {
+        _chargementSuite = true;
+      } else {
+        _isLoading = true;
+        _erreur = null;
+      }
+    });
+    final debut = suite ? _produits.length : 0;
     try {
       // Requête Supabase (Postgres) sur la table "products" :
       // - .select() sans jointure : on récupère juste les colonnes du
@@ -94,7 +117,10 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
         query = query.eq('sous_categorie', _sousCatSelectionnee);
       }
 
-      final rows = await query;
+      final rows = await query
+          .order('created_at', ascending: false)
+          .order('id')
+          .range(debut, debut + _taillePage - 1);
       // Convertit chaque ligne brute (Map) reçue de Supabase en un
       // ProductModel typé et exploitable par les widgets Flutter.
       final produits = rows
@@ -111,15 +137,38 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
           .toSet()
           .toList();
 
+      if (!mounted) return;
       setState(() {
-        _produits = produits;
-        _sousCategories = sousCats;
+        _produits = suite ? [..._produits, ...produits] : produits;
+        _plusDisponible = produits.length == _taillePage;
+        _chargementSuite = false;
+        // On ne remplace la liste des sous-catégories que sans filtre
+        // (sinon les autres chips disparaîtraient), en cumulant les pages.
+        if (_sousCatSelectionnee.isEmpty) {
+          _sousCategories = {
+            if (suite) ..._sousCategories,
+            ...sousCats,
+          }.toList();
+        }
         _isLoading = false;
       });
     } catch (e) {
-      // En cas d'erreur réseau, on arrête juste le chargement (état
-      // "aucun produit" affiché par défaut).
-      setState(() => _isLoading = false);
+      // Checklist production (point 07) : message + Réessayer au lieu
+      // d'un faux « aucun produit ».
+      if (!mounted) return;
+      final message =
+          messageErreur(e, parDefaut: 'Impossible de charger les produits.');
+      setState(() {
+        _isLoading = false;
+        _chargementSuite = false;
+        if (!suite) _erreur = message;
+      });
+      if (suite) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFE63946),
+        ));
+      }
     }
   }
 
@@ -165,6 +214,9 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
+                : _erreur != null
+                ? EtatErreurWidget(
+                    message: _erreur!, onReessayer: _loadProduits)
                 : _produits.isEmpty
                     ? Center(
                         child: Text('Aucun produit dans cette catégorie',
@@ -179,7 +231,15 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                           childAspectRatio: 0.75,
                         ),
                         itemCount: _produits.length,
-                        itemBuilder: (_, i) => ProductCardWidget(
+                        itemBuilder: (_, i) {
+                          // Dernière carte affichée → page suivante.
+                          if (i == _produits.length - 1 &&
+                              _plusDisponible &&
+                              !_chargementSuite) {
+                            WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => _loadProduits(suite: true));
+                          }
+                          return ProductCardWidget(
                           product: _produits[i],
                           // push() empile l'écran détail produit :
                           // retour possible vers cette grille filtrée.
@@ -188,9 +248,11 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                           // supplémentaire côté écran détail.
                           onTap: () => context.push('/client/product',
                               extra: _produits[i]),
-                        ),
+                        );
+                        },
                       ),
           ),
+          if (_chargementSuite) const LinearProgressIndicator(minHeight: 3),
         ],
       ),
     );

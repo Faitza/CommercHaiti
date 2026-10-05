@@ -10,6 +10,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/bottom_nav_item.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Boutiques Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/boutiques_screen.dart
@@ -222,6 +223,14 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
           Expanded(
             child: shopProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
+                // Checklist production (point 07) : erreur réseau →
+                // message + Réessayer au lieu d'une liste vide.
+                : shopProvider.errorMessage != null && shops.isEmpty
+                ? EtatErreurWidget(
+                    message: shopProvider.errorMessage!,
+                    onReessayer: () =>
+                        context.read<ShopProvider>().listenShops(forcer: true),
+                  )
                 : shopProvider.shopsFiltres.isEmpty
                     ? Center(
                         child: Column(

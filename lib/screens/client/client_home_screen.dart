@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +16,9 @@ import '../../widgets/notification_bell_widget.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/bottom_nav_item.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/image_reseau_widget.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Client Home Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/client_home_screen.dart
@@ -52,6 +57,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   // Indique si une recherche produit est en cours d'exécution (appel
   // réseau Supabase déclenché par la saisie utilisateur).
   bool _isSearching = false;
+  // Checklist production (point 07) : messages si le chargement de
+  // l'accueil ou la recherche échouent.
+  String? _erreur;
+  String? _erreurRecherche;
+  // Checklist production (point 02) : la recherche attend que
+  // l'utilisateur arrête de taper (400 ms) avant d'interroger le
+  // serveur, au lieu d'envoyer une requête à chaque lettre.
+  Timer? _rechercheTimer;
+  String _derniereRecherche = '';
   // Contrôleur du champ de recherche (produits & boutiques).
   final _searchCtrl = TextEditingController();
   // Clé du Scaffold, utilisée pour ouvrir le menu latéral (endDrawer)
@@ -87,8 +101,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     // ici, donc potentiellement une requête réseau par frappe).
     _searchCtrl.addListener(() {
       final q = _searchCtrl.text.trim();
+      // Le listener est aussi appelé quand seul le curseur bouge : on
+      // ignore si le texte n'a pas changé.
+      if (q == _derniereRecherche) return;
+      _derniereRecherche = q;
       setState(() => _query = q.toLowerCase());
-      _runSearch(q);
+      _rechercheTimer?.cancel();
+      if (q.isEmpty) {
+        _runSearch(q);
+        return;
+      }
+      setState(() => _isSearching = true);
+      _rechercheTimer =
+          Timer(const Duration(milliseconds: 400), () => _runSearch(q));
     });
   }
 
@@ -105,7 +130,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       setState(() => _searchProduits = []);
       return;
     }
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _erreurRecherche = null;
+    });
     try {
       // Requête Supabase (Postgres) sur la table "products" :
       // - .ilike('nom', '%$q%') : recherche insensible à la casse,
@@ -132,13 +160,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         _isSearching = false;
       });
     } catch (e) {
-      if (mounted) setState(() => _isSearching = false);
+      if (!mounted || _searchCtrl.text.trim() != q) return;
+      setState(() {
+        _isSearching = false;
+        _erreurRecherche = messageErreur(e,
+            parDefaut: 'La recherche a échoué. Réessayez.');
+      });
     }
   }
 
   @override
   void dispose() {
     // Libère le contrôleur de recherche pour éviter une fuite mémoire.
+    _rechercheTimer?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -182,9 +216,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             .where((p) => p.hasPromo)
             .toList();
         _isLoading = false;
+        _erreur = null;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _erreur = messageErreur(e,
+            parDefaut: 'Impossible de charger les produits.');
+      });
     }
   }
 
@@ -194,7 +234,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     // chaque changement dans ces 3 providers (utilisateur, boutiques,
     // thème sombre/clair).
     final auth = context.watch<AuthProvider>();
-    final shops = context.watch<ShopProvider>().shops;
+    final shopProv = context.watch<ShopProvider>();
+    final shops = shopProv.shops;
     final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
@@ -476,6 +517,20 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       height: 180,
                       child: _isLoading
                           ? const Center(child: CircularProgressIndicator())
+                          // Checklist production (points 06 et 07).
+                          : _erreur != null
+                          ? EtatErreurWidget(
+                              message: _erreur!,
+                              compact: true,
+                              onReessayer: () {
+                                setState(() => _isLoading = true);
+                                _loadData();
+                              })
+                          : _topProduits.isEmpty
+                          ? const EtatVideWidget(
+                              message: 'Aucun produit pour le moment',
+                              icone: Icons.shopping_bag_outlined,
+                              compact: true)
                           : ListView.builder(
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -517,6 +572,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // déjà causé des bugs de navigation dans ce projet.
                     _sectionTitle('Boutiques ouvertes',
                         onTap: () => context.go('/client/boutiques')),
+                    // Checklist production (points 05, 06, 07).
+                    if (shopProv.isLoading && shops.isEmpty)
+                      const ChargementWidget()
+                    else if (shopProv.errorMessage != null && shops.isEmpty)
+                      EtatErreurWidget(
+                        message: shopProv.errorMessage!,
+                        compact: true,
+                        onReessayer: () => context
+                            .read<ShopProvider>()
+                            .listenShops(forcer: true),
+                      )
+                    else if (shops.isEmpty)
+                      const EtatVideWidget(
+                        message: 'Aucune boutique ouverte pour le moment',
+                        icone: Icons.storefront_outlined,
+                        compact: true,
+                      )
+                    else
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -589,6 +662,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
     if (_isSearching) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_erreurRecherche != null) {
+      return EtatErreurWidget(
+        message: _erreurRecherche!,
+        onReessayer: () => _runSearch(_searchCtrl.text.trim()),
+      );
     }
     if (boutiquesTrouvees.isEmpty && _searchProduits.isEmpty) {
       return Center(
@@ -699,7 +778,7 @@ class _ProduitCard extends StatelessWidget {
                   child: SizedBox(
                     height: 100, width: double.infinity,
                     child: product.vignette != null
-                        ? Image.network(product.vignette!, fit: BoxFit.cover)
+                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFFEEF3FB),
                             child: const Icon(Icons.image_outlined,

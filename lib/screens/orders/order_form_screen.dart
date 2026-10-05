@@ -10,6 +10,7 @@ import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/moncash_widgets.dart';
+import '../../services/database_service.dart';
 
 /// Order Form Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_form_screen.dart
@@ -69,6 +70,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // désactiver le bouton "Confirmer" et afficher un indicateur de
   // chargement (évite les doubles soumissions).
   bool _isLoading = false;
+  // Checklist production (point 10) : clé unique de cette commande,
+  // créée une seule fois pour ce formulaire. Tous les essais (double
+  // appui, nouvel essai après une erreur réseau) envoient la même clé :
+  // le serveur ne crée jamais deux commandes pour elle.
+  final String _cleCommande = DatabaseService.nouvelleCleIdempotence();
 
   // Liste fixe des zones de livraison desservies (zone géographique des
   // Cayes et environs, cohérent avec le périmètre du projet ITAC).
@@ -142,6 +148,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // délègue la création de la commande au OrderProvider (qui appelle
   // lui-même la RPC Supabase `create_order_atomic`).
   Future<void> _valider() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     // 1) Validation classique des champs texte (adresse, téléphones...) via
     // les validateurs attachés à chaque TextFormField.
     if (!_formKey.currentState!.validate()) return;
@@ -167,7 +177,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // on abandonne silencieusement. Note : dans ce cas précis, `_isLoading`
     // reste à `true` car il n'est pas remis à `false` ici — cas limite
     // qui ne devrait pas se produire en pratique.
-    if (cart.items.isEmpty) return;
+    if (cart.items.isEmpty) {
+      // Checklist production (point 09) : sans cette remise à false, le
+      // bouton restait bloqué sur « Traitement… ».
+      setState(() => _isLoading = false);
+      return;
+    }
 
     // Le vendeur/la boutique de la commande sont résolus à partir du
     // PREMIER article : le panier ne gère qu'une seule boutique à la fois
@@ -273,7 +288,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // plante entre les deux opérations). Si le stock d'UN SEUL article est
     // insuffisant, toute la RPC échoue (rien n'est décrémenté) et
     // orderProvider expose un message d'erreur adapté.
-    final orderId = await orderProvider.createOrder(order: order, items: items);
+    final orderId = await orderProvider.createOrder(
+        order: order, items: items, cleIdempotence: _cleCommande);
 
     // MonCash : la commande est créée, on y enregistre le numéro de
     // transaction. En cas d'échec, la commande reste valable et le client

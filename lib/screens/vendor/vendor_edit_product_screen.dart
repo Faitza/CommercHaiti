@@ -9,6 +9,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/categories.dart';
 import '../../widgets/categorie_dropdowns_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modifier produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -118,10 +119,21 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
   /// Ajoute une nouvelle photo au produit : sélection depuis la galerie
   /// puis upload vers Supabase Storage.
   Future<void> _ajouterPhoto() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (_photoUrls.length >= 4 || _product == null) return;
     // `XFile` (pas `dart:io.File`) car cette app tourne aussi sur Flutter
     // Web, où dart:io/path_provider ne sont pas disponibles.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
 
     setState(() => _isSaving = true);
@@ -136,9 +148,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
     if (url != null) {
       setState(() => _photoUrls.add(url));
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Échec du téléversement de la photo — réessayez'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement de la photo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
       ));
     }
     if (mounted) setState(() => _isSaving = false);
@@ -148,6 +161,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
   /// UPDATE Supabase (`DatabaseService.updateProduct`) ciblé sur
   /// `widget.productId`, avec toutes les valeurs actuelles des champs.
   Future<void> _sauvegarder() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
@@ -254,7 +271,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(10),
                                           image: DecorationImage(
-                                              image: NetworkImage(url),
+                                              image: CachedNetworkImageProvider(url),
                                               fit: BoxFit.cover),
                                         ),
                                       ),

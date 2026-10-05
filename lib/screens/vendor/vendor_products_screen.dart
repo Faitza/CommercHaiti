@@ -8,6 +8,9 @@ import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/whatsapp_share_product_widget.dart';
+import '../../widgets/image_reseau_widget.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Liste produits Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -34,6 +37,26 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
   // liste des produits affichés localement (filtrage cote client, pas de
   // requete Supabase supplementaire).
   String _query = '';
+
+  // Checklist production (point 02) : avant, les deux StreamBuilder de
+  // cet écran créaient chacun leur abonnement temps réel, et les
+  // recréaient à CHAQUE lettre tapée dans la recherche (setState →
+  // build → nouveau .stream()). Un seul abonnement est maintenant créé
+  // par boutique et partagé par les deux StreamBuilder.
+  String? _streamShopId;
+  Stream<List<Map<String, dynamic>>>? _streamProduits;
+
+  Stream<List<Map<String, dynamic>>> _produits(String shopId) {
+    if (_streamProduits == null || _streamShopId != shopId) {
+      _streamShopId = shopId;
+      _streamProduits = Supabase.instance.client
+          .from('products')
+          .stream(primaryKey: ['id'])
+          .eq('shop_id', shopId)
+          .asBroadcastStream();
+    }
+    return _streamProduits!;
+  }
 
   @override
   void initState() {
@@ -93,10 +116,7 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                 // connecté. Ici ce premier StreamBuilder ne sert qu'à
                 // afficher le compteur "$nb produits" dans l'en-tête.
                 StreamBuilder(
-                  stream: Supabase.instance.client
-                      .from('products')
-                      .stream(primaryKey: ['id'])
-                      .eq('shop_id', shopId),
+                  stream: _produits(shopId),
                   builder: (context, snapshot) {
                     final nb = snapshot.data?.length ?? 0;
                     return Row(
@@ -170,14 +190,21 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
             // fois utilisé pour construire la vraie liste de cartes
             // produits affichée à l'écran.
             child: StreamBuilder(
-              stream: Supabase.instance.client
-                  .from('products')
-                  .stream(primaryKey: ['id'])
-                  .eq('shop_id', shopId),
+              stream: _produits(shopId),
               builder: (context, snapshot) {
+                // Checklist production (point 07) : erreur réseau →
+                // message + Réessayer (recrée l'abonnement).
+                if (snapshot.hasError && !snapshot.hasData) {
+                  return EtatErreurWidget(
+                    message: messageErreur(snapshot.error!,
+                        parDefaut: 'Impossible de charger vos produits.'),
+                    onReessayer: () => setState(() => _streamProduits = null),
+                  );
+                }
                 // Tant que la première réponse du stream n'est pas arrivée,
                 // on affiche un indicateur de chargement.
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 // Aucune donnée reçue ou boutique sans produit : message
@@ -202,6 +229,13 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                   products = products
                       .where((p) => p.nom.toLowerCase().contains(_query))
                       .toList();
+                }
+                // Checklist production (point 06) : recherche sans résultat.
+                if (products.isEmpty) {
+                  return EtatVideWidget(
+                    message: 'Aucun produit ne correspond à « $_query »',
+                    icone: Icons.search_off,
+                  );
                 }
 
                 // Affiche chaque produit filtré sous forme de carte
@@ -265,7 +299,7 @@ class _ProductListTile extends StatelessWidget {
                 child: SizedBox(
                   width: 64, height: 64,
                   child: product.vignette != null
-                      ? Image.network(product.vignette!, fit: BoxFit.cover)
+                      ? ImageReseau(product.vignette!, fit: BoxFit.cover)
                       : Container(
                           color: const Color(0xFFEEF3FB),
                           child: const Icon(Icons.image_outlined,

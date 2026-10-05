@@ -10,6 +10,7 @@ import '../../widgets/product_card_widget.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/image_reseau_widget.dart';
 
 /// Détail produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -380,7 +381,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ? Container(color: const Color(0xFFEEF3FB),
                                 child: const Icon(Icons.image_outlined,
                                     size: 60, color: Color(0xFF0D2B5E)))
-                            : Image.network(prod.photos[i], fit: BoxFit.cover,
+                            : ImageReseau(prod.photos[i], fit: BoxFit.cover,
                                 width: double.infinity),
                       ),
                     ),

@@ -9,6 +9,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/categories_boutique_widget.dart';
 import '../../widgets/horaire_boutique_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
 /// Path : lib/screens/vendor/vendor_edit_shop_screen.dart
@@ -137,11 +138,22 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   /// (colonne `logo_url`) ne se fait qu'au moment d'"Enregistrer" — cette
   /// méthode ne fait qu'uploader le fichier et mémoriser son URL.
   Future<void> _uploadLogo() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (_shop == null) return;
     // `pickImage` retourne un `XFile` (type multiplateforme de
     // image_picker) et non un `dart:io.File`, car dart:io n'existe pas
     // sur Flutter Web — cette app doit fonctionner en web comme en mobile.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
     setState(() => _isSaving = true);
     // `StorageService.uploadShopLogo` lit le fichier en `Uint8List`
@@ -153,15 +165,29 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       file: file,
       shopId: _shop!.proprietaireId,
     );
+    if (!mounted) return;
     setState(() {
-      _logoUrl = url;
+      // Checklist production (point 15) : on garde l'ancien logo si
+      // l'envoi a échoué, et on dit pourquoi.
+      if (url != null) _logoUrl = url;
       _isSaving = false;
     });
+    if (url == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement du logo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
+      ));
+    }
   }
 
   /// Valide le formulaire puis enregistre les modifications de la
   /// boutique en base via un UPDATE Supabase sur la table `shops`.
   Future<void> _enregistrer() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate() || _shop == null) return;
     // Règle métier : au moins une zone de livraison doit être
     // sélectionnée, sinon la boutique ne pourrait livrer nulle part.
@@ -306,7 +332,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                     color: AppColors.borderColor(isDark), width: 2),
                                 image: _logoUrl != null
                                     ? DecorationImage(
-                                        image: NetworkImage(_logoUrl!),
+                                        image: CachedNetworkImageProvider(_logoUrl!),
                                         fit: BoxFit.cover)
                                     : null,
                               ),

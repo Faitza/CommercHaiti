@@ -13,6 +13,8 @@ import 'providers/favorite_provider.dart';
 import 'providers/notification_provider.dart';
 import 'router/app_router.dart';
 import 'services/push_service.dart';
+import 'services/erreur_service.dart';
+import 'services/reseau_service.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
 /// Branch : feature/supabase-core
@@ -26,12 +28,21 @@ void main() async {
   // runApp().
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Checklist production (points 04 et 18) : toute erreur non prévue est
+  // journalisée et affichée sous forme de message clair (voir
+  // services/erreur_service.dart).
+  ErreurService.installer();
+
   // Initialise le client Supabase (backend-as-a-service utilisé pour
   // l'authentification, la base de données et le stockage de fichiers).
   // Les identifiants (URL + clé publique) viennent de SupabaseConfig.
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.publishableKey,
+    // Checklist production (point 08) : une requête qui ne répond pas
+    // est abandonnée après un délai au lieu de bloquer l'écran
+    // (voir services/reseau_service.dart).
+    httpClient: TimeoutHttpClient(),
   );
 
   // Notifications push (Firebase). Sans google-services.json, Firebase
@@ -174,6 +185,9 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
           // GoRouter.
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
+            // Permet à ErreurService d'afficher un message d'erreur
+            // depuis n'importe où (point 04).
+            scaffoldMessengerKey: ErreurService.messengerKey,
             title: 'CommercHaiti',
             // Permet d'afficher un bandeau quand un push arrive app ouverte.
             scaffoldMessengerKey: PushService.instance.scaffoldMessengerKey,

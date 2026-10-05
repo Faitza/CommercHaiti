@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Avis clients — vue vendeur (menu hamburger, section 12.2)
 /// Path : lib/screens/vendor/vendor_reviews_screen.dart
@@ -26,6 +28,13 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
   List<Map<String, dynamic>> _avis = [];
   bool _isLoading = true;
 
+  // ── Checklist production (points 07 et 13) ──
+  // Avis chargés par pages de [_taillePage] (avant : tous d'un coup).
+  static const _taillePage = 20;
+  bool _plusDisponible = false;
+  bool _chargementSuite = false;
+  String? _erreur;
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +45,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
   /// Charge une seule fois (pas de stream temps réel ici, contrairement à
   /// vendor_products_screen) la liste des avis de la boutique du vendeur
   /// connecté.
-  Future<void> _charger() async {
+  Future<void> _charger({bool suite = false}) async {
     // IMPORTANT : on utilise `AuthProvider.shopId` (UUID réel résolu via
     // `shops.proprietaire_id`), et non le `shopCode` affiché à l'écran —
     // c'est ce shopId qui correspond à la colonne `reviews.shop_id`.
@@ -50,20 +59,32 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
       // les lignes de `reviews` où `shop_id` correspond à la boutique,
       // triées par date de création décroissante (les plus récents avis
       // en premier) via `.order('created_at', ascending: false)`.
+      final debut = suite ? _avis.length : 0;
       final rows = await Supabase.instance.client
           .from('reviews')
           .select()
           .eq('shop_id', shopId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .range(debut, debut + _taillePage - 1);
+      if (!mounted) return;
       setState(() {
-        _avis = List<Map<String, dynamic>>.from(rows);
+        final page = List<Map<String, dynamic>>.from(rows);
+        _avis = suite ? [..._avis, ...page] : page;
+        _plusDisponible = page.length == _taillePage;
+        _chargementSuite = false;
         _isLoading = false;
+        _erreur = null;
       });
     } catch (e) {
-      // En cas d'erreur réseau/Supabase, on arrête simplement le
-      // chargement — la liste reste vide et l'écran affichera l'état
-      // "Aucun avis pour l'instant".
-      setState(() => _isLoading = false);
+      // En cas d'erreur réseau/Supabase : message + Réessayer au lieu
+      // d'un faux « Aucun avis pour l'instant ».
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _chargementSuite = false;
+        _erreur = messageErreur(e,
+            parDefaut: 'Impossible de charger les avis.');
+      });
     }
   }
 
@@ -83,6 +104,13 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _erreur != null && _avis.isEmpty
+          ? EtatErreurWidget(
+              message: _erreur!,
+              onReessayer: () {
+                setState(() => _isLoading = true);
+                _charger();
+              })
           : _avis.isEmpty
               ? Center(
                   child: Text('Aucun avis pour l\'instant',
@@ -90,8 +118,18 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _avis.length,
+                  // +1 : bouton « Charger plus » en bas de liste.
+                  itemCount: _avis.length + (_plusDisponible ? 1 : 0),
                   itemBuilder: (_, i) {
+                    if (i == _avis.length) {
+                      return ChargerPlusWidget(
+                        enCours: _chargementSuite,
+                        onCharger: () {
+                          setState(() => _chargementSuite = true);
+                          _charger(suite: true);
+                        },
+                      );
+                    }
                     final r = _avis[i];
                     // Note sur 5 (entier), 0 par défaut si absente.
                     final note = (r['note'] ?? 0) as int;

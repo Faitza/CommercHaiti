@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../providers/theme_provider.dart';
 import '../constants/app_colors.dart';
+import 'image_reseau_widget.dart';
 
 /// Carte produit réutilisable — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -67,7 +68,7 @@ class ProductCardWidget extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(12)),
                     child: product.vignette != null
-                        ? Image.network(product.vignette!,
+                        ? ImageReseau(product.vignette!,
                             fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFFEEF3FB),

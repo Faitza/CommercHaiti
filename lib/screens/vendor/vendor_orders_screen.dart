@@ -7,6 +7,7 @@ import '../../models/order_model.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Commandes Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -62,7 +63,8 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
   Widget build(BuildContext context) {
     // `watch` reconstruit ce widget à chaque nouvelle émission du stream
     // de commandes (mise à jour temps réel de la liste affichée).
-    final orders = context.watch<OrderProvider>().ordresVendeur;
+    final orderProv = context.watch<OrderProvider>();
+    final orders = orderProv.ordresVendeur;
     final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
@@ -96,6 +98,22 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
               .where((o) => o.statut == s['value'])
               .toList();
 
+          // Checklist production (points 05 et 07).
+          if (orderProv.chargementVendeur && orders.isEmpty) {
+            return const ChargementWidget();
+          }
+          if (orderProv.erreurVendeur != null && orders.isEmpty) {
+            return EtatErreurWidget(
+              message: orderProv.erreurVendeur!,
+              onReessayer: () {
+                final auth = context.read<AuthProvider>();
+                if (auth.currentUser == null) return;
+                context
+                    .read<OrderProvider>()
+                    .listenVendorOrders(auth.currentUser!.id, forcer: true);
+              },
+            );
+          }
           if (filtered.isEmpty) {
             return Center(
               child: Text('Aucune commande "${s['label']}"',
