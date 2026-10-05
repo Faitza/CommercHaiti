@@ -48,11 +48,11 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // `..repeat()` : boucle indéfiniment (contrairement à `_controller`
-    // qui ne joue qu'une fois). Sa valeur (0 → 1 en 1.1s, en boucle) sert
+    // qui ne joue qu'une fois). Sa valeur (0 → 1 en 1,2 s, en boucle) sert
     // de base de temps commune aux 3 points, chacun décalé dans le temps
     // (voir `_dot()` plus bas) pour créer un effet de vague.
     _dotsController = AnimationController(
-        duration: const Duration(milliseconds: 1100), vsync: this)
+        duration: const Duration(milliseconds: 1200), vsync: this)
       ..repeat();
 
     // Lance en parallèle la logique de redirection (ne bloque pas
@@ -68,15 +68,18 @@ class _SplashScreenState extends State<SplashScreen>
   //     été vu → on l'affiche.
   //  3. Sinon → écran de choix de rôle (Client/Vendeur).
   Future<void> _redirect() async {
-    // Délai pendant lequel le splash reste affiché avant de naviguer
-    // (logo + animation des points). Porté de 0,7 s à 3 s à la demande
-    // de Faitza ; ajuster cette valeur pour l'allonger ou le raccourcir.
-    await Future.delayed(const Duration(seconds: 3));
+    // Le logo et les points restent affichés AU MOINS 5 secondes (demande
+    // de Faitza). La lecture des préférences se fait pendant ce temps,
+    // donc la durée totale reste 5 s et pas 5 s + lecture.
+    final resultats = await Future.wait([
+      Future.delayed(const Duration(seconds: 5)),
+      // Lecture de la préférence locale indiquant si l'onboarding a déjà
+      // été terminé par l'utilisateur (stockée via shared_preferences).
+      SharedPreferences.getInstance(),
+    ]);
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
-    // Lecture de la préférence locale indiquant si l'onboarding a déjà
-    // été terminé par l'utilisateur (stockée via shared_preferences).
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = resultats[1] as SharedPreferences;
     final onboardingVu = prefs.getBool('onboarding_done') ?? false;
     if (!mounted) return;
     // On attend la fin du frame courant avant de naviguer, pour éviter
@@ -103,27 +106,33 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  // Un point de l'indicateur de chargement. `index` décale sa phase dans
-  // la boucle (0.2 par point) pour que les 3 points ne "pulsent" pas en
-  // même temps mais l'un après l'autre, comme une petite vague.
+  // Un point de l'indicateur de chargement. Les 3 points sautent l'un
+  // après l'autre (décalage d'un tiers de cycle chacun), comme une petite
+  // vague : chaque point monte de 8 px, grossit et devient plein, puis
+  // redescend et pâlit avant que le suivant ne prenne le relais.
+  // (Avant : points de 8 px qui ne variaient que de taille, à peine
+  // visibles, et l'écran ne restait que 0,7 s.)
   Widget _dot(int index) {
     return AnimatedBuilder(
       animation: _dotsController,
       builder: (context, _) {
-        // Phase 0..1 propre à ce point, décalée de celle des autres.
-        final phase = (_dotsController.value + index * 0.2) % 1.0;
-        // sin(phase * 2π) oscille entre -1 et 1 ; on le ramène à 0..1
-        // pour piloter à la fois la taille et l'opacité du point.
-        final wave = (sin(phase * 2 * pi) + 1) / 2;
-        return Transform.scale(
-          scale: 0.6 + wave * 0.6,
-          child: Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(
-              color: index == 0
-                  ? const Color(0xFFE63946)
-                  : Colors.white.withOpacity(0.3 + wave * 0.7),
-              shape: BoxShape.circle,
+        // Phase 0..1 propre à ce point, décalée d'un tiers par point.
+        final phase = (_dotsController.value - index / 3) % 1.0;
+        // Impulsion : le point est « actif » pendant la première moitié
+        // de sa phase (sin de 0 à π), au repos pendant la seconde.
+        final pulse = phase < 0.5 ? sin(phase * 2 * pi) : 0.0;
+        final couleur =
+            index == 0 ? const Color(0xFFE63946) : Colors.white;
+        return Transform.translate(
+          offset: Offset(0, -8 * pulse),
+          child: Transform.scale(
+            scale: 0.8 + 0.4 * pulse,
+            child: Container(
+              width: 10, height: 10,
+              decoration: BoxDecoration(
+                color: couleur.withValues(alpha: 0.35 + 0.65 * pulse),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
         );
