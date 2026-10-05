@@ -10,7 +10,9 @@ import 'providers/shop_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/favorite_provider.dart';
+import 'providers/notification_provider.dart';
 import 'router/app_router.dart';
+import 'services/push_service.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
 /// Branch : feature/supabase-core
@@ -31,6 +33,10 @@ void main() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.publishableKey,
   );
+
+  // Notifications push (Firebase). Sans google-services.json, Firebase
+  // n'est pas configuré : l'app démarre quand même, sans push.
+  await PushService.instance.init();
 
   // Démarre l'application Flutter une fois Supabase prêt.
   runApp(const CommercHaitiApp());
@@ -67,6 +73,9 @@ class CommercHaitiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         // Produits mis en favoris par le client.
         ChangeNotifierProvider(create: (_) => FavoriteProvider()),
+        // Notifications de l'utilisateur connecté (cloche + écran
+        // Notifications), mises à jour en temps réel.
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       // Le vrai MaterialApp est isolé dans un widget enfant séparé (voir
       // ci-dessous) : c'est indispensable pour la bonne gestion du
@@ -122,6 +131,35 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
   // le router doit réagir (via refreshListenable), pas ce State lui-même.
   late final _router = AppRouter.router(context.read<AuthProvider>());
 
+  late final AuthProvider _auth = context.read<AuthProvider>();
+  late final NotificationProvider _notifications =
+      context.read<NotificationProvider>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Ouvre le bon écran quand l'utilisateur touche une notification push.
+    PushService.instance.attach(_router, _auth);
+    // Démarre / arrête l'écoute des notifications selon la connexion.
+    _auth.addListener(_suivreNotifications);
+    _suivreNotifications();
+  }
+
+  void _suivreNotifications() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _notifications.listen(user.id);
+    } else {
+      _notifications.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_suivreNotifications);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Seul ThemeProvider doit déclencher une reconstruction ici (pour
@@ -137,6 +175,8 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: 'CommercHaiti',
+            // Permet d'afficher un bandeau quand un push arrive app ouverte.
+            scaffoldMessengerKey: PushService.instance.scaffoldMessengerKey,
             // Bascule automatiquement entre `theme` et `darkTheme` selon
             // la préférence stockée dans ThemeProvider.
             themeMode: themeProvider.themeMode,
