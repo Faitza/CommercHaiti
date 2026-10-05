@@ -68,9 +68,10 @@ class _SplashScreenState extends State<SplashScreen>
   //     été vu → on l'affiche.
   //  3. Sinon → écran de choix de rôle (Client/Vendeur).
   Future<void> _redirect() async {
-    // Petit délai artificiel pour laisser le temps à l'animation/logo de
-    // s'afficher correctement avant de naviguer.
-    await Future.delayed(const Duration(milliseconds: 700));
+    // Délai pendant lequel le splash reste affiché avant de naviguer
+    // (logo + animation des points). Porté de 0,7 s à 3 s à la demande
+    // de Faitza ; ajuster cette valeur pour l'allonger ou le raccourcir.
+    await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
     // Lecture de la préférence locale indiquant si l'onboarding a déjà
