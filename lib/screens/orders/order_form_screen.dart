@@ -765,8 +765,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
         borderSide: BorderSide.none),
     focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(
-            color: Color(0xFF0D2B5E), width: 1.5)),
+        borderSide: BorderSide(
+            color: AppColors.accentFor(isDark), width: 1.5)),
     errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Color(0xFFE63946))),

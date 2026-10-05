@@ -175,7 +175,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                       color: Color(0xFF0D2B5E), letterSpacing: 2)),
                   const SizedBox(height: 4),
                   const Text('Ce code identifie votre boutique sur les reçus',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF999999)),
+                      style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
                       textAlign: TextAlign.center),
                 ]),
               ),

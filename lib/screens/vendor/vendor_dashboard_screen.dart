@@ -11,6 +11,7 @@ import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/app_drawer_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/bottom_nav_item.dart';
 
 /// Vendor Dashboard Screen — Faitza COLAS
 /// Path : lib/screens/vendor/vendor_dashboard_screen.dart
@@ -605,12 +606,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(icon: Icons.dashboard_outlined,
+                BottomNavItem(icon: Icons.dashboard_outlined,
                     label: 'Dashboard', active: true, onTap: () {}),
-                _NavItem(icon: Icons.inventory_2_outlined,
+                BottomNavItem(icon: Icons.inventory_2_outlined,
                     label: 'Produits',
                     onTap: () => context.go('/vendor/products')),
-                _NavItem(icon: Icons.receipt_long_outlined,
+                BottomNavItem(icon: Icons.receipt_long_outlined,
                     label: 'Commandes',
                     onTap: () => context.go('/vendor/orders')),
               ],
@@ -732,33 +733,3 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   );
 }
 
-// Un item de la barre de navigation basse (icône + libellé), dont la
-// couleur change selon `active` (onglet courant en bleu marine, sinon
-// gris) pour indiquer visuellement l'écran actif.
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon, required this.label,
-    this.active = false, required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon,
-            color: active ? const Color(0xFF0D2B5E) : const Color(0xFF999999),
-            size: 22),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(
-            fontSize: 10,
-            color: active ? const Color(0xFF0D2B5E) : const Color(0xFF999999),
-            fontWeight: active ? FontWeight.bold : FontWeight.normal)),
-      ],
-    ),
-  );
-}
