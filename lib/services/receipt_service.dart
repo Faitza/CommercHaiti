@@ -79,18 +79,24 @@ class ReceiptService {
               ],
             ),
             pw.SizedBox(height: 16),
-            // ── Total de la commande, aligné à droite ──
+            // ── Livraison (déjà incluse dans le total) puis total ──
+            if (order.fraisLivraison > 0)
+              pw.Align(
+                alignment: pw.Alignment.centerRight,
+                child: pw.Text(
+                    'Livraison : ${order.fraisLivraison.toStringAsFixed(0)} HTG',
+                    style: const pw.TextStyle(fontSize: 11)),
+              ),
             pw.Align(
               alignment: pw.Alignment.centerRight,
               child: pw.Text('Total : ${order.total.toStringAsFixed(0)} HTG',
                   style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
             ),
             pw.SizedBox(height: 8),
-            // Mode de paiement fixe : l'app ne gère que le paiement à la
-            // livraison (cash), donc pas besoin de champ dynamique ici.
+            // Mode de paiement : à la livraison ou MonCash (avec réf.).
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text('Mode de paiement : Paiement à la livraison',
+              child: pw.Text('Mode de paiement : ${order.modePaiementLabel}',
                   style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
             ),
             pw.SizedBox(height: 24),

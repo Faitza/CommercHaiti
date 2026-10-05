@@ -36,6 +36,9 @@ class ShopModel {
   final bool isOpen;
   /// Date de création de la boutique.
   final DateTime createdAt;
+  /// Numéro MonCash où les clients envoient leur paiement (null = la
+  /// boutique ne propose pas MonCash). Voir migration_moncash.sql.
+  final String? moncashNumero;
 
   /// Constructeur constant. rating/totalAvis/isOpen ont des valeurs par
   /// défaut car une boutique fraîchement créée n'a encore aucun avis et
@@ -52,6 +55,7 @@ class ShopModel {
     this.totalAvis = 0,
     this.isOpen = true,
     required this.createdAt,
+    this.moncashNumero,
   });
 
   /// Initiales pour logo par défaut — "Marché Frais" → "MF"
@@ -88,6 +92,7 @@ class ShopModel {
       rating:         (map['rating'] ?? 0.0).toDouble(),
       totalAvis:      map['total_avis'] ?? 0,
       isOpen:         map['is_open'] ?? true,
+      moncashNumero:  map['moncash_numero'],
       // Repli sur l'heure actuelle si created_at est absent.
       createdAt:      map['created_at'] != null
                         ? DateTime.parse(map['created_at'])
@@ -125,12 +130,16 @@ class ZoneLivraison {
   final int delaiMin;
   /// Délai maximum estimé de livraison, en minutes.
   final int delaiMax;
+  /// Prix de la livraison dans cette zone, en HTG (0 = gratuite).
+  /// Voir migration_frais_livraison.sql.
+  final double frais;
 
   /// Constructeur constant — tous les champs requis.
   const ZoneLivraison({
     required this.zone,
     required this.delaiMin,
     required this.delaiMax,
+    this.frais = 0,
   });
 
   /// Texte formaté pour l'affichage, ex : "30-45 min".
@@ -144,6 +153,7 @@ class ZoneLivraison {
       zone:     map['zone'] ?? '',
       delaiMin: map['delai_min'] ?? 30,
       delaiMax: map['delai_max'] ?? 45,
+      frais:    (map['frais'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -154,6 +164,7 @@ class ZoneLivraison {
       'zone':      zone,
       'delai_min': delaiMin,
       'delai_max': delaiMax,
+      'frais':     frais,
     };
   }
 }

@@ -5,6 +5,8 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../widgets/moncash_widgets.dart';
+import '../../widgets/livreur_widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -87,9 +89,36 @@ class VendorOrderDetailScreen extends StatelessWidget {
               _row('Téléphone', order.telephoneClient, isDark: isDark),
               _row('Adresse', order.adresseLivraison, isDark: isDark),
               _row('Zone', order.zone, isDark: isDark),
+              if (order.fraisLivraison > 0)
+                _row('Livraison',
+                    '${order.fraisLivraison.toStringAsFixed(0)} HTG',
+                    isDark: isDark),
               _row('Total', '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
               if (order.noteVendeur != null)
                 _row('Note client', order.noteVendeur!, isDark: isDark),
+            ]),
+            const SizedBox(height: 16),
+
+            // Livreur : choix parmi « Mes livreurs » + envoi WhatsApp.
+            if (!order.estRetrait &&
+                order.statut != 'annulee' &&
+                order.statut != 'livree') ...[
+              _card(isDark: isDark, children: [
+                LivreurVendeurWidget(order: order),
+              ]),
+              const SizedBox(height: 16),
+            ],
+
+            // Paiement : à la livraison, ou MonCash avec les boutons
+            // « Paiement reçu » / « Pas reçu » (migration_moncash.sql).
+            _card(isDark: isDark, children: [
+              MoncashVendeurWidget(
+                orderId: order.id,
+                modePaiement: order.modePaiement,
+                reference: order.moncashReference,
+                paiementStatut: order.paiementStatut,
+                total: order.total,
+              ),
             ]),
             const SizedBox(height: 16),
 

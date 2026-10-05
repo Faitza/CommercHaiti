@@ -136,6 +136,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
             Navigator.pop(context);
             context.push('/vendor/stats');
           }),
+          DrawerMenuItem(Icons.delivery_dining_outlined, 'Mes livreurs',
+              onTap: () {
+            Navigator.pop(context);
+            context.push('/vendor/livreurs');
+          }),
           const DrawerMenuItem(Icons.local_offer_outlined, 'Promotions'),
           DrawerMenuItem(Icons.star_border, 'Avis', onTap: () {
             Navigator.pop(context);
