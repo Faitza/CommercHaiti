@@ -3,7 +3,9 @@
 /// Path : lib/models/shop_model.dart
 /// Table Supabase : shops
 /// Colonnes : id, proprietaire_id, nom, description, logo_url,
-///            shop_code, zones_livraison, rating, total_avis, is_open, created_at
+///            shop_code, zones_livraison, categories, rating, total_avis,
+///            is_open, horaire_ouverture, horaire_fermeture,
+///            jours_ouverture, is_open_manuel, created_at
 ///
 /// Représente UNE boutique créée par un vendeur. Contient les infos
 /// d'identité de la boutique (nom, logo, description), son code unique
@@ -27,22 +29,41 @@ class ShopModel {
   /// Liste des zones de livraison desservies par la boutique, chacune
   /// avec son délai estimé (voir ZoneLivraison plus bas).
   final List<ZoneLivraison> zonesLivraison;
+  /// Catégories vendues par la boutique (ex : ["Alimentation", "Beauté"]),
+  /// choisies parmi `Categories.toutes` (voir constants/categories.dart).
+  /// Limite les catégories proposées à l'ajout d'un produit.
+  final List<String> categories;
   /// Note moyenne de la boutique (calculée à partir des avis clients).
   final double rating;
   /// Nombre total d'avis reçus par la boutique.
   final int totalAvis;
-  /// Indique si la boutique est actuellement ouverte (accepte des
-  /// commandes) ou fermée par le vendeur.
-  final bool isOpen;
+  /// Valeur brute de la colonne `is_open`. Utilisée seulement en repli,
+  /// pour une boutique qui n'a pas encore d'horaire (voir `isOpen`).
+  final bool isOpenBase;
+  /// Heure d'ouverture "HH:mm" (colonne TIME `horaire_ouverture`).
+  final String? horaireOuverture;
+  /// Heure de fermeture "HH:mm" (colonne TIME `horaire_fermeture`).
+  final String? horaireFermeture;
+  /// Jours de travail, parmi `ShopModel.joursSemaine` (colonne TEXT[]
+  /// `jours_ouverture`).
+  final List<String> joursOuverture;
+  /// Forçage manuel par le vendeur (colonne `is_open_manuel`) :
+  /// true = "Ouvrir maintenant", false = "Fermer maintenant",
+  /// null = statut calculé automatiquement selon l'horaire.
+  final bool? isOpenManuel;
+  /// Validation par l'administration (colonne `statut_validation`) :
+  /// 'en_attente', 'approuvee' ou 'suspendue'. Seules les boutiques
+  /// approuvées sont visibles des clients (politique RLS côté Supabase).
+  final String statutValidation;
   /// Date de création de la boutique.
   final DateTime createdAt;
   /// Numéro MonCash où les clients envoient leur paiement (null = la
   /// boutique ne propose pas MonCash). Voir migration_moncash.sql.
   final String? moncashNumero;
 
-  /// Constructeur constant. rating/totalAvis/isOpen ont des valeurs par
-  /// défaut car une boutique fraîchement créée n'a encore aucun avis et
-  /// est ouverte par défaut.
+  /// Constructeur constant. rating/totalAvis/isOpenBase ont des valeurs
+  /// par défaut car une boutique fraîchement créée n'a encore aucun avis
+  /// et est ouverte par défaut.
   const ShopModel({
     required this.id,
     required this.proprietaireId,
@@ -51,12 +72,82 @@ class ShopModel {
     this.logoUrl,
     required this.shopCode,
     required this.zonesLivraison,
+    this.categories = const [],
     this.rating = 0.0,
     this.totalAvis = 0,
-    this.isOpen = true,
+    this.isOpenBase = true,
+    this.horaireOuverture,
+    this.horaireFermeture,
+    this.joursOuverture = const [],
+    this.isOpenManuel,
+    this.statutValidation = 'approuvee',
     required this.createdAt,
     this.moncashNumero,
   });
+
+  /// Jours proposés au vendeur (Lundi à Samedi), indexés comme
+  /// `DateTime.weekday` (1 = lundi).
+  static const List<String> joursSemaine = [
+    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi',
+  ];
+
+  /// La boutique a-t-elle un horaire complet (heures + au moins un jour) ?
+  bool get aUnHoraire =>
+      horaireOuverture != null &&
+      horaireFermeture != null &&
+      joursOuverture.isNotEmpty;
+
+  /// Statut ouvert/fermé affiché partout dans l'app, calculé à l'heure
+  /// actuelle de l'appareil (voir `estOuverteA`).
+  bool get isOpen => estOuverteA(DateTime.now());
+
+  /// Calcule si la boutique est ouverte à l'instant `t` :
+  ///  1. un forçage manuel (`isOpenManuel`) l'emporte toujours ;
+  ///  2. sinon, si un horaire existe : ouverte si `t` tombe un jour de
+  ///     travail entre l'heure d'ouverture et celle de fermeture. Si la
+  ///     fermeture est avant l'ouverture (ex : 18:00 → 02:00), l'horaire
+  ///     passe minuit et la fin de nuit compte pour le jour précédent ;
+  ///  3. sinon, repli sur la colonne `is_open`.
+  bool estOuverteA(DateTime t) {
+    if (isOpenManuel != null) return isOpenManuel!;
+    if (!aUnHoraire) return isOpenBase;
+
+    final ouverture = _minutes(horaireOuverture!);
+    final fermeture = _minutes(horaireFermeture!);
+    if (ouverture == null || fermeture == null) return isOpenBase;
+    final maintenant = t.hour * 60 + t.minute;
+    bool travaille(int weekday) =>
+        weekday >= 1 &&
+        weekday <= joursSemaine.length &&
+        joursOuverture.contains(joursSemaine[weekday - 1]);
+
+    if (ouverture < fermeture) {
+      return travaille(t.weekday) &&
+          maintenant >= ouverture &&
+          maintenant < fermeture;
+    }
+    // Horaire qui passe minuit.
+    final veille = t.weekday == 1 ? 7 : t.weekday - 1;
+    return (travaille(t.weekday) && maintenant >= ouverture) ||
+        (travaille(veille) && maintenant < fermeture);
+  }
+
+  /// "08:00" ou "08:00:00" (format TIME Postgres) → minutes depuis minuit.
+  static int? _minutes(String hhmm) {
+    final parts = hhmm.split(':');
+    if (parts.length < 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return h * 60 + m;
+  }
+
+  /// "08:00:00" → "08:00" (affichage).
+  static String? _hhmm(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString();
+    return s.length >= 5 ? s.substring(0, 5) : s;
+  }
 
   /// Initiales pour logo par défaut — "Marché Frais" → "MF"
   /// Sert de remplacement visuel (avatar texte) quand logoUrl est null.
@@ -89,9 +180,15 @@ class ShopModel {
                         .map((z) => ZoneLivraison.fromMap(
                               z as Map<String, dynamic>))
                         .toList(),
+      categories:     List<String>.from(map['categories'] ?? const []),
       rating:         (map['rating'] ?? 0.0).toDouble(),
       totalAvis:      map['total_avis'] ?? 0,
-      isOpen:         map['is_open'] ?? true,
+      isOpenBase:     map['is_open'] ?? true,
+      horaireOuverture: _hhmm(map['horaire_ouverture']),
+      horaireFermeture: _hhmm(map['horaire_fermeture']),
+      joursOuverture: List<String>.from(map['jours_ouverture'] ?? const []),
+      isOpenManuel:   map['is_open_manuel'],
+      statutValidation: map['statut_validation'] ?? 'approuvee',
       moncashNumero:  map['moncash_numero'],
       // Repli sur l'heure actuelle si created_at est absent.
       createdAt:      map['created_at'] != null
@@ -112,9 +209,14 @@ class ShopModel {
       'logo_url':         logoUrl,
       'shop_code':        shopCode,
       'zones_livraison':  zonesLivraison.map((z) => z.toMap()).toList(),
+      'categories':       categories,
       'rating':           rating,
       'total_avis':       totalAvis,
-      'is_open':          isOpen,
+      'is_open':          isOpenBase,
+      'horaire_ouverture': horaireOuverture,
+      'horaire_fermeture': horaireFermeture,
+      'jours_ouverture':  joursOuverture,
+      'is_open_manuel':   isOpenManuel,
       'created_at':       createdAt.toIso8601String(),
     };
   }

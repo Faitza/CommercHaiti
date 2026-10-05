@@ -9,6 +9,7 @@ import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/moncash_widgets.dart';
 import '../../widgets/livreur_widgets.dart';
 import '../../models/order_model.dart';
+import '../../widgets/litige_section_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 
@@ -134,6 +135,11 @@ class OrderTrackingScreen extends StatelessWidget {
                 // Livreur choisi par le vendeur (migration_livreurs.sql).
                 String? livreurNom;
                 String? livreurTelephone;
+                // Litige éventuel (colonnes litige_*, voir
+                // migration_litige_client.sql).
+                String? litigeStatut;
+                String? litigeMotif;
+                String? litigeResolution;
                 if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   // Le flux renvoie une liste de lignes correspondant au
                   // filtre ; ici il ne peut y avoir qu'une seule commande
@@ -150,6 +156,9 @@ class OrderTrackingScreen extends StatelessWidget {
                   paiementStatut = row['paiement_statut'];
                   livreurNom = row['livreur_nom'];
                   livreurTelephone = row['livreur_telephone'];
+                  litigeStatut = row['litige_statut'];
+                  litigeMotif = row['litige_motif'];
+                  litigeResolution = row['litige_resolution'];
                 }
 
                 // On retrouve l'index de l'étape courante dans `_etapes`
@@ -443,6 +452,18 @@ class OrderTrackingScreen extends StatelessWidget {
                             ),
                           ]),
                         ),
+
+                      // Signaler un problème (litige) — une fois la
+                      // commande acceptée — ou état du litige en cours.
+                      const SizedBox(height: 10),
+                      LitigeSectionWidget(
+                        orderId: orderId,
+                        statut: statut,
+                        litigeStatut: litigeStatut,
+                        litigeMotif: litigeMotif,
+                        litigeResolution: litigeResolution,
+                        isDark: isDark,
+                      ),
                     ],
                   ),
                 );

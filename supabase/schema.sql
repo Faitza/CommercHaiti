@@ -33,9 +33,14 @@ create table if not exists public.shops (
   logo_url          text,
   shop_code         text not null unique,
   zones_livraison   jsonb not null default '[]'::jsonb,
+  categories        text[] not null default '{}',
   rating            numeric(2,1) not null default 0.0,
   total_avis        integer not null default 0,
   is_open           boolean not null default true,
+  horaire_ouverture time,
+  horaire_fermeture time,
+  jours_ouverture   text[] not null default '{}',
+  is_open_manuel    boolean,            -- null = automatique selon l'horaire
   created_at        timestamptz not null default now()
 );
 

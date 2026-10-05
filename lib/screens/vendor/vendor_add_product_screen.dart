@@ -8,6 +8,8 @@ import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/whatsapp_share_product_widget.dart';
+import '../../constants/categories.dart';
+import '../../widgets/categorie_dropdowns_widget.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -38,8 +40,13 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   final _prixCtrl = TextEditingController();
   final _prixPromoCtrl = TextEditingController();
   final _stockCtrl = TextEditingController();
-  final _categorieCtrl = TextEditingController();
-  final _sousCategorieCtrl = TextEditingController();
+  // Catégorie / sous-catégorie choisies dans les dropdowns.
+  String? _categorie;
+  String? _sousCategorie;
+  // Catégories proposées : celles cochées par la boutique
+  // (`shops.categories`), chargées dans initState. Toutes les catégories
+  // en repli si la boutique n'en a encore choisi aucune.
+  List<String> _categoriesBoutique = Categories.toutes;
 
   // URLs des photos déjà téléversées (max 4), tailles et couleurs
   // sélectionnées par le vendeur (listes vides = optionnel).
@@ -48,6 +55,22 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
   List<String> _couleurs = [];
   bool _disponible = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _chargerCategoriesBoutique();
+  }
+
+  /// Lit les catégories choisies par la boutique du vendeur connecté pour
+  /// limiter le dropdown catégorie.
+  Future<void> _chargerCategoriesBoutique() async {
+    final shopId = context.read<AuthProvider>().shopId;
+    if (shopId == null) return;
+    final shop = await _db.getShop(shopId);
+    if (!mounted || shop == null || shop.categories.isEmpty) return;
+    setState(() => _categoriesBoutique = shop.categories);
+  }
 
   final List<String> _taillesDisponibles = ['XS','S','M','L','XL','XXL'];
   // Palette de couleurs fixe (codes hexadécimaux) proposée pour marquer
@@ -137,8 +160,8 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
           : double.parse(_prixPromoCtrl.text),
       photos: _photoUrls,
       stock: int.parse(_stockCtrl.text),
-      categorie: _categorieCtrl.text.trim(),
-      sousCategorie: _sousCategorieCtrl.text.trim(),
+      categorie: _categorie ?? '',
+      sousCategorie: _sousCategorie ?? '',
       couleurs: _couleurs,
       tailles: _tailles,
       disponible: _disponible,
@@ -291,29 +314,20 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                   keyboardType: TextInputType.number),
               const SizedBox(height: 16),
 
-              // Catégorie et sous-catégorie, toutes deux obligatoires,
-              // saisies en texte libre côte à côte.
-              Row(children: [
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _label('Catégorie *'),
-                    _field(_categorieCtrl, 'Alimentation',
-                        validator: (v) =>
-                            v == null || v.isEmpty ? 'Requis' : null),
-                  ],
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _label('Sous-catégorie *'),
-                    _field(_sousCategorieCtrl, 'Fruits',
-                        validator: (v) =>
-                            v == null || v.isEmpty ? 'Requis' : null),
-                  ],
-                )),
-              ]),
+              // Catégorie (limitée aux catégories de la boutique) puis
+              // sous-catégorie dépendante, toutes deux obligatoires.
+              CategorieDropdownsWidget(
+                categoriesAutorisees: _categoriesBoutique,
+                categorie: _categorie,
+                sousCategorie: _sousCategorie,
+                isDark: isDark,
+                onCategorieChanged: (v) => setState(() {
+                  _categorie = v;
+                  _sousCategorie = null;
+                }),
+                onSousCategorieChanged: (v) =>
+                    setState(() => _sousCategorie = v),
+              ),
               const SizedBox(height: 16),
 
               // Sélecteur de couleurs : pastilles rondes de la palette
@@ -471,8 +485,6 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     _prixCtrl.dispose();
     _prixPromoCtrl.dispose();
     _stockCtrl.dispose();
-    _categorieCtrl.dispose();
-    _sousCategorieCtrl.dispose();
     super.dispose();
   }
 }

@@ -354,6 +354,25 @@ class _ProductListTile extends StatelessWidget {
               ),
             ],
           ),
+          // Produit masqué par l'administration : invisible pour les
+          // clients tant qu'un admin ne l'a pas réaffiché.
+          if (product.masqueAdmin)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDEAEA),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                  'Masqué par l\'administration'
+                  '${product.motifModeration != null ? ' : ${product.motifModeration}' : ''}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 11, color: Color(0xFFE63946),
+                      fontWeight: FontWeight.w600)),
+            ),
           if (!product.disponible)
             Container(
               width: double.infinity,

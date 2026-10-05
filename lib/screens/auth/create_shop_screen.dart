@@ -8,6 +8,8 @@ import '../../constants/app_colors.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
+import '../../widgets/categories_boutique_widget.dart';
+import '../../widgets/horaire_boutique_widget.dart';
 
 /// Créer boutique — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -44,6 +46,12 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   String? _logoUrl;
   // Zones de livraison sélectionnées par le vendeur (au moins une requise).
   final List<String> _zonesSelectionnees = [];
+  // Catégories vendues cochées par le vendeur (au moins une requise).
+  List<String> _categoriesSelectionnees = [];
+  // Horaire : pré-rempli 08:00 → 18:00, Lundi → Samedi, modifiable.
+  TimeOfDay? _ouverture = const TimeOfDay(hour: 8, minute: 0);
+  TimeOfDay? _fermeture = const TimeOfDay(hour: 18, minute: 0);
+  List<String> _jours = List<String>.from(ShopModel.joursSemaine);
   // Indique un chargement en cours (upload logo ou création boutique) —
   // désactive le bouton de soumission et affiche un spinner.
   bool _isLoading = false;
@@ -95,6 +103,22 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       ));
       return;
     }
+    if (_categoriesSelectionnees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sélectionnez au moins une catégorie vendue'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
+    if (_ouverture == null || _fermeture == null ||
+        _ouverture == _fermeture || _jours.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Horaire incomplet : heures d\'ouverture et de '
+            'fermeture différentes, et au moins un jour de travail'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
 
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
@@ -112,6 +136,10 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       // des délais de livraison par défaut (20 à 45 minutes).
       zonesLivraison: _zonesSelectionnees.map((z) =>
           ZoneLivraison(zone: z, delaiMin: 20, delaiMax: 45)).toList(),
+      categories: _categoriesSelectionnees,
+      horaireOuverture: HoraireBoutiqueWidget.versTexte(_ouverture),
+      horaireFermeture: HoraireBoutiqueWidget.versTexte(_fermeture),
+      joursOuverture: _jours,
       createdAt: DateTime.now(),
     );
 
@@ -299,6 +327,35 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                     ),
                   );
                 }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Catégories vendues
+              // Cases à cocher (multi-sélection) : limitent ensuite les
+              // catégories proposées à l'ajout d'un produit.
+              _label('Catégories vendues *'),
+              Text('Cochez les catégories de produits que vous vendez',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
+              const SizedBox(height: 12),
+              CategoriesBoutiqueWidget(
+                selection: _categoriesSelectionnees,
+                isDark: _isDark,
+                onChanged: (l) => setState(() => _categoriesSelectionnees = l),
+              ),
+              const SizedBox(height: 24),
+
+              // Horaire
+              // Heures (TimePicker) + jours de travail : la boutique
+              // s'affiche ensuite ouverte / fermée automatiquement.
+              _label('Horaire d\'ouverture *'),
+              HoraireBoutiqueWidget(
+                ouverture: _ouverture,
+                fermeture: _fermeture,
+                jours: _jours,
+                isDark: _isDark,
+                onOuvertureChanged: (t) => setState(() => _ouverture = t),
+                onFermetureChanged: (t) => setState(() => _fermeture = t),
+                onJoursChanged: (l) => setState(() => _jours = l),
               ),
               const SizedBox(height: 32),
 
