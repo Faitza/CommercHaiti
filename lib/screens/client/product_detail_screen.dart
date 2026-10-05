@@ -5,10 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/product_model.dart';
+import '../../models/shop_model.dart';
 import '../../widgets/product_card_widget.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/image_reseau_widget.dart';
 
 /// Détail produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -67,6 +69,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   // table "products" ne contient que shopId, pas le nom de la
   // boutique).
   String _shopNom = '';
+  // Boutique complète, pour ouvrir sa page depuis le nom.
+  ShopModel? _shop;
 
   @override
   void initState() {
@@ -95,10 +99,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       // pas nécessaire ici.
       final row = await Supabase.instance.client
           .from('shops')
-          .select('nom')
+          .select()
           .eq('id', widget.product.shopId)
           .maybeSingle();
-      if (mounted) setState(() => _shopNom = row?['nom'] as String? ?? '');
+      if (mounted) {
+        setState(() {
+          _shopNom = row?['nom'] as String? ?? '';
+          _shop = row == null ? null : ShopModel.fromMap(row, row['id']);
+        });
+      }
     } catch (_) {
       // Erreur silencieuse : si la requête échoue, _shopNom reste vide
       // et le bloc d'affichage du nom de boutique (plus bas) ne
@@ -372,7 +381,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ? Container(color: const Color(0xFFEEF3FB),
                                 child: const Icon(Icons.image_outlined,
                                     size: 60, color: Color(0xFF0D2B5E)))
-                            : Image.network(prod.photos[i], fit: BoxFit.cover,
+                            : ImageReseau(prod.photos[i], fit: BoxFit.cover,
                                 width: double.infinity),
                       ),
                     ),
@@ -498,28 +507,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   // Nom de la boutique venderesse, affiché seulement une
                   // fois chargé par _chargerBoutique().
+                  // Nom bien lisible et cliquable : ouvre la boutique.
                   if (_shopNom.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Row(children: [
-                        Icon(Icons.storefront_outlined,
-                            size: 14, color: AppColors.textSecondaryFor(isDark)),
-                        const SizedBox(width: 4),
-                        Text(_shopNom,
-                            style: TextStyle(
-                                color: AppColors.textSecondaryFor(isDark), fontSize: 13)),
-                      ]),
+                      child: InkWell(
+                        onTap: _shop == null
+                            ? null
+                            : () => context.push('/client/boutique-detail',
+                                extra: _shop),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(children: [
+                            Icon(Icons.storefront_outlined,
+                                size: 16, color: AppColors.accentFor(isDark)),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(_shopNom,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: AppColors.accentFor(isDark),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      decoration: TextDecoration.underline)),
+                            ),
+                            Icon(Icons.chevron_right,
+                                size: 16, color: AppColors.accentFor(isDark)),
+                          ]),
+                        ),
+                      ),
                     ),
 
                   // Stock bas
                   // Avertissement affiché quand le stock du produit est
                   // qualifié de "faible" par le modèle (stockStatus),
                   // pour inciter à l'achat rapide.
-                  if (p.stockStatus == StockStatus.faible)
+                  if (p.disponible && p.stockStatus == StockStatus.faible)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text('Plus que ${p.stock} en stock !',
-                          style: const TextStyle(color: Color(0xFFF5A623),
+                          style: TextStyle(
+                              color: isDark
+                                  ? AppColors.amber
+                                  : AppColors.amberText,
                               fontWeight: FontWeight.w600)),
                     ),
                   const SizedBox(height: 16),
@@ -546,7 +576,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               color: Color(int.parse('0xFF${c.replaceAll('#', '')}')),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: sel ? const Color(0xFF0D2B5E) : Colors.transparent,
+                                color: sel ? AppColors.accentFor(isDark) : Colors.transparent,
                                 width: 2,
                               ),
                             ),

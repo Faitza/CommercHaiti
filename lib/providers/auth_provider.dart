@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
+import '../services/reseau_service.dart';
 
 /// Provider authentification — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -72,6 +74,15 @@ class AuthProvider extends ChangeNotifier {
           // les infos d'authentification (email, uid), pas le profil
           // métier de l'application.
           _currentUser = await _authService.getUserFromDatabase(uid);
+          // Compte bloqué par un administrateur (ex. connexion Google, qui
+          // ne passe pas par AuthService.signIn) : on déconnecte.
+          if (_currentUser?.isBlocked == true) {
+            _currentUser = null;
+            _errorMessage = _parseError(Exception('compte_bloque'));
+            await _authService.signOut();
+            notifyListeners();
+            return;
+          }
           // Si c'est un vendeur, on résout aussi l'id de sa boutique
           // (nécessaire pour toutes les requêtes liées à sa boutique).
           if (_currentUser?.isSeller == true) {
@@ -134,6 +145,9 @@ class AuthProvider extends ChangeNotifier {
   /// Retourne true en cas de succès, false sinon (avec _errorMessage
   /// rempli pour expliquer l'échec à l'utilisateur).
   Future<bool> signIn(String email, String password) async {
+    // Checklist production (point 09) : ignore un 2e appui pendant
+    // qu'une connexion est déjà en cours.
+    if (_isLoading) return false;
     _setLoading(true);
     _clearError();
     try {
@@ -167,6 +181,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    if (_isLoading) return false; // checklist production, point 09
     _setLoading(true);
     _clearError();
     try {
@@ -206,6 +221,7 @@ class AuthProvider extends ChangeNotifier {
     required String nomBoutique,
     required String description,
   }) async {
+    if (_isLoading) return false; // checklist production, point 09
     _setLoading(true);
     _clearError();
     try {
@@ -263,6 +279,10 @@ class AuthProvider extends ChangeNotifier {
   // ── Déconnexion ──
   /// Déconnecte l'utilisateur courant et réinitialise l'état local.
   Future<void> signOut() async {
+    // Retire le jeton push de ce téléphone AVANT de se déconnecter (la
+    // suppression a besoin de la session à cause de RLS) : sinon ce
+    // téléphone continuerait à recevoir les notifications de ce compte.
+    await PushService.instance.retirerJeton();
     await _authService.signOut();
     _currentUser = null;
     notifyListeners();
@@ -311,6 +331,8 @@ class AuthProvider extends ChangeNotifier {
   /// message générique plutôt que d'exposer le détail technique brut.
   String _parseError(dynamic e) {
     final msg = e.toString();
+    if (msg.contains('compte_bloque'))
+      return 'Votre compte a été bloqué par l\'administration CommercHaiti';
     if (msg.contains('Invalid login credentials'))
       return 'Email ou mot de passe incorrect';
     if (msg.contains('Email not confirmed'))
@@ -319,6 +341,11 @@ class AuthProvider extends ChangeNotifier {
       return 'Un compte existe déjà avec cet email';
     if (msg.contains('Password should be at least'))
       return 'Mot de passe trop court — minimum 6 caractères';
-    return 'Une erreur est survenue. Réessayez.';
+    // Supabase Auth limite le nombre de tentatives (checklist
+    // production, point 01) : message clair quand la limite est atteinte.
+    if (msg.contains('rate limit') || msg.contains('over_request_rate_limit') ||
+        msg.contains('429'))
+      return 'Trop de tentatives. Patientez quelques minutes puis réessayez.';
+    return messageErreur(e);
   }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../providers/theme_provider.dart';
 import '../constants/app_colors.dart';
+import 'image_reseau_widget.dart';
 
 /// Carte produit réutilisable — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -67,7 +68,7 @@ class ProductCardWidget extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(12)),
                     child: product.vignette != null
-                        ? Image.network(product.vignette!,
+                        ? ImageReseau(product.vignette!,
                             fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFFEEF3FB),
@@ -167,13 +168,18 @@ class ProductCardWidget extends StatelessWidget {
                   // N'apparaît que si le statut calculé du stock est
                   // "faible" (quelques unités restantes mais pas épuisé) —
                   // incite le client à commander rapidement.
-                  if (product.stockStatus == StockStatus.faible)
+                  // Pas affiché sur un produit désactivé : il porte déjà
+                  // « Non disponible ».
+                  if (product.disponible &&
+                      product.stockStatus == StockStatus.faible)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         'Plus que ${product.stock} en stock !',
-                        style: const TextStyle(
-                            color: Color(0xFFF5A623),
+                        style: TextStyle(
+                            color: isDark
+                                ? AppColors.amber
+                                : AppColors.amberText,
                             fontSize: 10,
                             fontWeight: FontWeight.w600),
                       ),

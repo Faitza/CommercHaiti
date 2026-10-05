@@ -9,6 +9,8 @@ import '../../widgets/receipt_buttons_widget.dart';
 import '../../widgets/review_dialog_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/recommander_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Historique commandes — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
@@ -46,7 +48,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     // `watch` ici (contrairement à `read` dans initState) : on veut que ce
     // widget se reconstruise automatiquement à chaque fois que la liste
     // `ordresClient` change (nouvelle commande, changement de statut, etc.)
-    final orders = context.watch<OrderProvider>().ordresClient;
+    final orderProv = context.watch<OrderProvider>();
+    final orders = orderProv.ordresClient;
     final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
@@ -66,7 +69,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       ),
       // Affiche un état vide illustré s'il n'y a aucune commande, sinon
       // une liste défilante de cartes.
-      body: orders.isEmpty
+      // Checklist production (points 05 et 07) : chargement puis erreur
+      // éventuelle, avant l'état vide (qui s'affichait aussi pendant le
+      // chargement et faisait croire qu'il n'y avait aucune commande).
+      body: orderProv.chargementClient && orders.isEmpty
+          ? const ChargementWidget(message: 'Chargement de vos commandes…')
+          : orderProv.erreurClient != null && orders.isEmpty
+          ? EtatErreurWidget(
+              message: orderProv.erreurClient!,
+              onReessayer: () {
+                final auth = context.read<AuthProvider>();
+                if (auth.currentUser == null) return;
+                context
+                    .read<OrderProvider>()
+                    .listenClientOrders(auth.currentUser!.id, forcer: true);
+              },
+            )
+          : orders.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -140,6 +159,17 @@ class _OrderCard extends StatelessWidget {
             // Une fois la commande livrée, on propose deux actions
             // supplémentaires : laisser un avis sur la boutique et
             // télécharger/partager le reçu PDF.
+            // Recommander : remet les mêmes articles dans le panier
+            // (commande terminée, livrée ou annulée).
+            if ((order.statut == 'livree' || order.statut == 'annulee') &&
+                order.items.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => recommander(context, order),
+                icon: const Icon(Icons.replay, size: 16),
+                label: const Text('Recommander'),
+              ),
+            ],
             if (order.statut == 'livree') ...[
               const SizedBox(height: 8),
               TextButton.icon(

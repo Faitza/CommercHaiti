@@ -7,6 +7,9 @@ import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/categories_boutique_widget.dart';
+import '../../widgets/horaire_boutique_widget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
 /// Path : lib/screens/vendor/vendor_edit_shop_screen.dart
@@ -35,6 +38,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
 
   final _nomCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
+  // Numéro MonCash où les clients envoient leur paiement (optionnel).
+  final _moncashCtrl = TextEditingController();
 
   // Modèle de la boutique chargé depuis Supabase, conservé pour connaître
   // son id (`_shop!.id`) et son `proprietaireId` lors des mises à jour.
@@ -43,8 +48,17 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   String? _logoUrl;
   // Zones de livraison actuellement cochées par le vendeur.
   final List<String> _zonesSelectionnees = [];
-  // Statut "boutique ouverte" (visible/achetable par les clients).
-  bool _isOpen = true;
+  // Prix de livraison saisi pour chaque zone sélectionnée (en HTG).
+  final Map<String, TextEditingController> _fraisCtrls = {};
+
+  TextEditingController _fraisCtrl(String zone) =>
+      _fraisCtrls.putIfAbsent(zone, () => TextEditingController());
+  // Catégories vendues cochées par le vendeur.
+  List<String> _categoriesSelectionnees = [];
+  // Horaire (heures + jours de travail), enregistré avec le formulaire.
+  TimeOfDay? _ouverture;
+  TimeOfDay? _fermeture;
+  List<String> _jours = [];
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -87,19 +101,35 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
         _shop = row;
         _nomCtrl.text = row.nom;
         _descriptionCtrl.text = row.description;
+        _moncashCtrl.text = row.moncashNumero ?? '';
         _logoUrl = row.logoUrl;
-        _isOpen = row.isOpen;
+        _ouverture = HoraireBoutiqueWidget.depuisTexte(row.horaireOuverture);
+        _fermeture = HoraireBoutiqueWidget.depuisTexte(row.horaireFermeture);
+        _jours = List<String>.from(row.joursOuverture);
         // Reconstruit la liste des zones sélectionnées à partir des
         // objets `zonesLivraison` de la boutique (on ne garde que le nom
         // de la zone, pas les délais).
         _zonesSelectionnees
           ..clear()
           ..addAll(row.zonesLivraison.map((z) => z.zone));
+        for (final z in row.zonesLivraison) {
+          _fraisCtrl(z.zone).text =
+              z.frais > 0 ? z.frais.toStringAsFixed(0) : '';
+        }
+        _categoriesSelectionnees = List<String>.from(row.categories);
         _isLoading = false;
       });
     } catch (_) {
       setState(() => _isLoading = false);
     }
+  }
+
+  /// Recharge uniquement la boutique après un forçage ouvert/fermé, sans
+  /// toucher aux champs du formulaire en cours de modification.
+  Future<void> _rechargerStatut() async {
+    if (_shop == null) return;
+    final shop = await _db.getShop(_shop!.id);
+    if (mounted && shop != null) setState(() => _shop = shop);
   }
 
   /// Ouvre la galerie pour choisir une nouvelle photo de logo, l'envoie
@@ -108,11 +138,22 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   /// (colonne `logo_url`) ne se fait qu'au moment d'"Enregistrer" — cette
   /// méthode ne fait qu'uploader le fichier et mémoriser son URL.
   Future<void> _uploadLogo() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (_shop == null) return;
     // `pickImage` retourne un `XFile` (type multiplateforme de
     // image_picker) et non un `dart:io.File`, car dart:io n'existe pas
     // sur Flutter Web — cette app doit fonctionner en web comme en mobile.
-    final file = await _picker.pickImage(source: ImageSource.gallery);
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Checklist production (point 14) : réduit déjà la photo au moment
+      // du choix (moins de mémoire, compression plus rapide ensuite).
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 85,
+    );
     if (file == null) return;
     setState(() => _isSaving = true);
     // `StorageService.uploadShopLogo` lit le fichier en `Uint8List`
@@ -124,21 +165,51 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       file: file,
       shopId: _shop!.proprietaireId,
     );
+    if (!mounted) return;
     setState(() {
-      _logoUrl = url;
+      // Checklist production (point 15) : on garde l'ancien logo si
+      // l'envoi a échoué, et on dit pourquoi.
+      if (url != null) _logoUrl = url;
       _isSaving = false;
     });
+    if (url == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_storage.derniereErreur ??
+            'Échec du téléversement du logo — réessayez'),
+        backgroundColor: const Color(0xFFE63946),
+      ));
+    }
   }
 
   /// Valide le formulaire puis enregistre les modifications de la
   /// boutique en base via un UPDATE Supabase sur la table `shops`.
   Future<void> _enregistrer() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate() || _shop == null) return;
     // Règle métier : au moins une zone de livraison doit être
     // sélectionnée, sinon la boutique ne pourrait livrer nulle part.
     if (_zonesSelectionnees.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Sélectionnez au moins une zone de livraison'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
+    if (_categoriesSelectionnees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Sélectionnez au moins une catégorie vendue'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
+    if (_ouverture == null || _fermeture == null ||
+        _ouverture == _fermeture || _jours.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Horaire incomplet : heures d\'ouverture et de '
+            'fermeture différentes, et au moins un jour de travail'),
         backgroundColor: Color(0xFFE63946),
       ));
       return;
@@ -150,14 +221,36 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
       // reconstruites en objets {zone, delai_min, delai_max} — les délais
       // sont ici fixés à des valeurs par défaut (20-45 min) car ce
       // formulaire ne permet pas encore de les personnaliser par zone.
+      final moncash = _moncashCtrl.text.trim();
       await _db.updateShop(_shop!.id, {
+        // Envoyé seulement s'il a changé : ce formulaire continue de
+        // marcher tant que migration_moncash.sql n'a pas été exécutée.
+        if (moncash != (_shop!.moncashNumero ?? ''))
+          'moncash_numero': moncash.isEmpty ? null : moncash,
         'nom': _nomCtrl.text.trim(),
         'description': _descriptionCtrl.text.trim(),
         'logo_url': _logoUrl,
-        'is_open': _isOpen,
-        'zones_livraison': _zonesSelectionnees
-            .map((z) => {'zone': z, 'delai_min': 20, 'delai_max': 45})
-            .toList(),
+        'horaire_ouverture': HoraireBoutiqueWidget.versTexte(_ouverture),
+        'horaire_fermeture': HoraireBoutiqueWidget.versTexte(_fermeture),
+        'jours_ouverture': _jours,
+        // Chaque zone garde ses délais existants (20-45 min par défaut)
+        // et reçoit le prix de livraison saisi (vide = gratuit).
+        'zones_livraison': _zonesSelectionnees.map((z) {
+          ZoneLivraison? existante;
+          for (final e in _shop!.zonesLivraison) {
+            if (e.zone == z) existante = e;
+          }
+          final frais = double.tryParse(
+                  _fraisCtrl(z).text.trim().replaceAll(',', '.')) ??
+              0;
+          return {
+            'zone': z,
+            'delai_min': existante?.delaiMin ?? 20,
+            'delai_max': existante?.delaiMax ?? 45,
+            'frais': frais < 0 ? 0 : frais,
+          };
+        }).toList(),
+        'categories': _categoriesSelectionnees,
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -239,7 +332,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                     color: AppColors.borderColor(isDark), width: 2),
                                 image: _logoUrl != null
                                     ? DecorationImage(
-                                        image: NetworkImage(_logoUrl!),
+                                        image: CachedNetworkImageProvider(_logoUrl!),
                                         fit: BoxFit.cover)
                                     : null,
                               ),
@@ -274,23 +367,58 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                               : null,
                         ),
                         const SizedBox(height: 16),
-                        // Interrupteur "Boutique ouverte" : ne modifie que
-                        // l'état local `_isOpen` — l'enregistrement réel en
-                        // base ne se fait qu'au clic sur "Enregistrer" (via
-                        // `_enregistrer`), contrairement au switch de
-                        // disponibilité produit qui, lui, écrit
-                        // immédiatement.
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Boutique ouverte',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
-                            Switch(
-                              value: _isOpen,
-                              onChanged: (v) => setState(() => _isOpen = v),
-                              activeColor: const Color(0xFF0D2B5E),
-                            ),
-                          ],
+                        // Numéro MonCash (optionnel) : s'il est rempli, les
+                        // clients peuvent choisir de payer par MonCash.
+                        const Text('Numéro MonCash (optionnel)',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _moncashCtrl,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            hintText: 'Ex : 3712 3456',
+                            helperText:
+                                'Les clients pourront payer par MonCash à ce numéro',
+                          ),
+                          validator: (v) {
+                            final chiffres =
+                                (v ?? '').replaceAll(RegExp(r'[^\d]'), '');
+                            if (chiffres.isEmpty) return null;
+                            if (chiffres.length == 8 ||
+                                (chiffres.length == 11 &&
+                                    chiffres.startsWith('509'))) {
+                              return null;
+                            }
+                            return 'Numéro invalide (8 chiffres)';
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // Statut actuel + "Ouvrir maintenant" / "Fermer
+                        // maintenant" (écrit immédiatement en base).
+                        const Text('Statut',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        ForcerStatutWidget(
+                          shop: _shop!,
+                          isDark: isDark,
+                          onChanged: _rechargerStatut,
+                        ),
+                        const SizedBox(height: 16),
+                        // Horaire automatique (enregistré avec le bouton
+                        // "Enregistrer").
+                        const Text('Horaire d\'ouverture *',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        HoraireBoutiqueWidget(
+                          ouverture: _ouverture,
+                          fermeture: _fermeture,
+                          jours: _jours,
+                          isDark: isDark,
+                          onOuvertureChanged: (t) =>
+                              setState(() => _ouverture = t),
+                          onFermetureChanged: (t) =>
+                              setState(() => _fermeture = t),
+                          onJoursChanged: (l) => setState(() => _jours = l),
                         ),
                         const SizedBox(height: 16),
                         // Sélection des zones de livraison via des
@@ -317,6 +445,56 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                               checkmarkColor: const Color(0xFF0D2B5E),
                             );
                           }).toList(),
+                        ),
+                        // Prix de livraison de chaque zone choisie : il
+                        // s'ajoute au total de la commande du client.
+                        if (_zonesSelectionnees.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text('Prix de livraison par zone (HTG)',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          const Text('Laissez vide si la livraison est gratuite.',
+                              style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          for (final zone in _zonesDisponibles
+                              .where(_zonesSelectionnees.contains))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Row(children: [
+                                Expanded(child: Text(zone)),
+                                SizedBox(
+                                  width: 110,
+                                  child: TextFormField(
+                                    controller: _fraisCtrl(zone),
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.right,
+                                    decoration: const InputDecoration(
+                                        hintText: '0', suffixText: 'HTG',
+                                        isDense: true),
+                                    validator: (v) {
+                                      final t = (v ?? '').trim();
+                                      if (t.isEmpty) return null;
+                                      final n = double.tryParse(
+                                          t.replaceAll(',', '.'));
+                                      return n == null || n < 0
+                                          ? 'Invalide'
+                                          : null;
+                                    },
+                                  ),
+                                ),
+                              ]),
+                            ),
+                        ],
+                        const SizedBox(height: 16),
+                        // Catégories vendues (cases à cocher) : limitent
+                        // les catégories proposées à l'ajout d'un produit.
+                        const Text('Catégories vendues *',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        CategoriesBoutiqueWidget(
+                          selection: _categoriesSelectionnees,
+                          isDark: isDark,
+                          onChanged: (l) =>
+                              setState(() => _categoriesSelectionnees = l),
                         ),
                         const SizedBox(height: 32),
                         // Bouton "Enregistrer" — désactivé pendant la
@@ -353,6 +531,10 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   void dispose() {
     _nomCtrl.dispose();
     _descriptionCtrl.dispose();
+    _moncashCtrl.dispose();
+    for (final c in _fraisCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 }

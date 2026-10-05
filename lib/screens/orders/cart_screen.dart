@@ -5,6 +5,7 @@ import '../../providers/cart_provider.dart';
 import '../../models/cart_item_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/image_reseau_widget.dart';
 
 /// Cart Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/cart_screen.dart
@@ -312,7 +313,7 @@ class _CartItemCard extends StatelessWidget {
             child: SizedBox(
               width: 64, height: 64,
               child: item.product.vignette != null
-                  ? Image.network(item.product.vignette!, fit: BoxFit.cover)
+                  ? ImageReseau(item.product.vignette!, fit: BoxFit.cover)
                   : Container(
                       color: const Color(0xFFEEF3FB),
                       child: const Icon(Icons.image_outlined,

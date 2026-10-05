@@ -11,6 +11,7 @@ import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/app_drawer_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/bottom_nav_item.dart';
 
 /// Vendor Dashboard Screen — Faitza COLAS
 /// Path : lib/screens/vendor/vendor_dashboard_screen.dart
@@ -135,6 +136,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
           DrawerMenuItem(Icons.bar_chart_outlined, 'Stats', onTap: () {
             Navigator.pop(context);
             context.push('/vendor/stats');
+          }),
+          DrawerMenuItem(Icons.delivery_dining_outlined, 'Mes livreurs',
+              onTap: () {
+            Navigator.pop(context);
+            context.push('/vendor/livreurs');
           }),
           const DrawerMenuItem(Icons.local_offer_outlined, 'Promotions'),
           DrawerMenuItem(Icons.star_border, 'Avis', onTap: () {
@@ -291,6 +297,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Bandeau de validation : tant que l'administration
+                    // n'a pas approuvé la boutique (ou si elle l'a
+                    // suspendue), les clients ne la voient pas.
+                    if (_shop != null && _shop!.statutValidation != 'approuvee')
+                      _bandeauValidation(_shop!.statutValidation),
                     // Section "Commandes en attente" : liste des commandes
                     // dont le vendeur doit encore accepter ou refuser la
                     // demande. Le badge affiche leur nombre.
@@ -600,12 +611,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(icon: Icons.dashboard_outlined,
+                BottomNavItem(icon: Icons.dashboard_outlined,
                     label: 'Dashboard', active: true, onTap: () {}),
-                _NavItem(icon: Icons.inventory_2_outlined,
+                BottomNavItem(icon: Icons.inventory_2_outlined,
                     label: 'Produits',
                     onTap: () => context.go('/vendor/products')),
-                _NavItem(icon: Icons.receipt_long_outlined,
+                BottomNavItem(icon: Icons.receipt_long_outlined,
                     label: 'Commandes',
                     onTap: () => context.go('/vendor/orders')),
               ],
@@ -687,6 +698,36 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
   // Titre de section avec un badge numéroté optionnel (ex : "En attente du
   // vendeur" + badge rouge "3") affiché seulement si `badge > 0`.
+  /// Bandeau affiché quand la boutique n'est pas (ou plus) approuvée par
+  /// l'administration CommercHaiti.
+  Widget _bandeauValidation(String statut) {
+    final suspendue = statut == 'suspendue';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: suspendue ? const Color(0xFFFDEAEA) : const Color(0xFFFFF4E0),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(children: [
+        Icon(suspendue ? Icons.block : Icons.hourglass_top,
+            color: suspendue ? const Color(0xFFE63946) : const Color(0xFFF5A623)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            suspendue
+                ? 'Boutique suspendue par l\'administration : elle n\'est '
+                    'plus visible des clients. Contactez CommercHaiti.'
+                : 'Boutique en attente d\'approbation : elle sera visible '
+                    'des clients dès qu\'un administrateur l\'aura validée.',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _sectionTitle(String t, bool isDark, {int badge = 0}) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Row(children: [
@@ -727,33 +768,3 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   );
 }
 
-// Un item de la barre de navigation basse (icône + libellé), dont la
-// couleur change selon `active` (onglet courant en bleu marine, sinon
-// gris) pour indiquer visuellement l'écran actif.
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon, required this.label,
-    this.active = false, required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon,
-            color: active ? const Color(0xFF0D2B5E) : const Color(0xFF999999),
-            size: 22),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(
-            fontSize: 10,
-            color: active ? const Color(0xFF0D2B5E) : const Color(0xFF999999),
-            fontWeight: active ? FontWeight.bold : FontWeight.normal)),
-      ],
-    ),
-  );
-}

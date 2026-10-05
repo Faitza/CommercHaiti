@@ -28,6 +28,9 @@ class UserModel {
   final String? shopCode;
   /// Date de création du compte.
   final DateTime createdAt;
+  /// Compte bloqué par un administrateur (colonne `users.is_blocked`,
+  /// gérée depuis l'admin web) : la connexion est alors refusée.
+  final bool isBlocked;
 
   /// Constructeur constant — champs communs requis, champs spécifiques
   /// au rôle (adresse, shopCode) optionnels.
@@ -40,6 +43,7 @@ class UserModel {
     this.adresse,
     this.shopCode,
     required this.createdAt,
+    this.isBlocked = false,
   });
 
   /// Vrai si l'utilisateur a le rôle vendeur.
@@ -63,6 +67,7 @@ class UserModel {
       role:      map['role'] ?? 'customer',
       adresse:   map['adresse'],
       shopCode:  map['shop_code'],
+      isBlocked: map['is_blocked'] ?? false,
       // Repli sur l'heure actuelle si created_at est absent.
       createdAt: map['created_at'] != null
                    ? DateTime.parse(map['created_at'])

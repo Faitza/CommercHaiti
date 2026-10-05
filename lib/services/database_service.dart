@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 import '../models/shop_model.dart';
@@ -197,29 +199,21 @@ class DatabaseService {
   /// commande, ni décrémentés du stock.
   ///
   /// La fonction retourne l'id (String) de la commande créée.
+  ///
+  /// [cleIdempotence] (checklist production, point 10 « empêche le double
+  /// paiement ») : identifiant unique de CETTE tentative de commande,
+  /// généré une fois à l'ouverture du formulaire. Si la même clé est
+  /// renvoyée (double appui, ou nouvel essai après un délai dépassé alors
+  /// que la 1re requête avait en fait abouti), le serveur renvoie la
+  /// commande déjà créée au lieu d'en créer une 2e — le client ne paie
+  /// donc jamais deux fois la même commande.
   Future<String> createOrder({
     required OrderModel order,
     required List<Map<String, dynamic>> items,
+    String? cleIdempotence,
   }) async {
     try {
-      final response = await _supabase.rpc(
-        'create_order_atomic',
-        // Les paramètres sont préfixés "p_" côté SQL (convention pour les
-        // distinguer des colonnes de table) ; on les passe ici sous forme
-        // de Map nom_param -> valeur. `p_items` est encodé en JSON par le
-        // client Supabase (List<Map> -> jsonb côté Postgres).
-        params: {
-          'p_client_id':         order.clientId,
-          'p_shop_id':           order.shopId,
-          'p_seller_id':         order.sellerId,
-          'p_items':             items,
-          'p_total':             order.total,
-          'p_adresse_livraison': order.adresseLivraison,
-          'p_zone':              order.zone,
-          'p_telephone_client':  order.telephoneClient,
-          'p_note_vendeur':      order.noteVendeur,
-        },
-      );
+      final response = await _appelerCreateOrder(order, items, cleIdempotence);
       return response as String;
     } on PostgrestException catch (e) {
       // La fonction SQL lève une exception contenant le mot-clé
@@ -230,9 +224,67 @@ class DatabaseService {
       if (e.message.contains('stock_insuffisant')) {
         throw Exception('stock_insuffisant');
       }
+      // Refus posés par la modération admin (triggers SQL, voir
+      // supabase/migration_admin_moderation.sql).
+      for (final code in const [
+        'compte_bloque', 'boutique_indisponible', 'produit_indisponible',
+      ]) {
+        if (e.message.contains(code)) throw Exception(code);
+      }
       // Toute autre erreur Postgrest est simplement propagée telle quelle.
       rethrow;
     }
+  }
+
+  /// Génère une clé d'idempotence (UUID v4 aléatoire) pour createOrder.
+  static String nouvelleCleIdempotence() {
+    final r = Random.secure();
+    final b = List<int>.generate(16, (_) => r.nextInt(256));
+    b[6] = (b[6] & 0x0f) | 0x40; // version 4
+    b[8] = (b[8] & 0x3f) | 0x80; // variante RFC 4122
+    final h = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+    return '${h.substring(0, 8)}-${h.substring(8, 12)}-'
+        '${h.substring(12, 16)}-${h.substring(16, 20)}-${h.substring(20)}';
+  }
+
+  /// Appel RPC de create_order_atomic. Tant que
+  /// supabase/migration_production.sql n'est pas exécutée, la fonction
+  /// serveur ne connaît pas `p_cle_idempotence` (erreur PGRST202) : on
+  /// refait alors l'appel sans ce paramètre pour que l'app continue de
+  /// fonctionner pendant la mise à jour.
+  Future<dynamic> _appelerCreateOrder(OrderModel order,
+      List<Map<String, dynamic>> items, String? cle) async {
+    try {
+      return await _rpcCreateOrder(order, items, cle);
+    } on PostgrestException catch (e) {
+      if (cle != null && e.code == 'PGRST202') {
+        return await _rpcCreateOrder(order, items, null);
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> _rpcCreateOrder(OrderModel order,
+      List<Map<String, dynamic>> items, String? cle) {
+    return _supabase.rpc(
+      'create_order_atomic',
+      // Les paramètres sont préfixés "p_" côté SQL (convention pour les
+      // distinguer des colonnes de table) ; on les passe ici sous forme
+      // de Map nom_param -> valeur. `p_items` est encodé en JSON par le
+      // client Supabase (List<Map> -> jsonb côté Postgres).
+      params: {
+        'p_client_id':         order.clientId,
+        'p_shop_id':           order.shopId,
+        'p_seller_id':         order.sellerId,
+        'p_items':             items,
+        'p_total':             order.total,
+        'p_adresse_livraison': order.adresseLivraison,
+        'p_zone':              order.zone,
+        'p_telephone_client':  order.telephoneClient,
+        'p_note_vendeur':      order.noteVendeur,
+        if (cle != null) 'p_cle_idempotence': cle,
+      },
+    );
   }
 
   /// Change le statut d'une commande (ex. 'acceptee', 'preparation',

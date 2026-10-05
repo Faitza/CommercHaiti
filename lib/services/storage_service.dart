@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'reseau_service.dart';
 
 /// Service Storage Supabase — Falexson MERCIVAL
 /// Branch : feature/firebase-core
@@ -22,6 +23,10 @@ class StorageService {
   static const String _bucketProducts = 'products';
   static const String _bucketShops = 'shops';
 
+  /// Message lisible de la dernière erreur d'upload (null si tout s'est
+  /// bien passé) — à afficher par l'écran quand upload…() retourne null.
+  String? derniereErreur;
+
   /// Compresse puis uploade une photo de produit dans le bucket
   /// `products`, sous le chemin `shopId/productId/<timestamp>.jpg`
   /// (organisation par boutique puis par produit). Le timestamp dans le
@@ -37,8 +42,8 @@ class StorageService {
     try {
       // Réduit le poids de l'image avant envoi (bande passante + coût de
       // stockage), voir _compress ci-dessous.
+      derniereErreur = null;
       final bytes = await _compress(file);
-      if (bytes == null) return null;
 
       final fileName =
           '$shopId/$productId/${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -59,6 +64,8 @@ class StorageService {
           .from(_bucketProducts)
           .getPublicUrl(fileName);
     } catch (e) {
+      derniereErreur = messageErreur(e,
+          parDefaut: 'Échec du téléversement de la photo — réessayez');
       return null;
     }
   }
@@ -76,8 +83,8 @@ class StorageService {
     try {
       // maxSize plus petit (300px) qu'une photo produit car un logo est
       // affiché en miniature — inutile de stocker une image plus grande.
+      derniereErreur = null;
       final bytes = await _compress(file, maxSize: 300);
-      if (bytes == null) return null;
 
       final fileName = '$shopId/logo.jpg';
 
@@ -88,9 +95,43 @@ class StorageService {
                 contentType: 'image/jpeg', upsert: true),
           );
 
-      return _supabase.storage
-          .from(_bucketShops)
-          .getPublicUrl(fileName);
+      // `?v=` : le logo garde toujours le même chemin (upsert) ; sans ce
+      // paramètre, l'ancien logo resterait affiché depuis le cache des
+      // images (checklist production, point 16).
+      final url = _supabase.storage.from(_bucketShops).getPublicUrl(fileName);
+      return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
+    } catch (e) {
+      derniereErreur = messageErreur(e,
+          parDefaut: 'Échec du téléversement de la photo — réessayez');
+      return null;
+    }
+  }
+
+  /// Compresse puis uploade une photo jointe à un litige dans le bucket
+  /// `litiges`, dans le dossier du client (`<uid>/<commande>/...`) : la
+  /// règle Storage n'autorise chaque client à écrire que dans son dossier.
+  /// Retourne l'URL publique (affichée dans l'admin web), ou null en cas
+  /// d'échec.
+  Future<String?> uploadLitigePhoto({
+    required XFile file,
+    required String orderId,
+  }) async {
+    try {
+      final uid = _supabase.auth.currentUser?.id;
+      if (uid == null) return null;
+      final bytes = await _compress(file);
+      if (bytes == null) return null;
+
+      final fileName =
+          '$uid/$orderId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await _supabase.storage.from('litiges').uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+
+      return _supabase.storage.from('litiges').getPublicUrl(fileName);
     } catch (e) {
       return null;
     }
@@ -111,33 +152,61 @@ class StorageService {
     }
   }
 
-  /// Redimensionne/compresse l'image en JPEG de qualité 85%, avec une
-  /// dimension minimale de `maxSize` px (largeur et hauteur) — réduit le
-  /// poids du fichier avant upload pour économiser bande passante et
-  /// stockage. Si la compression échoue (ex. format d'image non
-  /// supporté par le plugin), on retombe sur l'envoi des octets bruts non
-  /// compressés plutôt que d'empêcher totalement l'upload ; si même la
-  /// lecture des octets échoue, on retourne `null`.
+  /// Poids maximum d'une photo AVANT compression (point 15 de la
+  /// checklist production). Au-delà, on refuse tout de suite : inutile de
+  /// lire en mémoire une photo de 40 Mo sur un petit téléphone.
+  static const int tailleMaxOriginal = 15 * 1024 * 1024; // 15 Mo
+  /// Poids maximum d'un fichier ENVOYÉ (après compression). Doit rester
+  /// aligné avec `file_size_limit` des buckets dans
+  /// supabase/migration_production.sql (2 Mo).
+  static const int tailleMaxEnvoi = 2 * 1024 * 1024; // 2 Mo
+
+  /// Redimensionne/compresse l'image en JPEG (qualité 85 %, côté le plus
+  /// court ramené à `maxSize` px) — réduit le poids du fichier avant
+  /// upload pour économiser bande passante et stockage (point 14).
+  ///
+  /// Checklist production (point 15) : avant ce correctif, si la
+  /// compression échouait, l'original était envoyé tel quel, quel que
+  /// soit son poids. Désormais :
+  /// - un original de plus de [tailleMaxOriginal] est refusé ;
+  /// - si le résultat dépasse encore [tailleMaxEnvoi], on recompresse
+  ///   plus fort (qualité 60) ;
+  /// - l'original non compressé n'est envoyé que s'il pèse moins de
+  ///   [tailleMaxEnvoi] ;
+  /// - sinon on lève `fichier_trop_lourd` (message clair côté écran).
   // ── Compresser image — max 600x600px (fonctionne sur toutes plateformes) ──
-  Future<Uint8List?> _compress(XFile file, {int maxSize = 600}) async {
+  Future<Uint8List> _compress(XFile file, {int maxSize = 600}) async {
+    if (await file.length() > tailleMaxOriginal) {
+      throw Exception('fichier_trop_lourd');
+    }
+    final bytes = await file.readAsBytes();
+    Uint8List? resultat;
     try {
-      final bytes = await file.readAsBytes();
-      final compressed = await FlutterImageCompress.compressWithList(
+      resultat = await FlutterImageCompress.compressWithList(
         bytes,
         minWidth: maxSize,
         minHeight: maxSize,
         quality: 85,
         format: CompressFormat.jpeg,
       );
-      return compressed;
-    } catch (e) {
-      // Si la compression échoue (ex. format non supporté), on envoie l'original
-      try {
-        return await file.readAsBytes();
-      } catch (_) {
-        return null;
+      if (resultat.length > tailleMaxEnvoi) {
+        resultat = await FlutterImageCompress.compressWithList(
+          bytes,
+          minWidth: maxSize,
+          minHeight: maxSize,
+          quality: 60,
+          format: CompressFormat.jpeg,
+        );
       }
+    } catch (e) {
+      // Compression impossible (ex. format non supporté) : on garde
+      // l'original seulement s'il est déjà assez léger (test ci-dessous).
+      resultat = bytes;
     }
+    if (resultat.length > tailleMaxEnvoi) {
+      throw Exception('fichier_trop_lourd');
+    }
+    return resultat;
   }
 
   /// Extrait le chemin relatif d'un fichier (ex. "shopId/logo.jpg") à
@@ -150,6 +219,6 @@ class StorageService {
     final marker = '/storage/v1/object/public/$bucket/';
     final idx = url.indexOf(marker);
     if (idx == -1) return url;
-    return url.substring(idx + marker.length);
+    return url.substring(idx + marker.length).split('?').first;
   }
 }

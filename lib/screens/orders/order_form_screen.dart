@@ -6,8 +6,11 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
+import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/moncash_widgets.dart';
+import '../../services/database_service.dart';
 
 /// Order Form Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_form_screen.dart
@@ -41,16 +44,37 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // Zone de livraison choisie parmi `_zones` (chaîne vide = rien de
   // sélectionné, ce qui bloque la validation dans `_valider()`).
   String _zone = '';
-  // Mode de paiement choisi. Seul 'livraison' (paiement à la livraison,
-  // COD) est réellement sélectionnable actuellement : voir la section
-  // "Paiement" plus bas dans `build()`, où l'option MonCash est affichée
-  // mais désactivée (`onChanged: null`) car ce mode n'est pas encore
-  // implémenté côté projet.
+  // true = le client vient chercher sa commande à la boutique : pas
+  // d'adresse, pas de zone, pas de frais de livraison.
+  bool _retrait = false;
+  // Mode de paiement choisi : 'livraison' (paiement à la livraison, COD)
+  // ou 'moncash' (seulement si la boutique a renseigné son numéro
+  // MonCash, voir `_moncashNumero`).
   String _modePaiement = 'livraison';
+  // Numéro MonCash de la boutique du panier (null = MonCash non proposé).
+  String? _moncashNumero;
+  // Zones livrées par la boutique du panier et leur prix de livraison
+  // (HTG). Vide tant que la boutique n'est pas chargée, ou si elle n'a
+  // configuré aucune zone : on retombe alors sur la liste fixe `_zones`.
+  Map<String, double> _fraisParZone = {};
+
+  List<String> get _zonesProposees =>
+      _fraisParZone.isEmpty ? _zones : _fraisParZone.keys.toList();
+
+  // Prix de livraison de la zone choisie. Le serveur recalcule le même
+  // montant à la création de la commande (migration_frais_livraison.sql).
+  double get _fraisLivraison => _retrait ? 0 : _fraisParZone[_zone] ?? 0;
+  // Numéro de transaction MonCash saisi par le client.
+  final _moncashRefCtrl = TextEditingController();
   // Bascule à `true` pendant l'appel réseau de création de commande, pour
   // désactiver le bouton "Confirmer" et afficher un indicateur de
   // chargement (évite les doubles soumissions).
   bool _isLoading = false;
+  // Checklist production (point 10) : clé unique de cette commande,
+  // créée une seule fois pour ce formulaire. Tous les essais (double
+  // appui, nouvel essai après une erreur réseau) envoient la même clé :
+  // le serveur ne crée jamais deux commandes pour elle.
+  final String _cleCommande = DatabaseService.nouvelleCleIdempotence();
 
   // Liste fixe des zones de livraison desservies (zone géographique des
   // Cayes et environs, cohérent avec le périmètre du projet ITAC).
@@ -67,6 +91,31 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // modifiable, voir le texte d'aide affiché sous le champ dans build()).
     final auth = context.read<AuthProvider>();
     _telephoneCtrl.text = auth.currentUser?.telephone ?? '';
+    _chargerBoutique();
+  }
+
+  // Récupère le numéro MonCash et les zones (avec leur prix de livraison)
+  // de la boutique du panier. `select()` sans liste de colonnes : ne
+  // plante pas si migration_moncash.sql n'a pas encore été exécutée (la
+  // colonne est alors simplement absente).
+  Future<void> _chargerBoutique() async {
+    final cart = context.read<CartProvider>();
+    if (cart.items.isEmpty) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('shops')
+          .select()
+          .eq('id', cart.items.first.product.shopId)
+          .maybeSingle();
+      if (row == null || !mounted) return;
+      final numero = (row['moncash_numero'] as String?)?.trim();
+      final zones = ShopModel.fromMap(row, row['id']).zonesLivraison;
+      setState(() {
+        if (numero != null && numero.isNotEmpty) _moncashNumero = numero;
+        _fraisParZone = {for (final z in zones) z.zone: z.frais};
+        if (_zone.isNotEmpty && !_zonesProposees.contains(_zone)) _zone = '';
+      });
+    } catch (_) {}
   }
 
   // Validateur du champ téléphone : format haïtien, 8 chiffres une fois
@@ -99,13 +148,17 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // délègue la création de la commande au OrderProvider (qui appelle
   // lui-même la RPC Supabase `create_order_atomic`).
   Future<void> _valider() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     // 1) Validation classique des champs texte (adresse, téléphones...) via
     // les validateurs attachés à chaque TextFormField.
     if (!_formKey.currentState!.validate()) return;
     // 2) La zone de livraison n'est pas un TextFormField mais une sélection
     // par "chips" (Wrap de GestureDetector plus bas) : on la valide donc
     // manuellement ici, hors du mécanisme de Form.
-    if (_zone.isEmpty) {
+    if (!_retrait && _zone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Sélectionnez une zone de livraison'),
         backgroundColor: Color(0xFFE63946),
@@ -124,7 +177,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // on abandonne silencieusement. Note : dans ce cas précis, `_isLoading`
     // reste à `true` car il n'est pas remis à `false` ici — cas limite
     // qui ne devrait pas se produire en pratique.
-    if (cart.items.isEmpty) return;
+    if (cart.items.isEmpty) {
+      // Checklist production (point 09) : sans cette remise à false, le
+      // bouton restait bloqué sur « Traitement… ».
+      setState(() => _isLoading = false);
+      return;
+    }
 
     // Le vendeur/la boutique de la commande sont résolus à partir du
     // PREMIER article : le panier ne gère qu'une seule boutique à la fois
@@ -200,8 +258,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       shopId: item.product.shopId, sellerId: sellerId,
       items: [], total: cart.totalAvecPromo,
       statut: 'nouvelle',
-      adresseLivraison: _adresseCtrl.text.trim(),
-      zone: _zone,
+      adresseLivraison:
+          _retrait ? OrderModel.retraitBoutique : _adresseCtrl.text.trim(),
+      zone: _retrait ? OrderModel.retraitBoutique : _zone,
       telephoneClient: _telephoneCtrl.text.trim(),
       noteVendeur: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
       createdAt: DateTime.now(),
@@ -229,7 +288,23 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // plante entre les deux opérations). Si le stock d'UN SEUL article est
     // insuffisant, toute la RPC échoue (rien n'est décrémenté) et
     // orderProvider expose un message d'erreur adapté.
-    final orderId = await orderProvider.createOrder(order: order, items: items);
+    final orderId = await orderProvider.createOrder(
+        order: order, items: items, cleIdempotence: _cleCommande);
+
+    // MonCash : la commande est créée, on y enregistre le numéro de
+    // transaction. En cas d'échec, la commande reste valable et le client
+    // peut renvoyer le numéro depuis l'écran de suivi.
+    if (orderId != null && _modePaiement == 'moncash') {
+      try {
+        await Supabase.instance.client.rpc('declarer_paiement_moncash',
+            params: {
+              'p_order_id': orderId,
+              'p_reference': _moncashRefCtrl.text.trim(),
+            });
+      } catch (e) {
+        debugPrint('declarer_paiement_moncash: $e');
+      }
+    }
 
     setState(() => _isLoading = false);
 
@@ -329,6 +404,33 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // l'adresse précise, plus une sélection de zone parmi
                     // une liste fixe de quartiers desservis (`_zones`).
                     _sectionCard(isDark, children: [
+                      // Livraison ou « M ap vin chèche l » (retrait à la
+                      // boutique : ni adresse, ni zone, ni frais).
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(
+                              value: false,
+                              icon: Icon(Icons.local_shipping_outlined, size: 16),
+                              label: Text('Livraison')),
+                          ButtonSegment(
+                              value: true,
+                              icon: Icon(Icons.storefront_outlined, size: 16),
+                              label: Text('Je viens chercher')),
+                        ],
+                        selected: {_retrait},
+                        onSelectionChanged: (s) =>
+                            setState(() => _retrait = s.first),
+                        showSelectedIcon: false,
+                      ),
+                      const SizedBox(height: 12),
+                      if (_retrait)
+                        Text(
+                            'Vous récupérez la commande à la boutique quand '
+                            'le vendeur vous prévient. Pas de frais de livraison.',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondaryFor(isDark)))
+                      else ...[
                       _label(Icons.location_on_outlined, 'Adresse de livraison', isDark),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -353,7 +455,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       // manuelle faite dans `_valider()`.
                       Wrap(
                         spacing: 8, runSpacing: 8,
-                        children: _zones.map((z) {
+                        children: _zonesProposees.map((z) {
                           final sel = _zone == z;
                           return GestureDetector(
                             onTap: () => setState(() => _zone = z),
@@ -371,7 +473,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                       : AppColors.borderColor(isDark),
                                 ),
                               ),
-                              child: Text(z,
+                              child: Text(
+                                  (_fraisParZone[z] ?? 0) > 0
+                                      ? '$z · ${_fraisParZone[z]!.toStringAsFixed(0)} HTG'
+                                      : z,
                                   style: TextStyle(
                                       fontSize: 12,
                                       color: sel
@@ -384,6 +489,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           );
                         }).toList(),
                       ),
+                      ],
                     ]),
                     const SizedBox(height: 12),
 
@@ -418,23 +524,17 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     ]),
                     const SizedBox(height: 12),
 
-                    // Paiement — jan maket la (COD sèlman, MonCash pa la ankò)
-                    // Section "Mode de paiement". Actuellement, un seul
-                    // mode est réellement utilisable : le paiement à la
-                    // livraison (COD, "Cash On Delivery" — le client paie
-                    // en espèces au livreur). L'option MonCash (portefeuille
-                    // mobile très utilisé en Haïti) est affichée pour
-                    // montrer que le produit est prévu pour l'accueillir,
-                    // mais elle est désactivée (`onChanged: null` rend le
-                    // RadioListTile non cliquable, et son texte est grisé)
-                    // car son intégration (paiement en ligne réel) n'est
-                    // pas encore implémentée dans ce projet étudiant.
+                    // Section "Mode de paiement" : paiement à la livraison
+                    // (COD, "Cash On Delivery" — le client paie en espèces
+                    // au livreur) ou MonCash. MonCash n'est sélectionnable
+                    // que si la boutique a renseigné son numéro MonCash :
+                    // le client envoie l'argent à ce numéro puis saisit le
+                    // numéro de transaction, que le vendeur confirme
+                    // ensuite (pas d'API MonCash, voir migration_moncash.sql).
                     _sectionCard(isDark, children: [
                       _label(Icons.payments_outlined, 'PAIEMENT', isDark),
                       const SizedBox(height: 4),
-                      // Option active : paiement à la livraison. C'est la
-                      // seule valeur que `_modePaiement` peut réellement
-                      // prendre pour l'instant (sa valeur par défaut).
+                      // Paiement à la livraison (valeur par défaut).
                       RadioListTile<String>(
                         value: 'livraison',
                         groupValue: _modePaiement,
@@ -450,26 +550,54 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               style: TextStyle(fontSize: 14)),
                         ]),
                       ),
-                      // Option MonCash désactivée : `onChanged: null`
-                      // empêche toute sélection (le bouton radio ne réagit
-                      // pas au tap), et les couleurs grisées communiquent
-                      // visuellement que l'option n'est "pas encore
-                      // disponible" (voir le label "Bientôt dispo").
+                      // MonCash : désactivé (`onChanged: null`, texte
+                      // grisé) si la boutique n'a pas de numéro MonCash.
                       RadioListTile<String>(
                         value: 'moncash',
                         groupValue: _modePaiement,
-                        onChanged: null,
+                        onChanged: _moncashNumero == null
+                            ? null
+                            : (v) => setState(
+                                () => _modePaiement = v ?? 'livraison'),
+                        activeColor: const Color(0xFF0D2B5E),
                         contentPadding: EdgeInsets.zero,
                         dense: true,
                         title: Row(children: [
                           Icon(Icons.phone_android,
-                              size: 16, color: AppColors.textSecondaryFor(isDark)),
+                              size: 16,
+                              color: _moncashNumero == null
+                                  ? AppColors.textSecondaryFor(isDark)
+                                  : const Color(0xFFD71920)),
                           const SizedBox(width: 6),
-                          Text('MonCash — Bientôt dispo',
-                              style: TextStyle(
-                                  fontSize: 14, color: AppColors.textSecondaryFor(isDark))),
+                          Flexible(
+                            child: Text(
+                                _moncashNumero == null
+                                    ? 'MonCash — non proposé par cette boutique'
+                                    : 'MonCash',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: _moncashNumero == null
+                                        ? AppColors.textSecondaryFor(isDark)
+                                        : null)),
+                          ),
                         ]),
                       ),
+                      // Instructions + numéro de transaction (obligatoire
+                      // quand MonCash est choisi).
+                      if (_modePaiement == 'moncash' &&
+                          _moncashNumero != null) ...[
+                        const SizedBox(height: 4),
+                        MoncashInstructions(
+                            numero: _moncashNumero!,
+                            total: cart.totalAvecPromo + _fraisLivraison),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _moncashRefCtrl,
+                          validator: validerReferenceMoncash,
+                          decoration: _deco(
+                              'Numéro de transaction MonCash', isDark),
+                        ),
+                      ],
                     ]),
                     const SizedBox(height: 12),
 
@@ -541,12 +669,32 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                               ],
                             ),
                           ),
+                        // Livraison : prix de la zone choisie (le serveur
+                        // l'ajoute au total de la commande).
+                        if (_zone.isNotEmpty || _retrait)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Livraison',
+                                    style: TextStyle(fontSize: 13)),
+                                Text(
+                                    _retrait
+                                        ? 'Retrait en boutique'
+                                        : _fraisLivraison > 0
+                                            ? '${_fraisLivraison.toStringAsFixed(0)} HTG'
+                                            : 'Gratuite',
+                                    style: const TextStyle(fontSize: 13)),
+                              ],
+                            ),
+                          ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Total',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text('${cart.totalAvecPromo.toStringAsFixed(0)} HTG',
+                            Text('${(cart.totalAvecPromo + _fraisLivraison).toStringAsFixed(0)} HTG',
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.accentFor(isDark))),
@@ -633,8 +781,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
         borderSide: BorderSide.none),
     focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(
-            color: Color(0xFF0D2B5E), width: 1.5)),
+        borderSide: BorderSide(
+            color: AppColors.accentFor(isDark), width: 1.5)),
     errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Color(0xFFE63946))),
@@ -646,6 +794,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // recommandé par Flutter, pour éviter les fuites mémoire.
   @override
   void dispose() {
+    _moncashRefCtrl.dispose();
     _adresseCtrl.dispose();
     _telephoneCtrl.dispose();
     _confirmTelCtrl.dispose();

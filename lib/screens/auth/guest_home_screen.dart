@@ -8,6 +8,10 @@ import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
+import '../../widgets/bottom_nav_item.dart';
+import '../../widgets/image_reseau_widget.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Accueil Visiteur — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -133,6 +137,8 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
   // Liste des produits les plus commandés, affichée en scroll horizontal.
   List<ProductModel> _topProduits = [];
   bool _isLoading = true;
+  // Checklist production (point 07) : message si le chargement échoue.
+  String? _erreur;
 
   @override
   void initState() {
@@ -153,25 +159,36 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
           .from('products')
           .select()
           .eq('disponible', true)
+          // Pas de produit en rupture dans la vitrine de l'accueil.
+          .gt('stock', 0)
           .order('total_commandes', ascending: false)
           .limit(10);
       if (mounted) {
         setState(() {
           _topProduits = rows.map((r) => ProductModel.fromMap(r, r['id'])).toList();
           _isLoading = false;
+          _erreur = null;
         });
       }
-    } catch (_) {
-      // En cas d'erreur réseau/serveur, on arrête simplement le
-      // chargement (la liste reste vide) sans bloquer l'écran.
-      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      // En cas d'erreur réseau/serveur, on arrête le chargement et on
+      // affiche un message avec « Réessayer » (checklist production,
+      // point 07) au lieu d'une section vide.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _erreur = messageErreur(e,
+              parDefaut: 'Impossible de charger les produits.');
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     // Liste des boutiques mise à jour en temps réel via ShopProvider.
-    final shops = context.watch<ShopProvider>().shops;
+    final shopProv = context.watch<ShopProvider>();
+    final shops = shopProv.shops;
     final isDark = context.watch<ThemeProvider>().isDarkMode;
 
     return Scaffold(
@@ -335,6 +352,19 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                       height: 180,
                       child: _isLoading
                           ? const Center(child: CircularProgressIndicator())
+                          : _erreur != null
+                          ? EtatErreurWidget(
+                              message: _erreur!,
+                              compact: true,
+                              onReessayer: () {
+                                setState(() => _isLoading = true);
+                                _chargerProduits();
+                              })
+                          : _topProduits.isEmpty
+                          ? const EtatVideWidget(
+                              message: 'Aucun produit pour le moment',
+                              icone: Icons.shopping_bag_outlined,
+                              compact: true)
                           : ListView.builder(
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -353,6 +383,24 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                     // défilement global).
                     _sectionTitle('Boutiques ouvertes', isDark,
                         onTap: () => context.go('/client/boutiques')),
+                    // Checklist production (points 05, 06, 07).
+                    if (shopProv.isLoading && shops.isEmpty)
+                      const ChargementWidget()
+                    else if (shopProv.errorMessage != null && shops.isEmpty)
+                      EtatErreurWidget(
+                        message: shopProv.errorMessage!,
+                        compact: true,
+                        onReessayer: () => context
+                            .read<ShopProvider>()
+                            .listenShops(forcer: true),
+                      )
+                    else if (shops.isEmpty)
+                      const EtatVideWidget(
+                        message: 'Aucune boutique ouverte pour le moment',
+                        icone: Icons.storefront_outlined,
+                        compact: true,
+                      )
+                    else
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -388,11 +436,11 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _NavItem(icon: Icons.home, label: 'Accueil', active: true,
+                BottomNavItem(icon: Icons.home, label: 'Accueil', active: true,
                     onTap: () {}),
-                _NavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                BottomNavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
                     onTap: () => GuestHomeScreen.showInscriptionSheet(context)),
-                _NavItem(icon: Icons.inventory_2_outlined, label: 'Commande',
+                BottomNavItem(icon: Icons.inventory_2_outlined, label: 'Commande',
                     onTap: () => GuestHomeScreen.showInscriptionSheet(context)),
               ],
             ),
@@ -459,7 +507,7 @@ class _GuestProduitCard extends StatelessWidget {
                   child: SizedBox(
                     height: 100, width: double.infinity,
                     child: product.vignette != null
-                        ? Image.network(product.vignette!, fit: BoxFit.cover)
+                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFFEEF3FB),
                             child: const Icon(Icons.image_outlined,
@@ -579,45 +627,3 @@ class _GuestBoutiqueCard extends StatelessWidget {
   }
 }
 
-// Élément de la barre de navigation basse (icône + libellé). `active`
-// détermine la couleur (bleu marine si actif, gris sinon).
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon,
-              color: active
-                  ? AppColors.accentFor(isDark)
-                  : AppColors.textSecondaryFor(isDark),
-              size: 22),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 10,
-                  color: active
-                      ? AppColors.accentFor(isDark)
-                      : AppColors.textSecondaryFor(isDark),
-                  fontWeight: active
-                      ? FontWeight.bold
-                      : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-}

@@ -83,6 +83,10 @@ class _ReviewSheetState extends State<_ReviewSheet> {
   /// setState()/Navigator sur un widget déjà retiré de l'arbre pendant
   /// l'attente asynchrone.
   Future<void> _envoyer() async {
+    // Checklist production (point 09) : bloque un 2e appui pendant que le
+    // premier est en cours (le bouton grisé ne suffit pas : deux appuis
+    // très rapides passent avant que l'écran se redessine).
+    if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
       final review = ReviewModel(

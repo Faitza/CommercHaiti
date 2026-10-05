@@ -40,6 +40,25 @@ class OrderModel {
   final String? receiptUrl;
   /// Date/heure de création de la commande.
   final DateTime createdAt;
+  /// Frais de livraison (déjà inclus dans `total`), fixés par le serveur
+  /// selon la zone (migration_frais_livraison.sql).
+  final double fraisLivraison;
+  /// Livreur choisi par le vendeur (migration_livreurs.sql) : nom et
+  /// téléphone copiés sur la commande, visibles par le client.
+  final String? livreurId;
+  final String? livreurNom;
+  final String? livreurTelephone;
+  /// 'livraison' (paiement à la livraison) ou 'moncash'.
+  final String modePaiement;
+  /// Numéro de transaction MonCash saisi par le client.
+  final String? moncashReference;
+  /// null (paiement à la livraison) | 'en_attente' | 'confirme' | 'refuse'.
+  final String? paiementStatut;
+
+  /// Libellé du mode de paiement pour les reçus.
+  String get modePaiementLabel => modePaiement == 'moncash'
+      ? 'MonCash${moncashReference != null ? ' (réf. $moncashReference)' : ''}'
+      : 'Paiement à la livraison';
 
   /// Constructeur constant — tous les champs sont requis sauf noteVendeur
   /// et receiptUrl qui ne sont pas toujours renseignés.
@@ -57,7 +76,21 @@ class OrderModel {
     this.noteVendeur,
     this.receiptUrl,
     required this.createdAt,
+    this.fraisLivraison = 0,
+    this.livreurId,
+    this.livreurNom,
+    this.livreurTelephone,
+    this.modePaiement = 'livraison',
+    this.moncashReference,
+    this.paiementStatut,
   });
+
+  /// Valeur de `zone` (et d'`adresseLivraison`) quand le client vient
+  /// chercher sa commande à la boutique (« M ap vin chèche l ») : pas de
+  /// frais de livraison, pas de livreur.
+  static const String retraitBoutique = 'Retrait en boutique';
+
+  bool get estRetrait => zone == retraitBoutique;
 
   /// Annulation seulement si statut = nouvelle
   /// Une commande ne peut être annulée par le client que tant que le
@@ -103,6 +136,13 @@ class OrderModel {
       telephoneClient:  map['telephone_client'] ?? '',
       noteVendeur:      map['note_vendeur'],
       receiptUrl:       map['receipt_url'],
+      fraisLivraison:   (map['frais_livraison'] ?? 0).toDouble(),
+      livreurId:        map['livreur_id'],
+      livreurNom:       map['livreur_nom'],
+      livreurTelephone: map['livreur_telephone'],
+      modePaiement:     map['mode_paiement'] ?? 'livraison',
+      moncashReference: map['moncash_reference'],
+      paiementStatut:   map['paiement_statut'],
       // Si created_at est absent (nouvelle commande pas encore relue
       // depuis la base), on utilise l'heure actuelle comme repli.
       createdAt:        map['created_at'] != null

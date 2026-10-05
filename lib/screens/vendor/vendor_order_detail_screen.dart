@@ -5,8 +5,11 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../widgets/moncash_widgets.dart';
+import '../../widgets/livreur_widgets.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
 
 /// Détail commande Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -31,8 +34,23 @@ class VendorOrderDetailScreen extends StatelessWidget {
   /// cet écran de détail pour revenir à la liste des commandes.
   Future<void> _changerStatut(
       BuildContext context, String newStatut) async {
-    await context.read<OrderProvider>().updateStatut(order.id, newStatut);
-    if (context.mounted) Navigator.pop(context);
+    // Checklist production (points 07 et 09) : on ne referme l'écran que
+    // si le changement a vraiment été fait (pas sur un 2e appui ignoré),
+    // et on affiche un message clair si le serveur refuse ou ne répond pas.
+    try {
+      final fait = await context
+          .read<OrderProvider>()
+          .updateStatut(order.id, newStatut);
+      if (fait && context.mounted) Navigator.pop(context);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(messageErreur(e,
+              parDefaut: 'Le statut n\'a pas pu être modifié. Réessayez.')),
+          backgroundColor: const Color(0xFFE63946),
+        ));
+      }
+    }
   }
 
   @override
@@ -87,9 +105,36 @@ class VendorOrderDetailScreen extends StatelessWidget {
               _row('Téléphone', order.telephoneClient, isDark: isDark),
               _row('Adresse', order.adresseLivraison, isDark: isDark),
               _row('Zone', order.zone, isDark: isDark),
+              if (order.fraisLivraison > 0)
+                _row('Livraison',
+                    '${order.fraisLivraison.toStringAsFixed(0)} HTG',
+                    isDark: isDark),
               _row('Total', '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
               if (order.noteVendeur != null)
                 _row('Note client', order.noteVendeur!, isDark: isDark),
+            ]),
+            const SizedBox(height: 16),
+
+            // Livreur : choix parmi « Mes livreurs » + envoi WhatsApp.
+            if (!order.estRetrait &&
+                order.statut != 'annulee' &&
+                order.statut != 'livree') ...[
+              _card(isDark: isDark, children: [
+                LivreurVendeurWidget(order: order),
+              ]),
+              const SizedBox(height: 16),
+            ],
+
+            // Paiement : à la livraison, ou MonCash avec les boutons
+            // « Paiement reçu » / « Pas reçu » (migration_moncash.sql).
+            _card(isDark: isDark, children: [
+              MoncashVendeurWidget(
+                orderId: order.id,
+                modePaiement: order.modePaiement,
+                reference: order.moncashReference,
+                paiementStatut: order.paiementStatut,
+                total: order.total,
+              ),
             ]),
             const SizedBox(height: 16),
 

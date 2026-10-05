@@ -30,7 +30,14 @@ class AuthService {
         password: password,
       );
       if (response.user == null) return null;
-      return await getUserFromDatabase(response.user!.id);
+      final user = await getUserFromDatabase(response.user!.id);
+      // Compte bloqué par un administrateur : on referme aussitôt la
+      // session et on remonte un code stable traduit par AuthProvider.
+      if (user?.isBlocked == true) {
+        await _supabase.auth.signOut();
+        throw Exception('compte_bloque');
+      }
+      return user;
     } on AuthException catch (e) {
       throw Exception(e.message);
     }

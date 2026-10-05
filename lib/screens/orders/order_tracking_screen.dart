@@ -6,8 +6,14 @@ import '../../providers/order_provider.dart';
 import '../../widgets/order_status_badge.dart';
 import '../../widgets/whatsapp_button_widget.dart';
 import '../../widgets/receipt_buttons_widget.dart';
+import '../../widgets/moncash_widgets.dart';
+import '../../widgets/livreur_widgets.dart';
+import '../../models/order_model.dart';
+import '../../widgets/litige_section_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../services/reseau_service.dart';
+import '../../widgets/etat_widgets.dart';
 
 /// Order Tracking Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_tracking_screen.dart
@@ -99,7 +105,9 @@ class OrderTrackingScreen extends StatelessWidget {
           // Kontni Realtime
           // Contenu principal, mis à jour en temps réel.
           Expanded(
-            child: StreamBuilder(
+            // StatefulBuilder : permet au bouton « Réessayer » de recréer
+            // le stream (checklist production, point 07).
+            child: StatefulBuilder(builder: (context, relancer) => StreamBuilder(
               // `.stream(primaryKey: ['id'])` ouvre un flux Supabase
               // Realtime sur la table `orders`, filtré avec `.eq('id',
               // orderId)` pour ne recevoir que les changements concernant
@@ -111,6 +119,27 @@ class OrderTrackingScreen extends StatelessWidget {
                   .stream(primaryKey: ['id'])
                   .eq('id', orderId),
               builder: (context, snapshot) {
+                // Checklist production (points 05, 06, 07) : avant, l'écran
+                // affichait « nouvelle » par défaut pendant le chargement,
+                // et rien de clair si la requête échouait.
+                if (snapshot.hasError && !snapshot.hasData) {
+                  return EtatErreurWidget(
+                    message: messageErreur(snapshot.error!,
+                        parDefaut: 'Impossible de charger la commande.'),
+                    onReessayer: () => relancer(() {}),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const ChargementWidget(
+                      message: 'Chargement de la commande…');
+                }
+                if (snapshot.data!.isEmpty) {
+                  return const EtatVideWidget(
+                    message: 'Commande introuvable',
+                    icone: Icons.search_off,
+                    detail: 'Elle a peut-être été supprimée.',
+                  );
+                }
                 // Valeurs par défaut tant que le flux n'a pas encore livré
                 // de donnée (premier chargement).
                 String statut = 'nouvelle';
@@ -123,6 +152,19 @@ class OrderTrackingScreen extends StatelessWidget {
                 String adresse = '';
                 String zone = '';
                 String telephoneClient = '';
+                // Paiement (migration_moncash.sql).
+                String shopId = '';
+                String modePaiement = 'livraison';
+                String? moncashReference;
+                String? paiementStatut;
+                // Livreur choisi par le vendeur (migration_livreurs.sql).
+                String? livreurNom;
+                String? livreurTelephone;
+                // Litige éventuel (colonnes litige_*, voir
+                // migration_litige_client.sql).
+                String? litigeStatut;
+                String? litigeMotif;
+                String? litigeResolution;
                 if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   // Le flux renvoie une liste de lignes correspondant au
                   // filtre ; ici il ne peut y avoir qu'une seule commande
@@ -133,6 +175,15 @@ class OrderTrackingScreen extends StatelessWidget {
                   adresse = row['adresse_livraison'] ?? '';
                   zone = row['zone'] ?? '';
                   telephoneClient = row['telephone_client'] ?? '';
+                  shopId = row['shop_id'] ?? '';
+                  modePaiement = row['mode_paiement'] ?? 'livraison';
+                  moncashReference = row['moncash_reference'];
+                  paiementStatut = row['paiement_statut'];
+                  livreurNom = row['livreur_nom'];
+                  livreurTelephone = row['livreur_telephone'];
+                  litigeStatut = row['litige_statut'];
+                  litigeMotif = row['litige_motif'];
+                  litigeResolution = row['litige_resolution'];
                 }
 
                 // On retrouve l'index de l'étape courante dans `_etapes`
@@ -290,7 +341,15 @@ class OrderTrackingScreen extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(
-                                    etape['label'] as String,
+                                    // Retrait à la boutique : les deux
+                                    // dernières étapes changent de nom.
+                                    zone == OrderModel.retraitBoutique &&
+                                            etape['statut'] == 'livraison'
+                                        ? 'Prête à récupérer'
+                                        : zone == OrderModel.retraitBoutique &&
+                                                etape['statut'] == 'livree'
+                                            ? 'Récupérée'
+                                            : etape['label'] as String,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: estActuel
@@ -308,6 +367,36 @@ class OrderTrackingScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 14),
+
+                      // Livreur assigné par le vendeur (appel / WhatsApp),
+                      // tant que la commande n'est pas terminée.
+                      if (livreurNom != null &&
+                          livreurTelephone != null &&
+                          statut != 'livree' &&
+                          statut != 'annulee') ...[
+                        LivreurClientWidget(
+                          nom: livreurNom,
+                          telephone: livreurTelephone,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // Paiement MonCash : état (en attente / confirmé /
+                      // refusé) ou proposition de payer avec MonCash.
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) ...[
+                        MoncashSuiviWidget(
+                          orderId: orderId,
+                          shopId: shopId,
+                          statut: statut,
+                          total: total,
+                          modePaiement: modePaiement,
+                          reference: moncashReference,
+                          paiementStatut: paiementStatut,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Reçu PDF — BF-030
                       // Le bouton de génération/partage du reçu PDF n'est
@@ -388,11 +477,23 @@ class OrderTrackingScreen extends StatelessWidget {
                             ),
                           ]),
                         ),
+
+                      // Signaler un problème (litige) — une fois la
+                      // commande acceptée — ou état du litige en cours.
+                      const SizedBox(height: 10),
+                      LitigeSectionWidget(
+                        orderId: orderId,
+                        statut: statut,
+                        litigeStatut: litigeStatut,
+                        litigeMotif: litigeMotif,
+                        litigeResolution: litigeResolution,
+                        isDark: isDark,
+                      ),
                     ],
                   ),
                 );
               },
-            ),
+            )),
           ),
         ],
       ),

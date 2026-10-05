@@ -27,6 +27,9 @@ class AppColors {
   static const Color green     = Color(0xFF1D9E75);
   // Orange/ambre — utilisé pour les étoiles de notation et alertes légères.
   static const Color amber     = Color(0xFFF5A623);
+  // Orange foncé pour du TEXTE (ex. « Plus que 3 en stock ! ») : l'ambre
+  // ci-dessus sur fond blanc est trop pâle pour être lu (contraste ~2:1).
+  static const Color amberText = Color(0xFFB45309);
   // Vert WhatsApp — utilisé spécifiquement pour les boutons de contact via
   // WhatsApp (couleur de la marque WhatsApp).
   static const Color whatsapp  = Color(0xFF25D366);
