@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_links.dart';
@@ -13,6 +16,11 @@ import '../services/database_service.dart';
 /// présentant un produit : nom, prix, nom de la boutique, puis le lien de
 /// téléchargement de l'app en bas du message. Le vendeur choisit ensuite
 /// lui-même le contact ou le groupe destinataire dans WhatsApp.
+///
+/// Si le produit a des photos, elles sont téléchargées puis partagées
+/// avec le message (feuille de partage du téléphone : le vendeur y choisit
+/// WhatsApp). Si aucune photo ne se télécharge, on retombe sur l'ancien
+/// partage texte via wa.me.
 ///
 /// Utilisé à deux endroits (même bouton) :
 ///  - après l'ajout d'un produit (vendor_add_product_screen.dart)
@@ -53,29 +61,67 @@ class _WhatsAppShareProductWidgetState
     extends State<WhatsAppShareProductWidget> {
   bool _isLoading = false;
 
-  /// Récupère le nom de la boutique (si non fourni), construit le message
-  /// puis ouvre `https://wa.me/?text=...` : sans numéro, WhatsApp propose
-  /// de choisir le destinataire. Même stratégie que WhatsAppButtonWidget :
-  /// `launchUrl` direct dans un try/catch (pas de `canLaunchUrl`, peu
-  /// fiable sur Android 11+).
+  /// Récupère le nom de la boutique (si non fourni) et construit le
+  /// message, puis partage les photos + le message. Sans photo
+  /// téléchargeable (ou sur le web), ouvre `https://wa.me/?text=...` :
+  /// sans numéro, WhatsApp propose de choisir le destinataire.
   Future<void> _partager() async {
     setState(() => _isLoading = true);
-    var nomBoutique = widget.nomBoutique;
-    if (nomBoutique == null || nomBoutique.isEmpty) {
-      final shop = await DatabaseService().getShop(widget.product.shopId);
-      nomBoutique = shop?.nom ?? 'CommercHaiti';
-    }
-    final message =
-        WhatsAppShareProductWidget.construireMessage(widget.product, nomBoutique);
-    final url = Uri.parse(
-        'https://wa.me/?text=${Uri.encodeComponent(message)}');
     try {
-      final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) _erreur();
+      var nomBoutique = widget.nomBoutique;
+      if (nomBoutique == null || nomBoutique.isEmpty) {
+        final shop = await DatabaseService().getShop(widget.product.shopId);
+        nomBoutique = shop?.nom ?? 'CommercHaiti';
+      }
+      final message = WhatsAppShareProductWidget.construireMessage(
+          widget.product, nomBoutique);
+      final photos = kIsWeb ? <XFile>[] : await _telechargerPhotos();
+      if (photos.isNotEmpty) {
+        // WhatsApp garde le texte comme légende de la première photo.
+        await Share.shareXFiles(photos, text: message);
+      } else {
+        await _partagerTexte(message);
+      }
     } catch (_) {
       if (mounted) _erreur();
     }
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  /// Télécharge toutes les photos du produit (une photo qui échoue est
+  /// simplement ignorée). Retourne une liste vide si aucune n'a réussi.
+  Future<List<XFile>> _telechargerPhotos() async {
+    final fichiers = <XFile>[];
+    final urls = widget.product.photos;
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        final rep = await http
+            .get(Uri.parse(urls[i]))
+            .timeout(const Duration(seconds: 15));
+        if (rep.statusCode != 200 || rep.bodyBytes.isEmpty) continue;
+        final type = rep.headers['content-type'] ?? 'image/jpeg';
+        final ext = type.contains('png')
+            ? 'png'
+            : type.contains('webp')
+                ? 'webp'
+                : 'jpg';
+        fichiers.add(XFile.fromData(rep.bodyBytes,
+            name: 'produit-${i + 1}.$ext', mimeType: type));
+      } catch (_) {
+        // Photo injoignable : on continue avec les autres.
+      }
+    }
+    return fichiers;
+  }
+
+  /// Ancien partage : texte seul via wa.me. Même stratégie que
+  /// WhatsAppButtonWidget : `launchUrl` direct dans un try/catch (pas de
+  /// `canLaunchUrl`, peu fiable sur Android 11+).
+  Future<void> _partagerTexte(String message) async {
+    final url = Uri.parse(
+        'https://wa.me/?text=${Uri.encodeComponent(message)}');
+    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) _erreur();
   }
 
   void _erreur() {
