@@ -213,6 +213,8 @@ class DatabaseService {
           'p_shop_id':           order.shopId,
           'p_seller_id':         order.sellerId,
           'p_items':             items,
+          // Indicatif seulement : le serveur recalcule prix et total à
+          // partir de la table products (migration_commandes_serveur.sql).
           'p_total':             order.total,
           'p_adresse_livraison': order.adresseLivraison,
           'p_zone':              order.zone,

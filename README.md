@@ -92,6 +92,7 @@ lib/
 supabase/
 ├── schema.sql                # Tables + Row Level Security
 ├── functions.sql             # Fonctions RPC (commande atomique, téléphone vendeur…)
+├── migration_commandes_serveur.sql  # Prix, total et stock des commandes côté serveur
 ├── fix_realtime.sql          # Activation Realtime sur les tables
 └── seed.sql                  # Données de démonstration
 ```
@@ -145,8 +146,9 @@ class SupabaseConfig {
 3. Dans l'éditeur SQL de Supabase, exécutez dans l'ordre :
    1. `supabase/schema.sql` — création des tables et des règles RLS
    2. `supabase/functions.sql` — fonctions RPC (commande atomique, etc.)
-   3. `supabase/fix_realtime.sql` — activation du temps réel
-   4. `supabase/seed.sql` *(optionnel)* — données de démonstration
+   3. `supabase/migration_commandes_serveur.sql` — prix, total et stock des commandes calculés par le serveur
+   4. `supabase/fix_realtime.sql` — activation du temps réel
+   5. `supabase/seed.sql` *(optionnel)* — données de démonstration
 
 4. **Authentification par email** : Authentication → Sign In / Providers → Email (activé par défaut).
 

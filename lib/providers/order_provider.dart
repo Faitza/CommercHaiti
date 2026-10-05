@@ -151,61 +151,15 @@ class OrderProvider extends ChangeNotifier {
   /// Changer statut commande (vendeur)
   /// Utilisé par le vendeur pour faire avancer une commande dans le
   /// workflow (ex : "nouvelle" → "acceptee" → "preparation" ...).
-  /// LORSQUE LA COMMANDE EST ACCEPTEE, LE STOCK EST DECREMENTE
-  /// AUTOMATIQUEMENT POUR CHAQUE PRODUIT DANS LA COMMANDE.
+  /// Le stock n'est PAS touché ici : create_order_atomic() le baisse déjà
+  /// au moment de la commande, et le serveur le remet si la commande est
+  /// annulée (voir supabase/migration_commandes_serveur.sql).
   Future<void> updateStatut(String orderId, String newStatut) async {
     try {
-      // 1. Mete ajou statut kòmand lan
       await _db.updateOrderStatus(orderId, newStatut);
-      
-      // 2. Si kòmand lan vin "acceptee", diminye stock la
-      if (newStatut == 'acceptee') {
-        // Chache kòmand lan nan lis vendeur a
-        final order = _ordresVendeur.firstWhere(
-          (o) => o.id == orderId,
-          orElse: () => throw Exception('Kòmand pa jwenn'),
-        );
-        
-        // Pou chak pwodwi nan kòmand lan, diminye stock la
-        for (final item in order.items) {
-          await _decrementStock(item.productId, item.quantite);
-        }
-      }
-      
     } catch (e) {
       _errorMessage = 'Erreur mise à jour statut: $e';
       notifyListeners();
-      rethrow;
-    }
-  }
-
-  /// Metòd prive pou dekremente stock yon pwodwi
-  /// Pran stock aktyèl la, soustrai kantite a, epi mete ajou nan baz done a
-  Future<void> _decrementStock(String productId, int quantity) async {
-    try {
-      // Pran stock aktyèl la
-      final result = await _supabase
-          .from('products')
-          .select('stock')
-          .eq('id', productId)
-          .single();
-      
-      final currentStock = result['stock'] as int? ?? 0;
-      final newStock = currentStock - quantity;
-      
-      // Verifye si gen ase stock
-      if (newStock < 0) {
-        throw Exception('Stock insuffisant pou pwodwi sa a');
-      }
-      
-      // Mete ajou stock la
-      await _supabase
-          .from('products')
-          .update({'stock': newStock})
-          .eq('id', productId);
-          
-    } catch (e) {
-      print('Error decrementing stock: $e');
       rethrow;
     }
   }
