@@ -39,16 +39,22 @@ class WhatsAppShareProductWidget extends StatefulWidget {
 
   /// Construit le texte du message WhatsApp. Si le produit est en promo,
   /// le prix promo est affiché, suivi du prix normal entre parenthèses.
-  static String construireMessage(ProductModel product, String nomBoutique) {
+  /// Avec [emoji] = false, le message est en texte simple : via le lien
+  /// wa.me, WhatsApp (surtout Web/Desktop) affiche souvent les emoji comme
+  /// des losanges « � ». Le partage de photos (feuille de partage du
+  /// téléphone) les transmet tels quels, donc on les garde là.
+  static String construireMessage(ProductModel product, String nomBoutique,
+      {bool emoji = true}) {
     final prix = product.hasPromo
         ? '${product.prixPromo!.toStringAsFixed(0)} HTG '
             '(au lieu de ${product.prix.toStringAsFixed(0)} HTG)'
         : '${product.prix.toStringAsFixed(0)} HTG';
-    return '🛍️ *${product.nom}*\n'
-        '💰 Prix : $prix\n'
-        '🏪 Boutique : $nomBoutique\n'
+    String e(String symbole) => emoji ? '$symbole ' : '';
+    return '${e('🛍️')}*${product.nom}*\n'
+        '${e('💰')}Prix : $prix\n'
+        '${e('🏪')}Boutique : $nomBoutique\n'
         '\n'
-        '📲 Commandez sur CommercHaiti, téléchargez l\'app :\n'
+        '${e('📲')}Commandez sur CommercHaiti, téléchargez l\'app :\n'
         '${AppLinks.telechargementApp}';
   }
 
@@ -73,14 +79,16 @@ class _WhatsAppShareProductWidgetState
         final shop = await DatabaseService().getShop(widget.product.shopId);
         nomBoutique = shop?.nom ?? 'CommercHaiti';
       }
-      final message = WhatsAppShareProductWidget.construireMessage(
-          widget.product, nomBoutique);
       final photos = kIsWeb ? <XFile>[] : await _telechargerPhotos();
       if (photos.isNotEmpty) {
         // WhatsApp garde le texte comme légende de la première photo.
-        await Share.shareXFiles(photos, text: message);
+        await Share.shareXFiles(photos,
+            text: WhatsAppShareProductWidget.construireMessage(
+                widget.product, nomBoutique));
       } else {
-        await _partagerTexte(message);
+        await _partagerTexte(WhatsAppShareProductWidget.construireMessage(
+            widget.product, nomBoutique,
+            emoji: false));
       }
     } catch (_) {
       if (mounted) _erreur();
