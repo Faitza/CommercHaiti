@@ -44,11 +44,13 @@ class WhatsAppShareProductWidget extends StatefulWidget {
         ? '${product.prixPromo!.toStringAsFixed(0)} HTG '
             '(au lieu de ${product.prix.toStringAsFixed(0)} HTG)'
         : '${product.prix.toStringAsFixed(0)} HTG';
-    return '🛍️ *${product.nom}*\n'
-        '💰 Prix : $prix\n'
-        '🏪 Boutique : $nomBoutique\n'
+    // Pas d'emoji : via le lien wa.me, WhatsApp (surtout Web/Desktop)
+    // les affiche souvent comme des losanges « � ».
+    return '*${product.nom}*\n'
+        'Prix : $prix\n'
+        'Boutique : $nomBoutique\n'
         '\n'
-        '📲 Commandez sur CommercHaiti, téléchargez l\'app :\n'
+        'Commandez sur CommercHaiti, téléchargez l\'app :\n'
         '${AppLinks.telechargementApp}';
   }
 
