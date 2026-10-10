@@ -11,6 +11,7 @@ import '../../widgets/whatsapp_share_product_widget.dart';
 import '../../constants/categories.dart';
 import '../../widgets/categorie_dropdowns_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/recherche_photo_service.dart';
 
 /// Ajouter produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -186,6 +187,9 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     );
 
     await _db.createProduct(product);
+    // Recherche par photo : calcule l'empreinte de la photo du nouveau
+    // produit en arrière-plan (n'attend pas, ne bloque pas le vendeur).
+    RecherchePhotoService.instance.synchroniserBoutique(shopId);
     if (!mounted) return;
     setState(() => _isLoading = false);
     // Après l'ajout, on propose au vendeur de partager le produit sur

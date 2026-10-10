@@ -10,6 +10,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/categories.dart';
 import '../../widgets/categorie_dropdowns_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/recherche_photo_service.dart';
 
 /// Modifier produit — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -183,6 +184,12 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
         'couleurs': _couleurs,
         'disponible': _disponible,
       });
+      // Recherche par photo : recalcule l'empreinte si la photo
+      // principale a changé (en arrière-plan).
+      if (_product != null) {
+        RecherchePhotoService.instance
+            .synchroniserBoutique(_product!.shopId);
+      }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
