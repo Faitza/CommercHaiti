@@ -13,8 +13,9 @@ import '../services/database_service.dart';
 /// Path : lib/widgets/whatsapp_share_product_widget.dart
 ///
 /// Bouton réutilisable qui ouvre WhatsApp avec un message pré-écrit
-/// présentant un produit : nom, prix, nom de la boutique, puis le lien de
-/// téléchargement de l'app en bas du message. Le vendeur choisit ensuite
+/// présentant un produit : nom, prix, nom de la boutique, le lien direct
+/// vers le produit (ouvre l'app sur le produit, ou propose de la
+/// télécharger), puis le lien de téléchargement de l'app en bas du message. Le vendeur choisit ensuite
 /// lui-même le contact ou le groupe destinataire dans WhatsApp.
 ///
 /// Si le produit a des photos, elles sont téléchargées puis partagées
@@ -58,6 +59,8 @@ class WhatsAppShareProductWidget extends StatefulWidget {
         '${epuise ? '${e('⛔')}*RUPTURE DE STOCK* : ce produit est épuisé\n' : ''}'
         '${e('💰')}Prix : $prix\n'
         '${e('🏪')}Boutique : $nomBoutique\n'
+        '\n'
+        '${e('👉')}Voir le produit : ${AppLinks.lienProduit(product.id)}\n'
         '\n'
         '${e('📲')}${epuise ? 'Découvrez nos autres produits' : 'Commandez'} '
         'sur CommercHaiti, téléchargez l\'app :\n'
