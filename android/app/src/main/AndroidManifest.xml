@@ -20,9 +20,37 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Laisse go_router recevoir les liens ci-dessous (route /p/:id). -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Liens produit partagés sur WhatsApp : https://…/p/<id>.
+                 autoVerify : si le site publie /.well-known/assetlinks.json
+                 avec l'empreinte SHA-256 de la clé de signature de l'app,
+                 le lien ouvre l'app directement (sans passer par le
+                 navigateur). Domaine à changer aussi dans
+                 lib/constants/app_links.dart. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                      android:host="commerc-haiti-admin.vercel.app"
+                      android:pathPrefix="/p/"/>
+            </intent-filter>
+            <!-- commerchaiti://app/p/<id> : bouton "Ouvrir dans l'app" de
+                 la page web du produit (marche même sans assetlinks). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="commerchaiti"
+                      android:host="app"
+                      android:pathPrefix="/p/"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
