@@ -19,6 +19,8 @@ import '../../providers/cart_provider.dart';
 import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../services/recherche_photo_service.dart';
+import 'recherche_photo_screen.dart';
 
 /// Client Home Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/client_home_screen.dart
@@ -439,6 +441,16 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           child: const Icon(Icons.close,
                               color: Colors.white54, size: 16),
                         ),
+                      // Recherche par photo (comme sur Shein) : icône
+                      // appareil photo au bout de la barre de recherche.
+                      if (RecherchePhotoService.disponible) ...[
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => ouvrirRecherchePhoto(context),
+                          child: const Icon(Icons.photo_camera_outlined,
+                              color: Colors.white, size: 18),
+                        ),
+                      ],
                     ],
                   ),
                 ),

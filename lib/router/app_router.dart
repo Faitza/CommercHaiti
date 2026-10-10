@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
@@ -32,6 +34,7 @@ import '../screens/client/product_shops_screen.dart';
 import '../screens/client/favorites_screen.dart';
 import '../screens/client/edit_profile_screen.dart';
 import '../screens/client/all_products_screen.dart';
+import '../screens/client/recherche_photo_screen.dart';
 
 // Orders screens
 import '../screens/orders/cart_screen.dart';
@@ -140,6 +143,7 @@ class AppRouter {
               '/client/product',
               '/client/product-shops',
               '/client/all-products',
+              '/client/recherche-photo',
             ];
             final isGuestAllowed =
                 guestAllowed.any((p) => path.startsWith(p));
@@ -358,6 +362,13 @@ class AppRouter {
               final product = state.extra as ProductModel;
               return ProductDetailScreen(product: product);
             },
+          ),
+          GoRoute(
+            path: '/client/recherche-photo',
+            // Reçoit les octets de la photo (Uint8List) via `extra` —
+            // voir ouvrirRecherchePhoto().
+            builder: (_, state) =>
+                RecherchePhotoScreen(photo: state.extra as Uint8List),
           ),
           GoRoute(
             path: '/client/product-shops',

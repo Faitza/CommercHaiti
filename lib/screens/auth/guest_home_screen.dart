@@ -12,6 +12,8 @@ import '../../widgets/bottom_nav_item.dart';
 import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../services/recherche_photo_service.dart';
+import '../client/recherche_photo_screen.dart';
 
 /// Accueil Visiteur — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -276,11 +278,28 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: const Row(children: [
-                      Icon(Icons.search, color: Colors.white54, size: 16),
-                      SizedBox(width: 8),
-                      Text('Rechercher produits ou boutiques…',
-                          style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    child: Row(children: [
+                      const Icon(Icons.search, color: Colors.white54, size: 16),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('Rechercher produits ou boutiques…',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                      ),
+                      // Recherche par photo, aussi sans compte (BF-010).
+                      // Son propre GestureDetector : un appui sur l'icône
+                      // ouvre la photo au lieu de l'écran des boutiques.
+                      if (RecherchePhotoService.disponible)
+                        GestureDetector(
+                          onTap: () => ouvrirRecherchePhoto(context),
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 10),
+                            child: Icon(Icons.photo_camera_outlined,
+                                color: Colors.white, size: 18),
+                          ),
+                        ),
                     ]),
                   ),
                 ),

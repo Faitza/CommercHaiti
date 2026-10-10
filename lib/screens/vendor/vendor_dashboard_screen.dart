@@ -12,6 +12,7 @@ import '../../widgets/app_drawer_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/bottom_nav_item.dart';
+import '../../services/recherche_photo_service.dart';
 
 /// Vendor Dashboard Screen — Faitza COLAS
 /// Path : lib/screens/vendor/vendor_dashboard_screen.dart
@@ -57,6 +58,13 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
     // infos de la boutique dès l'ouverture de l'écran.
     _loadStats();
     _loadShop();
+    // Recherche par photo : complète en arrière-plan les empreintes des
+    // produits qui n'en ont pas encore (produits créés avant cette
+    // fonctionnalité, ou dont le calcul a échoué hors connexion).
+    final shopIdPhoto = context.read<AuthProvider>().shopId;
+    if (shopIdPhoto != null) {
+      RecherchePhotoService.instance.synchroniserBoutique(shopIdPhoto);
+    }
     final auth = context.read<AuthProvider>();
     if (auth.currentUser != null) {
       // Démarre l'écoute temps réel (stream Supabase Realtime) des
