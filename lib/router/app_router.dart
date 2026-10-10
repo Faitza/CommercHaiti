@@ -337,7 +337,10 @@ class AppRouter {
           ),
           GoRoute(
             path: '/client/all-products',
-            builder: (_, __) => const AllProductsScreen(),
+            // `extra` optionnel : catégorie à filtrer d'office (String).
+            builder: (_, state) => AllProductsScreen(
+              categorieInitiale: state.extra as String?,
+            ),
           ),
           GoRoute(
             path: '/client/edit-profile',
