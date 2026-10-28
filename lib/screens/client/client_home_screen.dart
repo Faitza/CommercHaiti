@@ -21,6 +21,7 @@ import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import 'recherche_photo_screen.dart';
 import '../../widgets/image_produit_widget.dart';
+import '../../l10n/traduction.dart';
 
 /// Foto ki parèt anba ble maren nan tèt akèy la.
 const String kAkeyFotoBanye = 'assets/images/banniere_accueil.jpg';
@@ -172,7 +173,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       setState(() {
         _isSearching = false;
         _erreurRecherche = messageErreur(e,
-            parDefaut: 'La recherche a échoué. Réessayez.');
+            parDefaut: traduire('La recherche a échoué. Réessayez.'));
       });
     }
   }
@@ -231,7 +232,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       setState(() {
         _isLoading = false;
         _erreur = messageErreur(e,
-            parDefaut: 'Impossible de charger les produits.');
+            parDefaut: traduire('Impossible de charger les produits.'));
       });
     }
   }
@@ -253,11 +254,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       // contenant les raccourcis principaux de navigation du compte
       // client.
       endDrawer: AppDrawerWidget(
-        headerTitle: 'Bonjour ${auth.prenom}',
+        headerTitle: context.tr('Bonjour {nom}', {'nom': auth.prenom}),
         headerSubtitle: 'CommercHaiti · Les Cayes',
         settingsRoute: '/params',
         items: [
-          DrawerMenuItem(Icons.storefront_outlined, 'Boutiques',
+          DrawerMenuItem(Icons.storefront_outlined, context.tr('Boutiques'),
               onTap: () {
             // Ferme d'abord le tiroir (pop du Drawer, pas de l'écran),
             // puis empile l'écran Boutiques par-dessus l'accueil :
@@ -266,7 +267,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             Navigator.pop(context);
             context.push('/client/boutiques');
           }),
-          DrawerMenuItem(Icons.category_outlined, 'Catégories', onTap: () {
+          DrawerMenuItem(Icons.category_outlined, context.tr('Catégories'), onTap: () {
             // "Catégories" mène maintenant vers le catalogue complet
             // (/client/all-products), qui affiche justement les filtres
             // de catégorie en évidence — distinct de "Boutiques" (liste
@@ -274,16 +275,16 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             Navigator.pop(context);
             context.push('/client/all-products');
           }),
-          DrawerMenuItem(Icons.grid_view_outlined, 'Tous les produits',
+          DrawerMenuItem(Icons.grid_view_outlined, context.tr('Tous les produits'),
               onTap: () {
             Navigator.pop(context);
             context.push('/client/all-products');
           }),
-          DrawerMenuItem(Icons.favorite_border, 'Favoris', onTap: () {
+          DrawerMenuItem(Icons.favorite_border, context.tr('Favoris'), onTap: () {
             Navigator.pop(context);
             context.push('/client/favorites');
           }),
-          DrawerMenuItem(Icons.person_outline, 'Profil', onTap: () {
+          DrawerMenuItem(Icons.person_outline, context.tr('Profil'), onTap: () {
             Navigator.pop(context);
             context.push('/client/edit-profile');
           }),
@@ -386,7 +387,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         color: Color(0xFFF5A623), size: 16),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text('Bonjour ${auth.prenom}',
+                      child: Text(context.tr('Bonjour {nom}', {'nom': auth.prenom}),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -417,11 +418,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           controller: _searchCtrl,
                           style: const TextStyle(
                               color: Colors.white, fontSize: 12),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             isDense: true,
                             border: InputBorder.none,
-                            hintText: 'Rechercher produits ou boutiques…',
-                            hintStyle: TextStyle(
+                            hintText: context.tr('Rechercher produits ou boutiques…'),
+                            hintStyle: const TextStyle(
                                 color: Colors.white54, fontSize: 12),
                           ),
                         ),
@@ -485,7 +486,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           const Icon(Icons.local_offer,
                               color: Colors.white, size: 20),
                           const SizedBox(width: 8),
-                          Text('Promotions du jour ! (${_promoProduits.length})',
+                          Text(context.tr('Promotions du jour ! ({n})', {'n': _promoProduits.length}),
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -514,7 +515,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // Carrousel horizontal des 10 produits les plus
                     // commandés (chargés par _loadData()). "Voir tout"
                     // ouvre le catalogue complet.
-                    _sectionTitle('Produits populaires',
+                    _sectionTitle(context.tr('Produits populaires'),
                         onTap: () => context.push('/client/all-products')),
                     // Lis vètikal (youn anba lòt) olye de karousèl
                     // orizontal la : chak pwodui sou yon liy.
@@ -532,8 +533,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                             _loadData();
                           })
                     else if (_topProduits.isEmpty)
-                      const EtatVideWidget(
-                          message: 'Aucun produit pour le moment',
+                      EtatVideWidget(
+                          message: context.tr('Aucun produit pour le moment'),
                           icone: Icons.shopping_bag_outlined,
                           compact: true)
                     else
@@ -572,7 +573,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // go()/push() entre les deux points d'entrée vers
                     // /client/boutiques est le genre de détail qui a
                     // déjà causé des bugs de navigation dans ce projet.
-                    _sectionTitle('Boutiques ouvertes',
+                    _sectionTitle(context.tr('Boutiques ouvertes'),
                         onTap: () => context.go('/client/boutiques')),
                     // Checklist production (points 05, 06, 07).
                     if (shopProv.isLoading && shops.isEmpty)
@@ -586,8 +587,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                             .listenShops(forcer: true),
                       )
                     else if (shops.isEmpty)
-                      const EtatVideWidget(
-                        message: 'Aucune boutique ouverte pour le moment',
+                      EtatVideWidget(
+                        message: context.tr('Aucune boutique ouverte pour le moment'),
                         icone: Icons.storefront_outlined,
                         compact: true,
                       )
@@ -636,12 +637,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                BottomNavItem(icon: Icons.home, label: 'Accueil', active: true,
+                BottomNavItem(icon: Icons.home, label: context.tr('Accueil'), active: true,
                     onTap: () {}),
-                BottomNavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                BottomNavItem(icon: Icons.shopping_cart_outlined, label: context.tr('Panier'),
                     badge: context.watch<CartProvider>().totalArticles,
                     onTap: () => context.go('/cart')),
-                BottomNavItem(icon: Icons.inventory_2_outlined, label: 'Commandes',
+                BottomNavItem(icon: Icons.inventory_2_outlined, label: context.tr('Commandes'),
                     onTap: () => context.go('/order-history')),
               ],
             ),
@@ -673,7 +674,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     }
     if (boutiquesTrouvees.isEmpty && _searchProduits.isEmpty) {
       return Center(
-        child: Text('Aucun résultat pour « ${_searchCtrl.text} »',
+        child: Text(context.tr('Aucun résultat pour « {q} »', {'q': _searchCtrl.text}),
             style: TextStyle(
                 color: AppColors.textSecondaryFor(
                     context.watch<ThemeProvider>().isDarkMode))),
@@ -683,7 +684,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 14),
       children: [
         if (_searchProduits.isNotEmpty) ...[
-          _sectionTitle('Produits (${_searchProduits.length})'),
+          _sectionTitle(context.tr('Produits ({n})', {'n': _searchProduits.length})),
           SizedBox(
             height: 180,
             child: ListView.builder(
@@ -700,7 +701,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           const SizedBox(height: 16),
         ],
         if (boutiquesTrouvees.isNotEmpty) ...[
-          _sectionTitle('Boutiques (${boutiquesTrouvees.length})'),
+          _sectionTitle(context.tr('Boutiques ({n})', {'n': boutiquesTrouvees.length})),
           ...boutiquesTrouvees.map((shop) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: _BoutiqueCard(
@@ -731,7 +732,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           if (onTap != null)
             GestureDetector(
               onTap: onTap,
-              child: Text('Voir tout',
+              child: Text(context.tr('Voir tout'),
                   style: TextStyle(
                       fontSize: 12, color: AppColors.accentFor(isDark))),
             ),
@@ -1027,7 +1028,7 @@ class _BoutiqueCard extends StatelessWidget {
                   Row(children: [
                     const Icon(Icons.star, size: 11, color: Color(0xFFF5A623)),
                     const SizedBox(width: 2),
-                    Text('${shop.rating.toStringAsFixed(1)} · ${shop.totalAvis} avis',
+                    Text(context.tr('{note} · {n} avis', {'note': shop.rating.toStringAsFixed(1), 'n': shop.totalAvis}),
                         style: TextStyle(
                             fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                   ]),
@@ -1044,7 +1045,7 @@ class _BoutiqueCard extends StatelessWidget {
                     : const Color(0xFFFDEAEA),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(shop.isOpen ? 'Ouvert' : 'Fermé',
+              child: Text(shop.isOpen ? context.tr('Ouvert') : context.tr('Fermé'),
                   style: TextStyle(
                       color: shop.isOpen
                           ? const Color(0xFF1D9E75)

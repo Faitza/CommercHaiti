@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/order_model.dart';
 import '../services/receipt_service.dart';
 import 'receipt_image_widget.dart';
+import '../l10n/traduction.dart';
 
 /// Boutons Télécharger / Partager le reçu PDF — BF-030 — + un bouton
 /// "Partager en image" (PNG) en complément, plus pratique pour WhatsApp.
@@ -103,7 +104,7 @@ class _ReceiptButtonsWidgetState extends State<ReceiptButtonsWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur reçu : ${e.toString()}'),
+          content: Text(traduire('Erreur reçu : {erreur}', {'erreur': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -165,7 +166,8 @@ class _ReceiptButtonsWidgetState extends State<ReceiptButtonsWidget> {
               name: 'recu-commerchaiti-${order.id.substring(0, 6)}.png',
               mimeType: 'image/png'),
         ],
-        text: 'Reçu CommercHaiti — Commande #${order.id.substring(0, 6).toUpperCase()}',
+        text: traduire('Reçu CommercHaiti — Commande #{num}',
+            {'num': order.id.substring(0, 6).toUpperCase()}),
       );
     } finally {
       // Retire systématiquement le widget invisible de l'Overlay, que le
@@ -210,7 +212,7 @@ class _ReceiptButtonsWidgetState extends State<ReceiptButtonsWidget> {
           onPressed: () => _action((order, nom) =>
               _receiptService.partager(order, shopNom: nom)),
           icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
-          label: const Text('Télécharger PDF'),
+          label: Text(context.tr('Télécharger PDF')),
         ),
         // Bouton 3 : même chose pour le reçu en image PNG (technique
         // Overlay + RepaintBoundary décrite plus haut) — plus adapté à un
@@ -218,7 +220,7 @@ class _ReceiptButtonsWidgetState extends State<ReceiptButtonsWidget> {
         TextButton.icon(
           onPressed: () => _action(_partagerImage),
           icon: const Icon(Icons.image_outlined, size: 16),
-          label: const Text('Télécharger image'),
+          label: Text(context.tr('Télécharger image')),
         ),
       ],
     );

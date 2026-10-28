@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../l10n/traduction.dart';
 import '../providers/auth_provider.dart';
 import 'notification_navigation.dart';
 
@@ -125,7 +126,8 @@ class PushService {
           .whereType<String>()
           .join('\n')),
       duration: const Duration(seconds: 5),
-      action: SnackBarAction(label: 'Voir', onPressed: () => _ouvrir(message)),
+      action: SnackBarAction(
+          label: traduire('Voir'), onPressed: () => _ouvrir(message)),
     ));
   }
 

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 import '../../services/database_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
@@ -104,7 +105,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     if (url == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_storage.derniereErreur ??
-            'Échec du téléversement du logo — réessayez'),
+            traduire('Échec du téléversement du logo — réessayez')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -123,25 +124,25 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     if (_zonesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Sélectionnez au moins une zone de livraison'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Sélectionnez au moins une zone de livraison')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
     if (_categoriesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Sélectionnez au moins une catégorie vendue'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Sélectionnez au moins une catégorie vendue')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
     if (_ouverture == null || _fermeture == null ||
         _ouverture == _fermeture || _jours.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Horaire incomplet : heures d\'ouverture et de '
-            'fermeture différentes, et au moins un jour de travail'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Horaire incomplet : heures d\'ouverture et de '
+            'fermeture différentes, et au moins un jour de travail')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
@@ -178,7 +179,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {erreur}', {'erreur': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -196,7 +197,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
-        title: const Text('Créer ma boutique'),
+        title: Text(context.tr('Créer ma boutique')),
         // Pas de bouton retour automatique : cet écran est une étape
         // obligatoire après inscription vendeur, l'utilisateur ne doit
         // pas pouvoir revenir en arrière avant de l'avoir complétée.
@@ -221,15 +222,15 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(children: [
-                  const Text('Votre code boutique',
-                      style: TextStyle(color: Color(0xFF666666))),
+                  Text(context.tr('Votre code boutique'),
+                      style: const TextStyle(color: Color(0xFF666666))),
                   const SizedBox(height: 4),
                   Text(widget.shopCode, style: const TextStyle(
                       fontSize: 22, fontWeight: FontWeight.bold,
                       color: Color(0xFF0D2B5E), letterSpacing: 2)),
                   const SizedBox(height: 4),
-                  const Text('Ce code identifie votre boutique sur les reçus',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                  Text(context.tr('Ce code identifie votre boutique sur les reçus'),
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
                       textAlign: TextAlign.center),
                 ]),
               ),
@@ -262,7 +263,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                               Icon(Icons.add_a_photo_outlined,
                                   color: AppColors.accentFor(_isDark), size: 28),
                               const SizedBox(height: 4),
-                              Text('Logo', style: TextStyle(
+                              Text(context.tr('Logo'), style: TextStyle(
                                   fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
                             ])
                         : null,
@@ -273,7 +274,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               // Précise que le logo est facultatif (des initiales seront
               // affichées par défaut ailleurs dans l'app si absent).
               Center(
-                child: Text('Optionnel — initiales affichées si absent',
+                child: Text(context.tr('Optionnel — initiales affichées si absent'),
                     style: TextStyle(fontSize: 11, color: AppColors.textSecondaryFor(_isDark))),
               ),
               const SizedBox(height: 24),
@@ -284,18 +285,18 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               TextFormField(
                 controller: _nomCtrl,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Nom requis';
+                  if (v == null || v.trim().isEmpty) return traduire('Nom requis');
                   final t = v.trim();
-                  if (t.length < 3) return 'Minimum 3 caractères';
-                  if (t.length > 50) return 'Maximum 50 caractères';
+                  if (t.length < 3) return traduire('Minimum 3 caractères');
+                  if (t.length > 50) return traduire('Maximum 50 caractères');
                   if (!RegExp(r"^[A-Za-zÀ-ÿ' \-0-9&]+$").hasMatch(t)) {
-                    return 'Caractères non autorisés';
+                    return traduire('Caractères non autorisés');
                   }
                   if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
-                    return 'Le nom ne peut pas être uniquement des chiffres';
+                    return traduire('Le nom ne peut pas être uniquement des chiffres');
                   }
                   if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
-                    return 'Maximum 4 chiffres dans le nom';
+                    return traduire('Maximum 4 chiffres dans le nom');
                   }
                   return null;
                 },
@@ -311,12 +312,12 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                 controller: _descriptionCtrl,
                 maxLines: 3,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Description requise';
+                  if (v == null || v.trim().isEmpty) return traduire('Description requise');
                   final t = v.trim();
-                  if (t.length < 10) return 'Minimum 10 caractères';
-                  if (t.length > 200) return 'Maximum 200 caractères';
+                  if (t.length < 10) return traduire('Minimum 10 caractères');
+                  if (t.length > 200) return traduire('Maximum 200 caractères');
                   if (RegExp(r'\d').hasMatch(t)) {
-                    return 'La description ne doit contenir aucun chiffre';
+                    return traduire('La description ne doit contenir aucun chiffre');
                   }
                   return null;
                 },
@@ -329,7 +330,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               // FilterChip. Au clic, on ajoute ou on retire la zone de la
               // liste `_zonesSelectionnees` (voir onSelected).
               _label('Zones de livraison *'),
-              Text('Sélectionnez les zones où vous livrez',
+              Text(context.tr('Sélectionnez les zones où vous livrez'),
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
               const SizedBox(height: 12),
               Wrap(
@@ -337,7 +338,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                 children: _zonesDisponibles.map((zone) {
                   final sel = _zonesSelectionnees.contains(zone);
                   return FilterChip(
-                    label: Text(zone),
+                    label: Text(context.tr(zone)),
                     selected: sel,
                     onSelected: (v) => setState(() {
                       if (v) _zonesSelectionnees.add(zone);
@@ -360,7 +361,7 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               // Cases à cocher (multi-sélection) : limitent ensuite les
               // catégories proposées à l'ajout d'un produit.
               _label('Catégories vendues *'),
-              Text('Cochez les catégories de produits que vous vendez',
+              Text(context.tr('Cochez les catégories de produits que vous vendez'),
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
               const SizedBox(height: 12),
               CategoriesBoutiqueWidget(
@@ -403,8 +404,8 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                       ? const SizedBox(width: 20, height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2))
-                      : const Text('Créer ma boutique',
-                          style: TextStyle(color: Colors.white,
+                      : Text(context.tr('Créer ma boutique'),
+                          style: const TextStyle(color: Colors.white,
                               fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -420,14 +421,14 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // écrans d'authentification, pour cohérence visuelle).
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(t, style: TextStyle(fontSize: 14,
+        child: Text(context.tr(t), style: TextStyle(fontSize: 14,
             fontWeight: FontWeight.w600, color: AppColors.textPrimaryFor(_isDark))),
       );
 
   // Décoration commune des champs de texte de cet écran (fond gris clair,
   // pas de bordure visible sauf en cas d'erreur).
   InputDecoration _deco(String hint) => InputDecoration(
-        hintText: hint,
+        hintText: context.tr(hint),
         hintStyle: TextStyle(color: AppColors.textSecondaryFor(_isDark)),
         filled: true,
         fillColor: AppColors.inputFill(_isDark),

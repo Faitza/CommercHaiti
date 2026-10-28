@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 
 /// Auth Screen — Faitza COLAS
 /// Path : lib/screens/auth/auth_screen.dart
@@ -83,16 +84,16 @@ class _AuthScreenState extends State<AuthScreen>
   // Vérifie qu'un email est renseigné et respecte un format valide
   // (texte@texte.domaine, domaine d'au moins 2 lettres).
   String? _valEmail(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Email requis';
+    if (v == null || v.trim().isEmpty) return traduire('Email requis');
     if (!RegExp(r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$').hasMatch(v.trim())) {
-      return 'Email invalide';
+      return traduire('Email invalide');
     }
     return null;
   }
   // Vérifie que le mot de passe est renseigné et fait au moins 6 caractères.
   String? _valPassword(String? v) {
-    if (v == null || v.isEmpty) return 'Mot de passe requis';
-    if (v.length < 6) return 'Minimum 6 caractères';
+    if (v == null || v.isEmpty) return traduire('Mot de passe requis');
+    if (v.length < 6) return traduire('Minimum 6 caractères');
     return null;
   }
   // Vérifie que le nom est renseigné, fait au moins 2 caractères, et n'est
@@ -100,17 +101,17 @@ class _AuthScreenState extends State<AuthScreen>
   // maximum 4 chiffres tolérés (ex: surnom/suffixe) — un nom "12345" ou
   // "Jean@@@" n'est pas valide.
   String? _valNom(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Nom requis';
+    if (v == null || v.trim().isEmpty) return traduire('Nom requis');
     final t = v.trim();
-    if (t.length < 2) return 'Trop court';
+    if (t.length < 2) return traduire('Trop court');
     if (!RegExp(r"^[A-Za-zÀ-ÿ' \-0-9]+$").hasMatch(t)) {
-      return 'Le nom ne peut contenir que des lettres';
+      return traduire('Le nom ne peut contenir que des lettres');
     }
     if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
-      return 'Le nom ne peut pas être uniquement des chiffres';
+      return traduire('Le nom ne peut pas être uniquement des chiffres');
     }
     if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
-      return 'Maximum 4 chiffres dans le nom';
+      return traduire('Maximum 4 chiffres dans le nom');
     }
     return null;
   }
@@ -118,13 +119,13 @@ class _AuthScreenState extends State<AuthScreen>
   // 8 chiffres (l'indicatif +509, s'il est saisi, est retiré avant
   // vérification), commençant par un chiffre de 2 à 9.
   String? _valTel(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Téléphone requis';
+    if (v == null || v.trim().isEmpty) return traduire('Téléphone requis');
     var chiffres = v.replaceAll(RegExp(r'[^\d]'), '');
     if (chiffres.length == 11 && chiffres.startsWith('509')) {
       chiffres = chiffres.substring(3);
     }
-    if (chiffres.length != 8) return 'Numéro invalide (8 chiffres attendus)';
-    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return 'Numéro invalide';
+    if (chiffres.length != 8) return traduire('Numéro invalide (8 chiffres attendus)');
+    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return traduire('Numéro invalide');
     return null;
   }
   // Vérifie que l'adresse est renseignée, suffisamment longue, et pas
@@ -132,21 +133,21 @@ class _AuthScreenState extends State<AuthScreen>
   // au moins un mot : rue, quartier, ville…) — les chiffres (numéro de
   // rue) restent autorisés, contrairement au nom.
   String? _valAdresse(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Adresse requise';
-    if (v.trim().length < 5) return 'Adresse trop courte';
+    if (v == null || v.trim().isEmpty) return traduire('Adresse requise');
+    if (v.trim().length < 5) return traduire('Adresse trop courte');
     if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(v)) {
-      return 'L\'adresse ne peut pas être uniquement des chiffres';
+      return traduire('L\'adresse ne peut pas être uniquement des chiffres');
     }
     return null;
   }
   // Vérifie qu'une description est renseignée, suffisamment longue, et
   // strictement textuelle (aucun chiffre autorisé).
   String? _valDescription(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Description requise';
+    if (v == null || v.trim().isEmpty) return traduire('Description requise');
     final t = v.trim();
-    if (t.length < 10) return 'Minimum 10 caractères';
+    if (t.length < 10) return traduire('Minimum 10 caractères');
     if (RegExp(r'\d').hasMatch(t)) {
-      return 'La description ne doit contenir aucun chiffre';
+      return traduire('La description ne doit contenir aucun chiffre');
     }
     return null;
   }
@@ -167,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen>
       context.go(auth.isSeller ? '/vendor/dashboard' : '/client/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(auth.errorMessage ?? 'Erreur connexion'),
+        content: Text(auth.errorMessage ?? traduire('Erreur connexion')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -210,7 +211,7 @@ class _AuthScreenState extends State<AuthScreen>
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(auth.errorMessage ?? 'Erreur inscription'),
+        content: Text(auth.errorMessage ?? traduire('Erreur inscription')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -254,14 +255,14 @@ class _AuthScreenState extends State<AuthScreen>
                       children: [
                         // Titre qui change selon le rôle transmis.
                         Text(
-                          isVendeur ? 'Espace Vendeur' : 'Espace Client',
+                          isVendeur ? context.tr('Espace Vendeur') : context.tr('Espace Client'),
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold),
                         ),
-                        const Text('CommercHaiti · Les Cayes',
-                            style: TextStyle(
+                        Text(context.tr('CommercHaiti · Les Cayes'),
+                            style: const TextStyle(
                                 color: Colors.white54, fontSize: 10)),
                       ],
                     ),
@@ -276,7 +277,7 @@ class _AuthScreenState extends State<AuthScreen>
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white54,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                  tabs: const [Tab(text: 'Connexion'), Tab(text: 'Inscription')],
+                  tabs: [Tab(text: context.tr('Connexion')), Tab(text: context.tr('Inscription'))],
                 ),
               ],
             ),
@@ -332,7 +333,7 @@ class _AuthScreenState extends State<AuthScreen>
             Center(
               child: TextButton(
                 onPressed: () => context.go('/guest'),
-                child: Text('Parcourir sans s\'inscrire',
+                child: Text(context.tr('Parcourir sans s\'inscrire'),
                     style: TextStyle(
                         color: AppColors.textSecondaryFor(_isDark), fontSize: 13)),
               ),
@@ -392,14 +393,14 @@ class _AuthScreenState extends State<AuthScreen>
             _label('Nom de la boutique'),
             _field(_nomBoutiqueCtrl, 'Marché Frais Lakay',
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Nom requis';
+                  if (v == null || v.trim().isEmpty) return traduire('Nom requis');
                   final t = v.trim();
-                  if (t.length < 3) return 'Min 3 caractères';
+                  if (t.length < 3) return traduire('Min 3 caractères');
                   if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
-                    return 'Ne peut pas être uniquement des chiffres';
+                    return traduire('Ne peut pas être uniquement des chiffres');
                   }
                   if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
-                    return 'Maximum 4 chiffres dans le nom';
+                    return traduire('Maximum 4 chiffres dans le nom');
                   }
                   return null;
                 },
@@ -417,7 +418,7 @@ class _AuthScreenState extends State<AuthScreen>
                 child: Row(children: [
                   const Icon(Icons.tag, size: 16, color: Color(0xFF0D2B5E)),
                   const SizedBox(width: 8),
-                  Text('Code : $_shopCodePreview',
+                  Text(context.tr('Code : {code}', {'code': _shopCodePreview}),
                       style: const TextStyle(
                           color: Color(0xFF0D2B5E),
                           fontWeight: FontWeight.bold,
@@ -450,7 +451,7 @@ class _AuthScreenState extends State<AuthScreen>
   // Libellé au-dessus d'un champ de formulaire.
   Widget _label(String t) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Text(t, style: TextStyle(
+    child: Text(context.tr(t), style: TextStyle(
         fontSize: 13, fontWeight: FontWeight.w600,
         color: AppColors.textPrimaryFor(_isDark))),
   );
@@ -472,7 +473,7 @@ class _AuthScreenState extends State<AuthScreen>
   // Décoration commune (bordures, couleurs, padding) appliquée à tous les
   // champs de saisie pour garder un style cohérent dans tout l'écran.
   InputDecoration _deco(String hint, IconData icon) => InputDecoration(
-    hintText: hint,
+    hintText: context.tr(hint),
     hintStyle: TextStyle(color: AppColors.textSecondaryFor(_isDark), fontSize: 13),
     prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondaryFor(_isDark)),
     filled: true,
@@ -527,7 +528,7 @@ class _AuthScreenState extends State<AuthScreen>
           ? const SizedBox(width: 20, height: 20,
               child: CircularProgressIndicator(
                   color: Colors.white, strokeWidth: 2))
-          : Text(label, style: const TextStyle(
+          : Text(context.tr(label), style: const TextStyle(
               fontSize: 15, fontWeight: FontWeight.bold)),
     ),
   );
@@ -547,7 +548,7 @@ class _AuthScreenState extends State<AuthScreen>
       icon: const Text('G', style: TextStyle(
           fontSize: 18, fontWeight: FontWeight.bold,
           color: Color(0xFF4285F4))),
-      label: Text('Continuer avec Google',
+      label: Text(context.tr('Continuer avec Google'),
           style: TextStyle(color: AppColors.textPrimaryFor(_isDark), fontSize: 14)),
       onPressed: auth.isLoading ? null : () => auth.signInWithGoogle(),
     ),

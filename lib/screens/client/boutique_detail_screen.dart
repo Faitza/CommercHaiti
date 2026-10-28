@@ -14,6 +14,7 @@ import '../../constants/app_colors.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
 import '../../widgets/image_produit_widget.dart';
+import '../../l10n/traduction.dart';
 
 /// Détail boutique — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -180,7 +181,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
       setState(() {
         _isLoading = false;
         _erreur = messageErreur(e,
-            parDefaut: 'Impossible de charger les produits de la boutique.');
+            parDefaut: traduire('Impossible de charger les produits de la boutique.'));
       });
     }
   }
@@ -240,7 +241,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                 color: Colors.white70, fontSize: 12)),
                         Text(
                             widget.shop.isOpen
-                                ? ' · Ouvert' : ' · Fermé',
+                                ? ' · ${context.tr('Ouvert')}' : ' · ${context.tr('Fermé')}',
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 12)),
                       ]),
@@ -322,7 +323,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                       : '30-45 min',
                                   style: TextStyle(
                                       fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
-                              Text(' · ${_produits.length} produits',
+                              Text(context.tr(' · {n} produits', {'n': _produits.length}),
                                   style: TextStyle(
                                       fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                             ]),
@@ -344,7 +345,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: WhatsAppButtonWidget(
                       telephone: _telephoneVendeur,
-                      label: 'Contacter via WhatsApp',
+                      label: context.tr('Contacter via WhatsApp'),
                     ),
                   ),
                 const SizedBox(height: 16),
@@ -364,13 +365,13 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                     },
                   )
                 else if (_produits.isEmpty)
-                  const EtatVideWidget(
-                    message: 'Cette boutique n\'a pas encore de produit disponible',
+                  EtatVideWidget(
+                    message: context.tr('Cette boutique n\'a pas encore de produit disponible'),
                     icone: Icons.shopping_bag_outlined,
                   )
                 else ...[
                   if (_categories.isNotEmpty) ...[
-                    _sectionTitle('Catégories'),
+                    _sectionTitle(context.tr('Catégories')),
                     // Rangée horizontale de "cartes catégorie" : chacune
                     // affiche une icône (déduite du nom via
                     // _iconPourCategorie) et le nom de la catégorie.
@@ -420,7 +421,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                       size: 20),
                                 ),
                                 const SizedBox(height: 6),
-                                Text(_categories[i],
+                                Text(context.tr(_categories[i]),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.center,
@@ -445,7 +446,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                   // ceci fonctionne car itemCount limite bien le nombre
                   // d'appels du builder à 4 maximum).
                   if (_produits.isNotEmpty) ...[
-                    _sectionTitle('Produits populaires'),
+                    _sectionTitle(context.tr('Produits populaires')),
                     GridView.builder(
                       // shrinkWrap + NeverScrollableScrollPhysics :
                       // cette grille ne défile pas elle-même, elle
@@ -523,7 +524,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                   // (_AvisSection), qui gère lui-même son propre
                   // chargement Supabase indépendamment du reste de
                   // l'écran (voir plus bas).
-                  _sectionTitle('Avis clients'),
+                  _sectionTitle(context.tr('Avis clients')),
                   _AvisSection(shopId: widget.shop.id),
                 ],
                 const SizedBox(height: 80),
@@ -621,7 +622,7 @@ class _AvisSectionState extends State<_AvisSection> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
               color: AppColors.surface(isDark), borderRadius: BorderRadius.circular(12)),
-          child: Text('Aucun avis pour l\'instant',
+          child: Text(context.tr('Aucun avis pour l\'instant'),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
         ),

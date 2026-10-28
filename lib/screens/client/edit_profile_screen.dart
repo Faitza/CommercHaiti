@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/database_service.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 
 /// Modifier profil client — Informations personnelles + Adresse
 /// Path : lib/screens/client/edit_profile_screen.dart
@@ -46,40 +47,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // d'inscription (auth_screen.dart), pour rester cohérent dans toute
   // l'app.
   String? _valNom(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Nom requis';
+    if (v == null || v.trim().isEmpty) return traduire('Nom requis');
     final t = v.trim();
-    if (t.length < 2) return 'Trop court';
+    if (t.length < 2) return traduire('Trop court');
     if (!RegExp(r"^[A-Za-zÀ-ÿ' \-0-9]+$").hasMatch(t)) {
-      return 'Le nom ne peut contenir que des lettres';
+      return traduire('Le nom ne peut contenir que des lettres');
     }
     if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
-      return 'Le nom ne peut pas être uniquement des chiffres';
+      return traduire('Le nom ne peut pas être uniquement des chiffres');
     }
     if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
-      return 'Maximum 4 chiffres dans le nom';
+      return traduire('Maximum 4 chiffres dans le nom');
     }
     return null;
   }
 
   // Téléphone : format haïtien, 8 chiffres (indicatif +509 optionnel).
   String? _valTel(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Téléphone requis';
+    if (v == null || v.trim().isEmpty) return traduire('Téléphone requis');
     var chiffres = v.replaceAll(RegExp(r'[^\d]'), '');
     if (chiffres.length == 11 && chiffres.startsWith('509')) {
       chiffres = chiffres.substring(3);
     }
-    if (chiffres.length != 8) return 'Numéro invalide (8 chiffres attendus)';
-    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return 'Numéro invalide';
+    if (chiffres.length != 8) return traduire('Numéro invalide (8 chiffres attendus)');
+    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return traduire('Numéro invalide');
     return null;
   }
 
   // Adresse : suffisamment longue et pas composée uniquement de chiffres
   // (les numéros de rue restent autorisés).
   String? _valAdresse(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Adresse requise';
-    if (v.trim().length < 5) return 'Adresse trop courte';
+    if (v == null || v.trim().isEmpty) return traduire('Adresse requise');
+    if (v.trim().length < 5) return traduire('Adresse trop courte');
     if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(v)) {
-      return 'L\'adresse ne peut pas être uniquement des chiffres';
+      return traduire('L\'adresse ne peut pas être uniquement des chiffres');
     }
     return null;
   }
@@ -140,7 +141,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // l'écran silencieusement.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {e}', {'e': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -166,7 +167,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           // lieu).
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Mon profil'),
+        title: Text(context.tr('Mon profil')),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -177,7 +178,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               // Champ Nom complet (obligatoire, validateur simple :
               // non vide).
-              Text('Nom complet *',
+              Text(context.tr('Nom complet *'),
                   style: TextStyle(fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryFor(isDark))),
               const SizedBox(height: 6),
@@ -189,7 +190,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 16),
               // Champ Téléphone (obligatoire, clavier numérique adapté
               // via keyboardType: TextInputType.phone).
-              Text('Téléphone *',
+              Text(context.tr('Téléphone *'),
                   style: TextStyle(fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryFor(isDark))),
               const SizedBox(height: 6),
@@ -202,7 +203,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 16),
               // Champ Adresse (obligatoire, sur 2 lignes maximum pour
               // laisser un peu de place à une adresse plus longue).
-              Text('Adresse principale *',
+              Text(context.tr('Adresse principale *'),
                   style: TextStyle(fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryFor(isDark))),
               const SizedBox(height: 6),
@@ -231,8 +232,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? const SizedBox(width: 20, height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2))
-                      : const Text('Enregistrer',
-                          style: TextStyle(color: Colors.white,
+                      : Text(context.tr('Enregistrer'),
+                          style: const TextStyle(color: Colors.white,
                               fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),

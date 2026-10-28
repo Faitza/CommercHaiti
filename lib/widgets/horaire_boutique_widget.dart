@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../models/shop_model.dart';
 import '../services/database_service.dart';
+import '../l10n/traduction.dart';
 
 /// Horaire boutique — Faitza COLAS
 /// Branch : feature/shop-hours
@@ -67,14 +68,14 @@ class HoraireBoutiqueWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          Expanded(child: _heure(context, 'Ouverture', ouverture,
+          Expanded(child: _heure(context, context.tr('Ouverture'), ouverture,
               const TimeOfDay(hour: 8, minute: 0), onOuvertureChanged)),
           const SizedBox(width: 12),
-          Expanded(child: _heure(context, 'Fermeture', fermeture,
+          Expanded(child: _heure(context, context.tr('Fermeture'), fermeture,
               const TimeOfDay(hour: 18, minute: 0), onFermetureChanged)),
         ]),
         const SizedBox(height: 12),
-        Text('Jours de travail',
+        Text(context.tr('Jours de travail'),
             style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -91,7 +92,7 @@ class HoraireBoutiqueWidget extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
                 activeColor: AppColors.navy,
-                title: Text(jour,
+                title: Text(context.tr(jour),
                     style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
                 onChanged: (v) => onJoursChanged(ShopModel.joursSemaine
                     .where((j) => j == jour ? v == true : jours.contains(j))
@@ -171,7 +172,7 @@ class _ForcerStatutWidgetState extends State<ForcerStatutWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {e}', {'e': e.toString()})),
           backgroundColor: AppColors.red,
         ));
       }
@@ -186,12 +187,14 @@ class _ForcerStatutWidgetState extends State<ForcerStatutWidget> {
     final ouverte = shop.isOpen;
     final String detail;
     if (shop.isOpenManuel != null) {
-      detail = 'Forcé manuellement';
+      detail = context.tr('Forcé manuellement');
     } else if (shop.aUnHoraire) {
-      detail = 'Automatique · ${shop.horaireOuverture} – '
-          '${shop.horaireFermeture}';
+      detail = context.tr('Automatique · {debut} – {fin}', {
+        'debut': shop.horaireOuverture,
+        'fin': shop.horaireFermeture,
+      });
     } else {
-      detail = 'Aucun horaire défini';
+      detail = context.tr('Aucun horaire défini');
     }
 
     return Column(
@@ -206,7 +209,7 @@ class _ForcerStatutWidgetState extends State<ForcerStatutWidget> {
             ),
           ),
           const SizedBox(width: 8),
-          Text(ouverte ? 'Ouverte maintenant' : 'Fermée maintenant',
+          Text(ouverte ? context.tr('Ouverte maintenant') : context.tr('Fermée maintenant'),
               style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimaryFor(widget.isDark))),
@@ -231,8 +234,8 @@ class _ForcerStatutWidgetState extends State<ForcerStatutWidget> {
               onPressed: _isSaving || shop.isOpenManuel == true
                   ? null
                   : () => _forcer(true),
-              child: const Text('Ouvrir maintenant',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(context.tr('Ouvrir maintenant'),
+                  style: const TextStyle(color: Colors.white)),
             ),
           ),
           const SizedBox(width: 10),
@@ -246,8 +249,8 @@ class _ForcerStatutWidgetState extends State<ForcerStatutWidget> {
               onPressed: _isSaving || shop.isOpenManuel == false
                   ? null
                   : () => _forcer(false),
-              child: const Text('Fermer maintenant',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(context.tr('Fermer maintenant'),
+                  style: const TextStyle(color: Colors.white)),
             ),
           ),
         ]),
@@ -256,7 +259,7 @@ class _ForcerStatutWidgetState extends State<ForcerStatutWidget> {
           TextButton.icon(
             onPressed: _isSaving ? null : () => _forcer(null),
             icon: const Icon(Icons.schedule, size: 18),
-            label: const Text('Revenir à l\'horaire automatique'),
+            label: Text(context.tr('Revenir à l\'horaire automatique')),
           ),
       ],
     );

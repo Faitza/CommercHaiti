@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw; // Alias "pw" pour distinguer les widgets PDF des widgets Flutter (Material)
 import 'package:printing/printing.dart';
 import '../models/order_model.dart';
+import '../l10n/traduction.dart';
 
 /// Reçu PDF automatique — BF-030
 /// Path : lib/services/receipt_service.dart
@@ -34,7 +35,7 @@ class ReceiptService {
             // ── En-tête : nom de la boutique + sous-titre CommercHaiti ──
             pw.Text(shopNom,
                 style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-            pw.Text('CommercHaiti — Reçu de commande',
+            pw.Text(traduire('CommercHaiti — Reçu de commande'),
                 style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
             pw.SizedBox(height: 16),
             pw.Divider(),
@@ -43,14 +44,14 @@ class ReceiptService {
             // On ne garde que les 6 premiers caractères de l'UUID de la
             // commande (en majuscules) pour un numéro plus court et lisible
             // par le client, plutôt que d'afficher l'UUID complet.
-            _ligne('N° commande', '#${order.id.substring(0, 6).toUpperCase()}'),
-            _ligne('Date', _formatDate(order.createdAt)),
-            _ligne('Client', order.telephoneClient),
-            _ligne('Adresse', order.adresseLivraison),
-            _ligne('Zone', order.zone),
+            _ligne(traduire('N° commande'), '#${order.id.substring(0, 6).toUpperCase()}'),
+            _ligne(traduire('Date'), _formatDate(order.createdAt)),
+            _ligne(traduire('Client'), order.telephoneClient),
+            _ligne(traduire('Adresse'), traduire(order.adresseLivraison)),
+            _ligne(traduire('Zone'), traduire(order.zone)),
             pw.SizedBox(height: 16),
             // ── Tableau des articles commandés ──
-            pw.Text('Articles',
+            pw.Text(traduire('Articles'),
                 style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
             pw.Table(
@@ -65,9 +66,9 @@ class ReceiptService {
               children: [
                 // Ligne d'en-tête du tableau (titres de colonnes en gras).
                 pw.TableRow(children: [
-                  _cell('Produit', bold: true),
-                  _cell('Qté', bold: true),
-                  _cell('Sous-total', bold: true),
+                  _cell(traduire('Produit'), bold: true),
+                  _cell(traduire('Qté'), bold: true),
+                  _cell(traduire('Sous-total'), bold: true),
                 ]),
                 // Une ligne par article de la commande, générée
                 // dynamiquement à partir de order.items.
@@ -84,25 +85,30 @@ class ReceiptService {
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Text(
-                    'Livraison : ${order.fraisLivraison.toStringAsFixed(0)} HTG',
+                    traduire('Livraison : {montant} HTG',
+                        {'montant': order.fraisLivraison.toStringAsFixed(0)}),
                     style: const pw.TextStyle(fontSize: 11)),
               ),
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text('Total : ${order.total.toStringAsFixed(0)} HTG',
+              child: pw.Text(
+                  traduire('Total : {montant} HTG',
+                      {'montant': order.total.toStringAsFixed(0)}),
                   style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold)),
             ),
             pw.SizedBox(height: 8),
             // Mode de paiement : à la livraison ou MonCash (avec réf.).
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text('Mode de paiement : ${order.modePaiementLabel}',
+              child: pw.Text(
+                  traduire('Mode de paiement : {mode}',
+                      {'mode': order.modePaiementLabel}),
                   style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
             ),
             pw.SizedBox(height: 24),
             pw.Divider(),
             // ── Pied de page : message de remerciement ──
-            pw.Text('Merci d\'avoir commandé sur CommercHaiti !',
+            pw.Text(traduire('Merci d\'avoir commandé sur CommercHaiti !'),
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
           ],
         ),

@@ -7,6 +7,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_links.dart';
 import '../models/product_model.dart';
 import '../services/database_service.dart';
+import '../l10n/traduction.dart';
 
 /// Bouton "Partager sur WhatsApp" (produit) — Faitza COLAS
 /// Branch : feature/whatsapp-share
@@ -46,15 +47,17 @@ class WhatsAppShareProductWidget extends StatefulWidget {
   static String construireMessage(ProductModel product, String nomBoutique,
       {bool emoji = true}) {
     final prix = product.hasPromo
-        ? '${product.prixPromo!.toStringAsFixed(0)} HTG '
-            '(au lieu de ${product.prix.toStringAsFixed(0)} HTG)'
+        ? traduire('{promo} HTG (au lieu de {prix} HTG)', {
+            'promo': product.prixPromo!.toStringAsFixed(0),
+            'prix': product.prix.toStringAsFixed(0),
+          })
         : '${product.prix.toStringAsFixed(0)} HTG';
     String e(String symbole) => emoji ? '$symbole ' : '';
     return '${e('🛍️')}*${product.nom}*\n'
-        '${e('💰')}Prix : $prix\n'
-        '${e('🏪')}Boutique : $nomBoutique\n'
+        '${e('💰')}${traduire('Prix : {prix}', {'prix': prix})}\n'
+        '${e('🏪')}${traduire('Boutique : {nom}', {'nom': nomBoutique})}\n'
         '\n'
-        '${e('📲')}Commandez sur CommercHaiti, téléchargez l\'app :\n'
+        '${e('📲')}${traduire('Commandez sur CommercHaiti, téléchargez l\'app :')}\n'
         '${AppLinks.telechargementApp}';
   }
 
@@ -133,8 +136,8 @@ class _WhatsAppShareProductWidgetState
   }
 
   void _erreur() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé'),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(traduire('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé')),
       backgroundColor: AppColors.red,
     ));
   }
@@ -156,9 +159,9 @@ class _WhatsAppShareProductWidgetState
                 child: CircularProgressIndicator(
                     strokeWidth: 2, color: Colors.white))
             : const Icon(Icons.share, color: Colors.white, size: 18),
-        label: const Text(
-          'Partager sur WhatsApp',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        label: Text(
+          context.tr('Partager sur WhatsApp'),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
         onPressed: _isLoading ? null : _partager,
       ),

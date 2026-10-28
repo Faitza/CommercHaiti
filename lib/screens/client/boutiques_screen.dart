@@ -11,6 +11,7 @@ import '../../constants/app_colors.dart';
 import '../../widgets/bottom_nav_item.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../l10n/traduction.dart';
 
 /// Boutiques Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/boutiques_screen.dart
@@ -89,12 +90,12 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                       onPressed: () =>
                           context.go(isGuest ? '/guest' : '/client/home'),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Boutiques',
-                              style: TextStyle(
+                          Text(context.tr('Boutiques'),
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold)),
@@ -126,11 +127,11 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(children: const [
-                    Icon(Icons.search, color: Colors.white54, size: 16),
-                    SizedBox(width: 8),
-                    Text('Rechercher une boutique…',
-                        style: TextStyle(
+                  child: Row(children: [
+                    const Icon(Icons.search, color: Colors.white54, size: 16),
+                    const SizedBox(width: 8),
+                    Text(context.tr('Rechercher une boutique…'),
+                        style: const TextStyle(
                             color: Colors.white54, fontSize: 12)),
                   ]),
                 ),
@@ -187,7 +188,7 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                             : AppColors.borderColor(isDark),
                       ),
                     ),
-                    child: Text(zone,
+                    child: Text(context.tr(zone),
                         style: TextStyle(
                             fontSize: 12,
                             color: sel
@@ -209,7 +210,7 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
             child: Row(children: [
-              Text('${shopProvider.shopsFiltres.length} boutique(s) disponible(s)',
+              Text(context.tr('{n} boutique(s) disponible(s)', {'n': shopProvider.shopsFiltres.length}),
                   style: TextStyle(
                       fontSize: 12, color: AppColors.textSecondaryFor(isDark))),
             ]),
@@ -239,7 +240,7 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                             Icon(Icons.storefront_outlined,
                                 size: 56, color: AppColors.borderColor(isDark)),
                             const SizedBox(height: 12),
-                            Text('Aucune boutique disponible',
+                            Text(context.tr('Aucune boutique disponible'),
                                 style: TextStyle(
                                     color: AppColors.textSecondaryFor(isDark))),
                           ],
@@ -292,14 +293,14 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                BottomNavItem(icon: Icons.home_outlined, label: 'Accueil',
+                BottomNavItem(icon: Icons.home_outlined, label: context.tr('Accueil'),
                     // Retour à l'accueil : on utilise go() car l'accueil
                     // doit redevenir la racine de la navigation (pas
                     // d'empilement de pages d'accueil successives).
                     onTap: () =>
                         context.go(isGuest ? '/guest' : '/client/home')),
                 BottomNavItem(icon: Icons.shopping_cart_outlined,
-                    label: 'Panier',
+                    label: context.tr('Panier'),
                     badge: isGuest
                         ? 0
                         : context.watch<CartProvider>().totalArticles,
@@ -307,7 +308,7 @@ class _BoutiquesScreenState extends State<BoutiquesScreen> {
                         ? GuestHomeScreen.showInscriptionSheet(context)
                         : context.go('/cart')),
                 BottomNavItem(icon: Icons.inventory_2_outlined,
-                    label: 'Commandes',
+                    label: context.tr('Commandes'),
                     onTap: () => isGuest
                         ? GuestHomeScreen.showInscriptionSheet(context)
                         : context.go('/order-history')),
@@ -390,7 +391,7 @@ class _ShopCard extends StatelessWidget {
                             size: 11, color: Color(0xFFF5A623)),
                         const SizedBox(width: 2),
                         Text(
-                          '${shop.rating.toStringAsFixed(1)} · ${shop.totalAvis} avis',
+                          context.tr('{note} · {n} avis', {'note': shop.rating.toStringAsFixed(1), 'n': shop.totalAvis}),
                           style: const TextStyle(
                               fontSize: 10,
                               color: Color(0xFFF5A623)),
@@ -411,7 +412,7 @@ class _ShopCard extends StatelessWidget {
                         : const Color(0xFFFDEAEA),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(shop.isOpen ? 'Ouvert' : 'Fermé',
+                  child: Text(shop.isOpen ? context.tr('Ouvert') : context.tr('Fermé'),
                       style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -434,12 +435,12 @@ class _ShopCard extends StatelessWidget {
             const SizedBox(height: 6),
             // Information de livraison affichée en dur (texte statique,
             // pas de champ dynamique du modèle shop utilisé ici).
-            Row(children: const [
-              Icon(Icons.access_time,
+            Row(children: [
+              const Icon(Icons.access_time,
                   size: 10, color: Color(0xFF1D9E75)),
-              SizedBox(width: 4),
-              Text('Livraison 30-45 min · Gratuite',
-                  style: TextStyle(
+              const SizedBox(width: 4),
+              Text(context.tr('Livraison 30-45 min · Gratuite'),
+                  style: const TextStyle(
                       fontSize: 10, color: Color(0xFF1D9E75))),
             ]),
           ],

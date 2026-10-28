@@ -8,6 +8,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../l10n/traduction.dart';
 
 /// Tous les produits — catalogue complet, toutes boutiques confondues.
 /// Accessible sans compte (BF-010 — navigation libre).
@@ -146,7 +147,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     } catch (e) {
       if (!mounted) return;
       final message =
-          messageErreur(e, parDefaut: 'Impossible de charger les produits.');
+          messageErreur(e, parDefaut: traduire('Impossible de charger les produits.'));
       setState(() {
         _isLoading = false;
         _chargementSuite = false;
@@ -185,7 +186,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
           // ouvert (probablement l'accueil).
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Tous les produits'),
+        title: Text(context.tr('Tous les produits')),
       ),
       body: Column(
         children: [
@@ -214,7 +215,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
-                      hintText: 'Rechercher un produit…',
+                      hintText: context.tr('Rechercher un produit…'),
                       hintStyle: TextStyle(fontSize: 13, color: AppColors.textSecondaryFor(isDark)),
                     ),
                   ),
@@ -254,7 +255,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
                 ? EtatErreurWidget(message: _erreur!, onReessayer: _charger)
                 : _produitsAffiches.isEmpty
                     ? Center(
-                        child: Text('Aucun produit trouvé',
+                        child: Text(context.tr('Aucun produit trouvé'),
                             style: TextStyle(color: AppColors.textSecondaryFor(isDark))))
                     : RefreshIndicator(
                         onRefresh: _charger,
@@ -304,7 +305,7 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text(label),
+        label: Text(context.tr(label)),
         selected: sel,
         onSelected: (_) {
           setState(() => _categorieSelectionnee = value);

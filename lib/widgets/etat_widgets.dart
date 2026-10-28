@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../l10n/traduction.dart';
 
 /// Widgets d'état communs — checklist production (points 05, 06, 07)
 /// Path : lib/widgets/etat_widgets.dart
@@ -119,7 +120,7 @@ class EtatErreurWidget extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onReessayer,
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Réessayer'),
+                label: Text(context.tr('Réessayer')),
               ),
             ],
           ],
@@ -151,7 +152,7 @@ class ChargerPlusWidget extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2.5))
             : OutlinedButton(
                 onPressed: onCharger,
-                child: const Text('Charger plus'),
+                child: Text(context.tr('Charger plus')),
               ),
       ),
     );

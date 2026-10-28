@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order_model.dart';
 import '../services/database_service.dart';
 import '../services/reseau_service.dart';
+import '../l10n/traduction.dart';
 
 /// Provider commandes — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
@@ -103,14 +104,14 @@ class OrderProvider extends ChangeNotifier {
           } catch (e) {
             if (version != _versionClient) return;
             _erreurClient = messageErreur(e,
-                parDefaut: 'Impossible de charger vos commandes.');
+                parDefaut: traduire('Impossible de charger vos commandes.'));
           }
           _chargementClient = false;
           notifyListeners();
         }, onError: (Object e) {
           _chargementClient = false;
           _erreurClient = messageErreur(e,
-              parDefaut: 'Impossible de charger vos commandes.');
+              parDefaut: traduire('Impossible de charger vos commandes.'));
           _clientSub?.cancel();
           _clientSub = null;
           notifyListeners();
@@ -145,14 +146,14 @@ class OrderProvider extends ChangeNotifier {
           } catch (e) {
             if (version != _versionVendeur) return;
             _erreurVendeur = messageErreur(e,
-                parDefaut: 'Impossible de charger les commandes.');
+                parDefaut: traduire('Impossible de charger les commandes.'));
           }
           _chargementVendeur = false;
           notifyListeners();
         }, onError: (Object e) {
           _chargementVendeur = false;
           _erreurVendeur = messageErreur(e,
-              parDefaut: 'Impossible de charger les commandes.');
+              parDefaut: traduire('Impossible de charger les commandes.'));
           _vendeurSub?.cancel();
           _vendeurSub = null;
           notifyListeners();
@@ -222,19 +223,19 @@ class OrderProvider extends ChangeNotifier {
       // On traduit ce cas précis en message clair, sinon message générique.
       final err = e.toString();
       if (err.contains('stock_insuffisant')) {
-        _errorMessage = 'Stock insuffisant — commande annulée';
+        _errorMessage = traduire('Stock insuffisant — commande annulée');
       } else if (err.contains('compte_bloque')) {
-        _errorMessage = 'Votre compte a été bloqué — commande impossible';
+        _errorMessage = traduire('Votre compte a été bloqué — commande impossible');
       } else if (err.contains('boutique_indisponible')) {
-        _errorMessage = 'Cette boutique n\'accepte pas de commandes pour le moment';
+        _errorMessage = traduire('Cette boutique n\'accepte pas de commandes pour le moment');
       } else if (err.contains('produit_indisponible')) {
-        _errorMessage = 'Un produit du panier n\'est plus disponible';
+        _errorMessage = traduire('Un produit du panier n\'est plus disponible');
       } else {
         // Délai dépassé, pas de réseau, trop de commandes d'affilée…
         // (checklist production, points 01, 07, 08). Réessayer avec la
         // même clé d'idempotence ne crée pas de doublon (point 10).
         _errorMessage =
-            messageErreur(e, parDefaut: 'Erreur lors de la commande');
+            messageErreur(e, parDefaut: traduire('Erreur lors de la commande'));
       }
       notifyListeners();
       return null;
@@ -262,7 +263,7 @@ class OrderProvider extends ChangeNotifier {
       await _db.updateOrderStatus(orderId, newStatut);
       return true;
     } catch (e) {
-      _errorMessage = 'Erreur mise à jour statut: $e';
+      _errorMessage = traduire('Erreur mise à jour statut: {erreur}', {'erreur': e});
       notifyListeners();
       rethrow;
     } finally {
@@ -281,7 +282,7 @@ class OrderProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _errorMessage = e.toString().contains('Annulation impossible')
-          ? 'Annulation impossible — commande déjà acceptée'
+          ? traduire('Annulation impossible — commande déjà acceptée')
           : messageErreur(e);
       notifyListeners();
       return false;

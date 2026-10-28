@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_colors.dart';
+import '../l10n/traduction.dart';
 
 /// Gestion globale des erreurs — checklist production (points 04 et 18)
 /// Path : lib/services/erreur_service.dart
@@ -70,7 +71,7 @@ class ErreurService {
     }
     _dernierMessageAffiche = maintenant;
     messengerKey.currentState?.showSnackBar(SnackBar(
-      content: Text(message),
+      content: Text(traduire(message)),
       backgroundColor: AppColors.red,
     ));
   }
@@ -122,11 +123,13 @@ class _WidgetEnErreur extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       alignment: Alignment.center,
-      child: const Text(
-        'Cet élément n\'a pas pu s\'afficher.',
+      // traduire() et non context.tr : ce widget peut s'afficher hors de
+      // l'arbre des Providers.
+      child: Text(
+        traduire('Cet élément n\'a pas pu s\'afficher.'),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
-        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
       ),
     );
   }

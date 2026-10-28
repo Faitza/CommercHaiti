@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/traduction.dart';
 
 /// Badge statut commande — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -62,7 +63,7 @@ class OrderStatusBadge extends StatelessWidget {
         border: Border.all(color: _couleur, width: 1),
       ),
       child: Text(
-        _label,
+        context.tr(_label),
         style: TextStyle(
           color: _couleur,
           fontSize: 11,

@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/langue_selecteur.dart';
+import '../../l10n/traduction.dart';
 
 /// Paramètres Client — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -130,22 +131,22 @@ class _ParamsScreenState extends State<ParamsScreen> {
     // l'utilisateur annule ou ferme la boîte autrement).
     final nouveau = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Changer le mot de passe'),
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Changer le mot de passe')),
         content: TextField(
           controller: ctrl,
           obscureText: true,
-          decoration: const InputDecoration(
-              hintText: 'Nouveau mot de passe (min. 6 caractères)'),
+          decoration: InputDecoration(
+              hintText: ctx.tr('Nouveau mot de passe (min. 6 caractères)')),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler')),
+              child: Text(ctx.tr('Annuler'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0D2B5E)),
             onPressed: () => Navigator.pop(context, ctrl.text),
-            child: const Text('Valider', style: TextStyle(color: Colors.white)),
+            child: Text(ctx.tr('Valider'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -160,9 +161,9 @@ class _ParamsScreenState extends State<ParamsScreen> {
       // l'écran aurait pu être fermé pendant que la boîte de dialogue était
       // ouverte.
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Mot de passe trop court — minimum 6 caractères'),
-          backgroundColor: Color(0xFFE63946),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Mot de passe trop court — minimum 6 caractères')),
+          backgroundColor: const Color(0xFFE63946),
         ));
       }
       return;
@@ -173,9 +174,9 @@ class _ParamsScreenState extends State<ParamsScreen> {
       await context.read<AuthProvider>().updatePassword(nouveau);
       // Nouvelle vérification `context.mounted` après ce second `await`.
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Mot de passe modifié avec succès'),
-          backgroundColor: Color(0xFF1D9E75),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Mot de passe modifié avec succès')),
+          backgroundColor: const Color(0xFF1D9E75),
         ));
       }
     } catch (e) {
@@ -183,7 +184,7 @@ class _ParamsScreenState extends State<ParamsScreen> {
       // l'utilisateur avec le message d'erreur brut.
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {erreur}', {'erreur': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -196,17 +197,17 @@ class _ParamsScreenState extends State<ParamsScreen> {
   Future<void> _deconnecter(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Se déconnecter ?'),
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Se déconnecter ?')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+              child: Text(ctx.tr('Annuler'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE63946)),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Déconnexion',
-                style: TextStyle(color: Colors.white)),
+            child: Text(ctx.tr('Déconnexion'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -247,7 +248,7 @@ class _ParamsScreenState extends State<ParamsScreen> {
           // adapté et sûr ici.
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Paramètres'),
+        title: Text(context.tr('Paramètres')),
       ),
       // Spinner tant que le chargement initial (_charger()) n'est pas
       // terminé, sinon la liste complète des réglages.
@@ -328,11 +329,11 @@ class _ParamsScreenState extends State<ParamsScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () => _deconnecter(context),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Center(
-                          child: Text('Déconnexion',
-                              style: TextStyle(
+                          child: Text(context.tr('Déconnexion'),
+                              style: const TextStyle(
                                   color: Color(0xFFE63946),
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -350,7 +351,7 @@ class _ParamsScreenState extends State<ParamsScreen> {
   // utilisé pour regrouper visuellement les items ci-dessous en catégories.
   Widget _sectionTitle(String t, bool isDark) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: Text(t.toUpperCase(),
+        child: Text(context.tr(t).toUpperCase(),
             style: TextStyle(fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textSecondaryFor(isDark), letterSpacing: 1)),
@@ -364,7 +365,7 @@ class _ParamsScreenState extends State<ParamsScreen> {
       ListTile(
         tileColor: AppColors.surface(isDark),
         leading: Icon(icon, color: AppColors.accentFor(isDark)),
-        title: Text(label,
+        title: Text(context.tr(label),
             style: TextStyle(
                 color: AppColors.textPrimaryFor(isDark), fontWeight: FontWeight.w600)),
         subtitle: sous != null && sous.isNotEmpty
@@ -385,11 +386,11 @@ class _ParamsScreenState extends State<ParamsScreen> {
       SwitchListTile(
         tileColor: AppColors.surface(isDark),
         secondary: Icon(icon, color: AppColors.accentFor(isDark)),
-        title: Text(label,
+        title: Text(context.tr(label),
             style: TextStyle(
                 color: AppColors.textPrimaryFor(isDark), fontWeight: FontWeight.w600)),
         subtitle: sous != null
-            ? Text(sous, style: TextStyle(
+            ? Text(context.tr(sous), style: TextStyle(
                 fontSize: 12, color: AppColors.textSecondaryFor(isDark)))
             : null,
         value: value,

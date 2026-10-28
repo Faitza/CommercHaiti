@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -131,7 +132,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_storage.derniereErreur ??
-            'Échec du téléversement de la photo — réessayez'),
+            traduire('Échec du téléversement de la photo — réessayez')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -157,9 +158,9 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     if (shopId == null) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Boutique introuvable — reconnectez-vous'),
-          backgroundColor: Color(0xFFE63946),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Boutique introuvable — reconnectez-vous')),
+          backgroundColor: const Color(0xFFE63946),
         ));
       }
       return;
@@ -206,13 +207,13 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Produit ajouté ✓'),
+        title: Text(dialogContext.tr('Produit ajouté ✓')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('« ${product.nom} » est maintenant en vente. '
-                'Faites-le connaître à vos clients :'),
+            Text(dialogContext.tr('« {nom} » est maintenant en vente. '
+                'Faites-le connaître à vos clients :', {'nom': product.nom})),
             const SizedBox(height: 16),
             WhatsAppShareProductWidget(product: product),
           ],
@@ -220,7 +221,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Terminer'),
+            child: Text(dialogContext.tr('Terminer')),
           ),
         ],
       ),
@@ -238,7 +239,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Ajouter un produit'),
+        title: Text(context.tr('Ajouter un produit')),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -286,7 +287,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
 
               _label('Nom du produit *'),
               _field(_nomCtrl, 'Ex: Robe fleurie',
-                  validator: (v) => v == null || v.isEmpty ? 'Nom requis' : null),
+                  validator: (v) => v == null || v.isEmpty ? traduire('Nom requis') : null),
               const SizedBox(height: 16),
 
               // Prix normal (obligatoire, doit être > 0) et prix promo
@@ -299,9 +300,9 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                     _label('Prix normal (HTG) *'),
                     _field(_prixCtrl, '500',
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Prix requis';
+                          if (v == null || v.isEmpty) return traduire('Prix requis');
                           if (double.tryParse(v) == null || double.parse(v) <= 0)
-                            return 'Prix invalide';
+                            return traduire('Prix invalide');
                           return null;
                         },
                         keyboardType: TextInputType.number),
@@ -317,9 +318,9 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                           if (v == null || v.isEmpty) return null;
                           final promo = double.tryParse(v);
                           final normal = double.tryParse(_prixCtrl.text);
-                          if (promo == null || promo <= 0) return 'Invalide';
+                          if (promo == null || promo <= 0) return traduire('Invalide');
                           if (normal != null && promo >= normal)
-                            return 'Doit être < prix normal';
+                            return traduire('Doit être < prix normal');
                           return null;
                         },
                         keyboardType: TextInputType.number),
@@ -331,7 +332,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
               // Stock initial du produit à la création.
               _label('Stock initial *'),
               _field(_stockCtrl, '10',
-                  validator: (v) => v == null || v.isEmpty ? 'Stock requis' : null,
+                  validator: (v) => v == null || v.isEmpty ? traduire('Stock requis') : null,
                   keyboardType: TextInputType.number),
               const SizedBox(height: 16),
 
@@ -424,8 +425,8 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Disponible à la vente',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text(context.tr('Disponible à la vente'),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   Switch(
                     value: _disponible,
                     onChanged: (v) => setState(() => _disponible = v),
@@ -452,8 +453,8 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
                       ? const SizedBox(width: 20, height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2))
-                      : const Text('Publier le produit',
-                          style: TextStyle(color: Colors.white,
+                      : Text(context.tr('Publier le produit'),
+                          style: const TextStyle(color: Colors.white,
                               fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -469,7 +470,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(t, style: TextStyle(fontSize: 14,
+        child: Text(context.tr(t), style: TextStyle(fontSize: 14,
             fontWeight: FontWeight.w600, color: AppColors.textPrimaryFor(isDark))),
       );
   }
@@ -485,7 +486,7 @@ class _VendorAddProductScreenState extends State<VendorAddProductScreen> {
         validator: validator,
         keyboardType: keyboardType,
         decoration: InputDecoration(
-          hintText: hint,
+          hintText: context.tr(hint),
           hintStyle: TextStyle(color: AppColors.textSecondaryFor(isDark)),
           filled: true,
           fillColor: AppColors.inputFill(isDark),

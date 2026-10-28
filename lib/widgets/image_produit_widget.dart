@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'image_reseau_widget.dart';
+import '../l10n/traduction.dart';
 
 /// Photo d'un produit, avec une image par défaut propre quand le vendeur
 /// n'a pas mis de photo (ou quand la photo ne se charge pas) : fond bleu
@@ -68,8 +69,8 @@ class ImageProduitParDefaut extends StatelessWidget {
                 color: const Color(0xFF7A93BD)),
             if (avecTexte) ...[
               const SizedBox(height: 4),
-              const Text('Pas de photo',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF5A6F94))),
+              Text(context.tr('Pas de photo'),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF5A6F94))),
             ],
           ],
         ),

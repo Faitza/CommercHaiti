@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../l10n/traduction.dart';
+
 /// Réseau — checklist production (points 07 et 08)
 /// Path : lib/services/reseau_service.dart
 ///
@@ -42,34 +44,37 @@ class TimeoutHttpClient extends http.BaseClient {
 String messageErreur(Object erreur,
     {String parDefaut = 'Une erreur est survenue. Réessayez.'}) {
   if (erreur is TimeoutException) {
-    return 'Le serveur met trop de temps à répondre. '
-        'Vérifiez votre connexion et réessayez.';
+    return traduire('Le serveur met trop de temps à répondre. '
+        'Vérifiez votre connexion et réessayez.');
   }
   // Pas d'import dart:io (indisponible sur Flutter Web) : on reconnaît
   // l'erreur réseau mobile par son nom.
   if (erreur.runtimeType.toString() == 'SocketException') {
-    return 'Pas de connexion Internet. Vérifiez votre réseau et réessayez.';
+    return traduire(
+        'Pas de connexion Internet. Vérifiez votre réseau et réessayez.');
   }
   if (erreur is http.ClientException) {
-    return 'Connexion impossible au serveur. Vérifiez votre réseau.';
+    return traduire('Connexion impossible au serveur. Vérifiez votre réseau.');
   }
   final texte = erreur.toString();
   // Limite de requêtes atteinte (voir supabase/migration_production.sql,
   // fonction verifier_limite()).
   if (texte.contains('trop_de_requetes')) {
-    return 'Trop de tentatives en peu de temps. '
-        'Patientez une minute puis réessayez.';
+    return traduire('Trop de tentatives en peu de temps. '
+        'Patientez une minute puis réessayez.');
   }
   if (erreur is PostgrestException && erreur.code == 'PGRST301') {
-    return 'Votre session a expiré. Reconnectez-vous.';
+    return traduire('Votre session a expiré. Reconnectez-vous.');
   }
   // Même numéro de transaction MonCash déjà utilisé pour une autre
   // commande (index unique, voir migration_production.sql, point 10).
   if (texte.contains('idx_orders_moncash_reference_unique')) {
-    return 'Ce numéro de transaction MonCash a déjà été utilisé.';
+    return traduire('Ce numéro de transaction MonCash a déjà été utilisé.');
   }
   if (texte.contains('fichier_trop_lourd')) {
-    return 'Image trop lourde. Choisissez une photo plus légère.';
+    return traduire('Image trop lourde. Choisissez une photo plus légère.');
   }
-  return parDefaut;
+  // traduire() : le texte par défaut est traduit ici ; un texte déjà
+  // traduit par l'appelant (absent du dictionnaire) reste tel quel.
+  return traduire(parDefaut);
 }

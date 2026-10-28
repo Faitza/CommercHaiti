@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/categories.dart';
+import '../l10n/traduction.dart';
 
 /// Dropdowns catégorie + sous-catégorie — Faitza COLAS
 /// Branch : feature/categories
@@ -59,7 +60,7 @@ class CategorieDropdownsWidget extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _label('Catégorie *'),
+            _label(context.tr('Catégorie *')),
             DropdownButtonFormField<String>(
               // `key` dépendant de la valeur : force la reconstruction du
               // champ quand le parent change la valeur (chargement async).
@@ -67,11 +68,11 @@ class CategorieDropdownsWidget extends StatelessWidget {
               initialValue: categorie?.isEmpty ?? true ? null : categorie,
               isExpanded: true,
               items: categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .map((c) => DropdownMenuItem(value: c, child: Text(context.tr(c))))
                   .toList(),
               onChanged: onCategorieChanged,
-              validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
-              decoration: _deco('Choisir'),
+              validator: (v) => v == null || v.isEmpty ? traduire('Requis') : null,
+              decoration: _deco(context.tr('Choisir')),
             ),
           ],
         )),
@@ -79,7 +80,7 @@ class CategorieDropdownsWidget extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _label('Sous-catégorie *'),
+            _label(context.tr('Sous-catégorie *')),
             DropdownButtonFormField<String>(
               // La clé inclut la catégorie : changer de catégorie recrée
               // ce champ avec la nouvelle liste de sous-catégories.
@@ -88,16 +89,16 @@ class CategorieDropdownsWidget extends StatelessWidget {
                   sousCategorie?.isEmpty ?? true ? null : sousCategorie,
               isExpanded: true,
               items: sousCategories
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  .map((s) => DropdownMenuItem(value: s, child: Text(context.tr(s))))
                   .toList(),
               // Désactivé tant qu'aucune catégorie n'est choisie.
               onChanged: categorie == null || categorie!.isEmpty
                   ? null
                   : onSousCategorieChanged,
-              validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
+              validator: (v) => v == null || v.isEmpty ? traduire('Requis') : null,
               decoration: _deco(categorie == null || categorie!.isEmpty
-                  ? 'Catégorie d\'abord'
-                  : 'Choisir'),
+                  ? context.tr('Catégorie d\'abord')
+                  : context.tr('Choisir')),
             ),
           ],
         )),

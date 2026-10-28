@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
+import '../l10n/traduction.dart';
 
 /// Rendu visuel du reçu — utilisé pour la capture en image (PNG) à
 /// partager sur WhatsApp, en complément du reçu PDF (BF-030).
@@ -65,8 +66,8 @@ class ReceiptImageWidget extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0D2B5E))),
-                    const Text('CommercHaiti — Reçu de commande',
-                        style: TextStyle(fontSize: 10, color: Color(0xFF999999))),
+                    Text(traduire('CommercHaiti — Reçu de commande'),
+                        style: const TextStyle(fontSize: 10, color: Color(0xFF999999))),
                   ],
                 ),
               ),
@@ -75,15 +76,15 @@ class ReceiptImageWidget extends StatelessWidget {
             const Divider(height: 1, color: Color(0xFFE0E0E0)),
             const SizedBox(height: 14),
             // ── Informations générales de la commande ──
-            _ligne('N° commande', '#${order.id.substring(0, 6).toUpperCase()}'),
-            _ligne('Date', _formatDate(order.createdAt)),
-            _ligne('Client', order.telephoneClient),
-            _ligne('Adresse', order.adresseLivraison),
-            _ligne('Zone', order.zone),
+            _ligne(traduire('N° commande'), '#${order.id.substring(0, 6).toUpperCase()}'),
+            _ligne(traduire('Date'), _formatDate(order.createdAt)),
+            _ligne(traduire('Client'), order.telephoneClient),
+            _ligne(traduire('Adresse'), traduire(order.adresseLivraison)),
+            _ligne(traduire('Zone'), traduire(order.zone)),
             const SizedBox(height: 14),
             // ── Liste des articles commandés (générée dynamiquement) ──
-            const Text('Articles',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(traduire('Articles'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 6),
             ...order.items.map((item) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
@@ -105,7 +106,7 @@ class ReceiptImageWidget extends StatelessWidget {
             const SizedBox(height: 10),
             // ── Livraison (déjà incluse dans le total) ──
             if (order.fraisLivraison > 0) ...[
-              _ligne('Livraison',
+              _ligne(traduire('Livraison'),
                   '${order.fraisLivraison.toStringAsFixed(0)} HTG'),
               const SizedBox(height: 6),
             ],
@@ -113,8 +114,8 @@ class ReceiptImageWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(traduire('Total'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 Text('${order.total.toStringAsFixed(0)} HTG',
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
@@ -131,9 +132,9 @@ class ReceiptImageWidget extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             // ── Pied de page : message de remerciement ──
-            const Center(
-              child: Text('Merci d\'avoir commandé sur CommercHaiti !',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF999999))),
+            Center(
+              child: Text(traduire('Merci d\'avoir commandé sur CommercHaiti !'),
+                  style: const TextStyle(fontSize: 10, color: Color(0xFF999999))),
             ),
           ],
         ),

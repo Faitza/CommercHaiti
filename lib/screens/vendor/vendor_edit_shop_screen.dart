@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
@@ -175,7 +176,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
     if (url == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_storage.derniereErreur ??
-            'Échec du téléversement du logo — réessayez'),
+            traduire('Échec du téléversement du logo — réessayez')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -192,25 +193,25 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
     // Règle métier : au moins une zone de livraison doit être
     // sélectionnée, sinon la boutique ne pourrait livrer nulle part.
     if (_zonesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Sélectionnez au moins une zone de livraison'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Sélectionnez au moins une zone de livraison')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
     if (_categoriesSelectionnees.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Sélectionnez au moins une catégorie vendue'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Sélectionnez au moins une catégorie vendue')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
     if (_ouverture == null || _fermeture == null ||
         _ouverture == _fermeture || _jours.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Horaire incomplet : heures d\'ouverture et de '
-            'fermeture différentes, et au moins un jour de travail'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Horaire incomplet : heures d\'ouverture et de '
+            'fermeture différentes, et au moins un jour de travail')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
@@ -256,7 +257,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {erreur}', {'erreur': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -277,12 +278,12 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Infos boutique'),
+        title: Text(context.tr('Infos boutique')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _shop == null
-              ? const Center(child: Text('Boutique introuvable'))
+              ? Center(child: Text(context.tr('Boutique introuvable')))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Form(
@@ -304,7 +305,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(children: [
-                            Text('Code boutique',
+                            Text(context.tr('Code boutique'),
                                 style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                             const SizedBox(height: 4),
                             Text(_shop!.shopCode,
@@ -345,40 +346,40 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                         ),
                         const SizedBox(height: 24),
                         // Champ nom de la boutique — obligatoire.
-                        const Text('Nom de la boutique *',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Nom de la boutique *'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _nomCtrl,
                           validator: (v) =>
-                              v == null || v.isEmpty ? 'Nom requis' : null,
+                              v == null || v.isEmpty ? traduire('Nom requis') : null,
                         ),
                         const SizedBox(height: 16),
                         // Champ description de la boutique — obligatoire,
                         // multi-lignes (3 lignes visibles).
-                        const Text('Description *',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Description *'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _descriptionCtrl,
                           maxLines: 3,
                           validator: (v) => v == null || v.isEmpty
-                              ? 'Description requise'
+                              ? traduire('Description requise')
                               : null,
                         ),
                         const SizedBox(height: 16),
                         // Numéro MonCash (optionnel) : s'il est rempli, les
                         // clients peuvent choisir de payer par MonCash.
-                        const Text('Numéro MonCash (optionnel)',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Numéro MonCash (optionnel)'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _moncashCtrl,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            hintText: 'Ex : 3712 3456',
+                          decoration: InputDecoration(
+                            hintText: context.tr('Ex : 3712 3456'),
                             helperText:
-                                'Les clients pourront payer par MonCash à ce numéro',
+                                context.tr('Les clients pourront payer par MonCash à ce numéro'),
                           ),
                           validator: (v) {
                             final chiffres =
@@ -389,14 +390,14 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                     chiffres.startsWith('509'))) {
                               return null;
                             }
-                            return 'Numéro invalide (8 chiffres)';
+                            return traduire('Numéro invalide (8 chiffres)');
                           },
                         ),
                         const SizedBox(height: 16),
                         // Statut actuel + "Ouvrir maintenant" / "Fermer
                         // maintenant" (écrit immédiatement en base).
-                        const Text('Statut',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Statut'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         ForcerStatutWidget(
                           shop: _shop!,
@@ -406,8 +407,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                         const SizedBox(height: 16),
                         // Horaire automatique (enregistré avec le bouton
                         // "Enregistrer").
-                        const Text('Horaire d\'ouverture *',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Horaire d\'ouverture *'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         HoraireBoutiqueWidget(
                           ouverture: _ouverture,
@@ -424,15 +425,15 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                         // Sélection des zones de livraison via des
                         // "chips" filtrables (FilterChip) : chaque tap
                         // ajoute/retire la zone de `_zonesSelectionnees`.
-                        const Text('Zones de livraison *',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Zones de livraison *'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8, runSpacing: 8,
                           children: _zonesDisponibles.map((zone) {
                             final sel = _zonesSelectionnees.contains(zone);
                             return FilterChip(
-                              label: Text(zone),
+                              label: Text(context.tr(zone)),
                               selected: sel,
                               onSelected: (v) => setState(() {
                                 if (v) {
@@ -450,17 +451,17 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                         // s'ajoute au total de la commande du client.
                         if (_zonesSelectionnees.isNotEmpty) ...[
                           const SizedBox(height: 16),
-                          const Text('Prix de livraison par zone (HTG)',
-                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          Text(context.tr('Prix de livraison par zone (HTG)'),
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
                           const SizedBox(height: 4),
-                          const Text('Laissez vide si la livraison est gratuite.',
-                              style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(context.tr('Laissez vide si la livraison est gratuite.'),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey)),
                           for (final zone in _zonesDisponibles
                               .where(_zonesSelectionnees.contains))
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Row(children: [
-                                Expanded(child: Text(zone)),
+                                Expanded(child: Text(context.tr(zone))),
                                 SizedBox(
                                   width: 110,
                                   child: TextFormField(
@@ -476,7 +477,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                       final n = double.tryParse(
                                           t.replaceAll(',', '.'));
                                       return n == null || n < 0
-                                          ? 'Invalide'
+                                          ? traduire('Invalide')
                                           : null;
                                     },
                                   ),
@@ -487,8 +488,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                         const SizedBox(height: 16),
                         // Catégories vendues (cases à cocher) : limitent
                         // les catégories proposées à l'ajout d'un produit.
-                        const Text('Catégories vendues *',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(context.tr('Catégories vendues *'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
                         CategoriesBoutiqueWidget(
                           selection: _categoriesSelectionnees,
@@ -514,8 +515,8 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                                 ? const SizedBox(width: 20, height: 20,
                                     child: CircularProgressIndicator(
                                         color: Colors.white, strokeWidth: 2))
-                                : const Text('Enregistrer',
-                                    style: TextStyle(color: Colors.white,
+                                : Text(context.tr('Enregistrer'),
+                                    style: const TextStyle(color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold)),
                           ),
