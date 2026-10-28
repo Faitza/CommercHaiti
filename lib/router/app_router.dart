@@ -172,6 +172,21 @@ class AppRouter {
             if (path == '/notifications') return '/role-selection';
           }
 
+          // Vandè san boutik → fini kreye boutik la anvan
+          // (Traduction : vendeur inscrit dont la boutique n'a pas été
+          // créée — erreur à l'enregistrement, app fermée avant la fin —
+          // il est renvoyé vers /create-shop au lieu d'un tableau de bord
+          // vide d'où il ne pourrait jamais créer sa boutique.)
+          if (isLoggedIn && isSeller && auth.sansBoutique &&
+              path.startsWith('/vendor')) {
+            return '/create-shop';
+          }
+          // Vendeur qui a déjà une boutique : pas de 2e création.
+          if (isLoggedIn && isSeller && auth.shopId != null &&
+              path == '/create-shop') {
+            return '/vendor/dashboard';
+          }
+
           // Client → pa ka al sou pages vendeur
           // Un client connecté ne doit jamais pouvoir accéder aux écrans
           // réservés aux vendeurs → redirection vers son accueil client.
@@ -241,7 +256,10 @@ class AppRouter {
             builder: (_, state) {
               final data = state.extra as Map<String, dynamic>?;
               return CreateShopScreen(
-                shopCode: data?['shopCode'] ?? 'MFL-2026-0000',
+                // Sans `extra` (vendeur renvoyé ici par le routeur), on
+                // reprend le code généré à l'inscription (users.shop_code).
+                shopCode: data?['shopCode'] ??
+                    auth.currentUser?.shopCode ?? 'MFL-2026-0000',
               );
             },
           ),
