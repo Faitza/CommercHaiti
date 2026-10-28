@@ -11,9 +11,9 @@ import '../../providers/favorite_provider.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Détail boutique — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -486,15 +486,8 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                   child: ClipRRect(
                                     borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(12)),
-                                    child: p.vignette != null
-                                        ? ImageReseau(p.vignette!,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity)
-                                        : Container(
-                                            color: const Color(0xFFEEF3FB),
-                                            child: const Icon(
-                                                Icons.image_outlined,
-                                                color: Color(0xFF0D2B5E))),
+                                    child: ImageProduit(p.vignette,
+                                        width: double.infinity),
                                   ),
                                 ),
                                 Padding(

@@ -9,11 +9,11 @@ import '../../models/product_model.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/bottom_nav_item.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import '../client/recherche_photo_screen.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Accueil Visiteur — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -241,25 +241,20 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                         ],
                       ),
                     ),
-                    // Ces deux actions renvoient toutes les deux vers le
-                    // choix de rôle : c'est le point d'entrée commun pour
-                    // quitter le mode visiteur et créer/rejoindre un compte.
-                    TextButton(
+                    // Un seul bouton pour quitter le mode visiteur (le
+                    // menu faisait la même chose) : petit lien encadré.
+                    OutlinedButton(
                       onPressed: () => context.go('/role-selection'),
-                      child: const Text('Se connecter',
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.go('/role-selection'),
-                      child: Container(
-                        width: 34, height: 34,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.menu,
-                            color: Colors.white, size: 18),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white54),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        minimumSize: const Size(0, 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
+                      child: const Text('Se connecter',
+                          style: TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -525,12 +520,7 @@ class _GuestProduitCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: SizedBox(
                     height: 100, width: double.infinity,
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: const Icon(Icons.image_outlined,
-                                color: Color(0xFF0D2B5E), size: 36)),
+                    child: ImageProduit(product.vignette),
                   ),
                 ),
                 // Icône favori (cœur) : pour un visiteur, tout clic ouvre
