@@ -22,6 +22,12 @@ import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import 'recherche_photo_screen.dart';
 
+/// Foto ki parèt anba ble maren nan tèt akèy la.
+const String kAkeyFotoBanye = 'assets/images/banniere_accueil.jpg';
+
+/// Opasite ble maren an sou foto a (1.0 = ble plen, foto a pa parèt).
+const double kAkeyOpasiteBle = 0.68;
+
 /// Client Home Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/client_home_screen.dart
 ///
@@ -289,8 +295,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           // Bandeau supérieur : logo/marque + localisation, bouton
           // panier, bouton menu hamburger, message de bienvenue
           // personnalisé et barre de recherche.
+          // Foto bannyè a anba koulè ble maren an : ble a kouche sou
+          // foto a ak yon opasite redwi (kAkeyOpasiteBle) pou foto a
+          // parèt anba l, menm jan ak Shein. Si foto a pa chaje, se
+          // koulè ble maren an sèl ki parèt.
           Container(
-            color: const Color(0xFF0D2B5E),
+            decoration: BoxDecoration(
+              color: AppColors.navy,
+              image: DecorationImage(
+                image: const AssetImage(kAkeyFotoBanye),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  AppColors.navy.withOpacity(kAkeyOpasiteBle),
+                  BlendMode.srcOver,
+                ),
+              ),
+            ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
               bottom: 8, left: 16, right: 16,
@@ -525,45 +545,44 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // ouvre le catalogue complet.
                     _sectionTitle('Produits populaires',
                         onTap: () => context.push('/client/all-products')),
-                    SizedBox(
-                      height: 180,
-                      child: _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          // Checklist production (points 06 et 07).
-                          : _erreur != null
-                          ? EtatErreurWidget(
-                              message: _erreur!,
-                              compact: true,
-                              onReessayer: () {
-                                setState(() => _isLoading = true);
-                                _loadData();
-                              })
-                          : _topProduits.isEmpty
-                          ? const EtatVideWidget(
-                              message: 'Aucun produit pour le moment',
-                              icone: Icons.shopping_bag_outlined,
-                              compact: true)
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              itemCount: _topProduits.length,
-                              itemBuilder: (_, i) => _ProduitCard(
-                                product: _topProduits[i],
-                                // Remarque : ici, contrairement aux
-                                // autres cartes produit de cet écran,
-                                // le clic ouvre '/client/product-shops'
-                                // (liste des boutiques qui vendent ce
-                                // produit, identifié par son NOM
-                                // seulement, via "extra:
-                                // _topProduits[i].nom") plutôt que la
-                                // fiche détail du produit lui-même.
+                    // Lis vètikal (youn anba lòt) olye de karousèl
+                    // orizontal la : chak pwodui sou yon liy.
+                    if (_isLoading)
+                      const SizedBox(
+                          height: 120,
+                          child: Center(child: CircularProgressIndicator()))
+                    // Checklist production (points 06 et 07).
+                    else if (_erreur != null)
+                      EtatErreurWidget(
+                          message: _erreur!,
+                          compact: true,
+                          onReessayer: () {
+                            setState(() => _isLoading = true);
+                            _loadData();
+                          })
+                    else if (_topProduits.isEmpty)
+                      const EtatVideWidget(
+                          message: 'Aucun produit pour le moment',
+                          icone: Icons.shopping_bag_outlined,
+                          compact: true)
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Column(
+                          children: [
+                            for (final p in _topProduits)
+                              _ProduitLigne(
+                                product: p,
+                                // Menm destinasyon ak anvan : lis
+                                // boutik ki vann pwodui sa a.
                                 onTap: () => context.push(
                                   '/client/product-shops',
-                                  extra: _topProduits[i].nom,
+                                  extra: p.nom,
                                 ),
                               ),
-                            ),
-                    ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 16),
 
                     // Boutiques ouvertes
@@ -887,6 +906,115 @@ class _ProduitCard extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Liy pwodui pou lis "Produits populaires" : foto agoch, non, pri
+/// (ak pri bare si gen pwomo), badj rediksyon ak bouton kè favori.
+class _ProduitLigne extends StatelessWidget {
+  final ProductModel product;
+  final VoidCallback onTap;
+  const _ProduitLigne({required this.product, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.surface(isDark),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6, offset: const Offset(0, 2),
+          )],
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 60, height: 60,
+                    child: product.vignette != null
+                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
+                        : Container(
+                            color: const Color(0xFFEEF3FB),
+                            child: const Icon(Icons.image_outlined,
+                                color: Color(0xFF0D2B5E), size: 26)),
+                  ),
+                ),
+                if (product.hasPromo)
+                  Positioned(
+                    top: 4, left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE63946),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text('-${product.pourcentageReduction}%',
+                          style: const TextStyle(color: Colors.white,
+                              fontSize: 8, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(product.nom, maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: AppColors.textPrimaryFor(isDark),
+                          fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Text('${product.prixAffiche.toStringAsFixed(0)} HTG',
+                        style: TextStyle(
+                            color: AppColors.accentFor(isDark),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
+                    if (product.hasPromo) ...[
+                      const SizedBox(width: 6),
+                      Text('${product.prix.toStringAsFixed(0)}',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondaryFor(isDark),
+                              decoration: TextDecoration.lineThrough)),
+                    ],
+                  ]),
+                ],
+              ),
+            ),
+            // Menm konpòtman ak bouton kè sou _ProduitCard (favori
+            // boutik la, product.shopId).
+            Consumer<FavoriteProvider>(
+              builder: (context, favProvider, _) {
+                final estFavori = favProvider.isFavorite(product.shopId);
+                return IconButton(
+                  onPressed: () => favProvider.toggleFavorite(product.shopId),
+                  icon: Icon(
+                      estFavori ? Icons.favorite : Icons.favorite_border,
+                      size: 20,
+                      color: estFavori
+                          ? const Color(0xFFE63946)
+                          : const Color(0xFF999999)),
+                );
+              },
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFAAAAAA)),
           ],
         ),
       ),
