@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/langue_selecteur.dart';
 
 /// Role Selection Screen — Faitza COLAS
 /// Path : lib/screens/auth/role_selection_screen.dart
@@ -52,6 +53,27 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             width: double.infinity,
             child: Column(
               children: [
+                // Choix de la langue dès le premier écran, avant même
+                // d'avoir un compte (fond blanc pour rester lisible sur
+                // le dégradé bleu).
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: Theme.of(context)
+                            .colorScheme
+                            .copyWith(primary: AppColors.navy),
+                      ),
+                      child: const LangueSelecteur(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 // Ikon bye bye
                 // Petite icône "main qui salue" dans un carré semi-transparent.
                 Container(

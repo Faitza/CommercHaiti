@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/langue_selecteur.dart';
 
 /// Paramètres Client — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -299,6 +300,7 @@ class _ParamsScreenState extends State<ParamsScreen> {
                 _switchItem(Icons.dark_mode_outlined, 'Mode sombre', null,
                     theme.isDarkMode,
                     (v) => context.read<ThemeProvider>().toggle(v), isDark),
+                LangueParametreTile(isDark: isDark),
                 const Divider(),
 
                 _sectionTitle('Sécurité', isDark),

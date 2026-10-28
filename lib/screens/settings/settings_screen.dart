@@ -8,6 +8,7 @@ import '../../services/database_service.dart';
 import '../../models/shop_model.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/horaire_boutique_widget.dart';
+import '../../l10n/langue_selecteur.dart';
 
 /// Paramètres Vendeur — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -388,6 +389,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _switchItem(Icons.dark_mode_outlined, 'Mode sombre', null,
                     theme.isDarkMode,
                     (v) => context.read<ThemeProvider>().toggle(v), isDark),
+                LangueParametreTile(isDark: isDark),
                 const Divider(),
 
                 _sectionTitle('Sécurité', isDark),

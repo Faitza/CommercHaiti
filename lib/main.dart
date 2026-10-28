@@ -16,6 +16,7 @@ import 'services/push_service.dart';
 import 'services/erreur_service.dart';
 import 'services/reseau_service.dart';
 import 'providers/connexion_provider.dart';
+import 'l10n/langue_provider.dart';
 import 'widgets/bandeau_hors_ligne.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
@@ -91,6 +92,8 @@ class CommercHaitiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         // Connexion Internet du téléphone (bandeau « hors ligne »).
         ChangeNotifierProvider(create: (_) => ConnexionProvider()),
+        // Langue de l'app (Kreyòl par défaut / Français).
+        ChangeNotifierProvider(create: (_) => LangueProvider()),
       ],
       // Le vrai MaterialApp est isolé dans un widget enfant séparé (voir
       // ci-dessous) : c'est indispensable pour la bonne gestion du
