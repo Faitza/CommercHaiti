@@ -46,6 +46,12 @@ as $$
 $$;
 
 -- ─── 1. Visibilité (RLS) ────────────────────────────────────────
+-- Anciennes politiques « tout le monde voit tout » : selon la façon
+-- dont la base a été créée, elles portent l'un ou l'autre nom. Les
+-- politiques Postgres s'additionnent (OU) : tant qu'une seule reste,
+-- les boutiques en attente restent visibles.
+drop policy if exists "shops_public_read" on public.shops;
+drop policy if exists "products_public_read" on public.products;
 drop policy if exists "shops_select_public" on public.shops;
 create policy "shops_select_public" on public.shops
   for select using (
