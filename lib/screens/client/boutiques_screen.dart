@@ -370,17 +370,23 @@ class _ShopCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
-                      // Zone affichée en dur ("Les Cayes") : ne reflète
-                      // pas forcément la vraie zone du modèle shop, à
-                      // surveiller si le modèle a un champ zone/ville.
+                      // Zones où la boutique livre (shops.zones_livraison),
+                      // séparées par des virgules, sur une seule ligne.
                       Row(children: [
                         Icon(Icons.location_on,
                             size: 10, color: AppColors.textSecondaryFor(isDark)),
                         const SizedBox(width: 2),
-                        Text('Les Cayes',
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.textSecondaryFor(isDark))),
+                        Expanded(
+                          child: Text(
+                              shop.zonesLivraison.isEmpty
+                                  ? 'Zones de livraison non indiquées'
+                                  : 'Livre à : ${shop.zonesLivraison.map((z) => z.zone).join(', ')}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondaryFor(isDark))),
+                        ),
                       ]),
                       const SizedBox(height: 2),
                       // Note moyenne (rating) formatée à 1 décimale et
@@ -432,20 +438,34 @@ class _ShopCard extends StatelessWidget {
                     color: AppColors.textSecondaryFor(isDark),
                     height: 1.5)),
             const SizedBox(height: 6),
-            // Information de livraison affichée en dur (texte statique,
-            // pas de champ dynamique du modèle shop utilisé ici).
-            Row(children: const [
-              Icon(Icons.access_time,
-                  size: 10, color: Color(0xFF1D9E75)),
-              SizedBox(width: 4),
-              Text('Livraison 30-45 min · Gratuite',
-                  style: TextStyle(
-                      fontSize: 10, color: Color(0xFF1D9E75))),
-            ]),
+            // Délai et prix de livraison calculés sur les zones de la
+            // boutique (voir _infoLivraison). Masqué s'il n'y a aucune zone.
+            if (shop.zonesLivraison.isNotEmpty)
+              Row(children: [
+                const Icon(Icons.access_time,
+                    size: 10, color: Color(0xFF1D9E75)),
+                const SizedBox(width: 4),
+                Text(_infoLivraison(shop.zonesLivraison),
+                    style: const TextStyle(
+                        fontSize: 10, color: Color(0xFF1D9E75))),
+              ]),
           ],
         ),
       ),
     );
+  }
+
+  /// Résumé "Livraison 20-45 min · 100-150 HTG" sur toutes les zones :
+  /// délai le plus court au plus long, et prix le plus bas au plus haut
+  /// ("Gratuite" pour une zone à 0 HTG, ex : "Gratuite - 150 HTG").
+  static String _infoLivraison(List<ZoneLivraison> zones) {
+    final dMin = zones.map((z) => z.delaiMin).reduce((a, b) => a < b ? a : b);
+    final dMax = zones.map((z) => z.delaiMax).reduce((a, b) => a > b ? a : b);
+    final fMin = zones.map((z) => z.frais).reduce((a, b) => a < b ? a : b);
+    final fMax = zones.map((z) => z.frais).reduce((a, b) => a > b ? a : b);
+    String prix(double f) => f > 0 ? '${f.toStringAsFixed(0)} HTG' : 'Gratuite';
+    final frais = fMin == fMax ? prix(fMin) : '${prix(fMin)} - ${prix(fMax)}';
+    return 'Livraison $dMin-$dMax min · $frais';
   }
 }
 
