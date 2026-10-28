@@ -10,6 +10,7 @@ import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/categories_boutique_widget.dart';
 import '../../widgets/horaire_boutique_widget.dart';
+import '../../widgets/zones_livraison_selecteur.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Créer boutique — Faitza COLAS
@@ -56,13 +57,6 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // Indique un chargement en cours (upload logo ou création boutique) —
   // désactive le bouton de soumission et affiche un spinner.
   bool _isLoading = false;
-
-  // Liste fixe des zones de livraison proposées (spécifiques à la région
-  // des Cayes, contexte local de l'application).
-  final List<String> _zonesDisponibles = [
-    'Cayes Centre', 'Cayes Nord', 'Cayes Sud',
-    'Torbeck', 'Saint-Jean', 'Maniche', 'Camp-Perrin',
-  ];
 
   // Mode sombre courant, mis à jour à chaque build() et réutilisé par les
   // méthodes utilitaires (_label, _deco) qui construisent des widgets en
@@ -325,34 +319,18 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 24),
 
               // Zones livraison
-              // Sélection multiple des zones de livraison via des
-              // FilterChip. Au clic, on ajoute ou on retire la zone de la
-              // liste `_zonesSelectionnees` (voir onSelected).
+              // Menu déroulant des zones de la liste + champ "Autre
+              // zone" pour en écrire une qui n'y est pas.
               _label('Zones de livraison *'),
-              Text('Sélectionnez les zones où vous livrez',
+              Text('Choisissez les zones où vous livrez',
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8, runSpacing: 8,
-                children: _zonesDisponibles.map((zone) {
-                  final sel = _zonesSelectionnees.contains(zone);
-                  return FilterChip(
-                    label: Text(zone),
-                    selected: sel,
-                    onSelected: (v) => setState(() {
-                      if (v) _zonesSelectionnees.add(zone);
-                      else _zonesSelectionnees.remove(zone);
-                    }),
-                    selectedColor: const Color(0xFFEEF3FB),
-                    checkmarkColor: const Color(0xFF0D2B5E),
-                    labelStyle: TextStyle(
-                      color: sel ? const Color(0xFF0D2B5E) : AppColors.textSecondaryFor(_isDark),
-                    ),
-                    side: BorderSide(
-                      color: sel ? const Color(0xFF0D2B5E) : AppColors.borderColor(_isDark),
-                    ),
-                  );
-                }).toList(),
+              ZonesLivraisonSelecteur(
+                zones: _zonesSelectionnees,
+                isDark: _isDark,
+                onChanged: (l) => setState(() => _zonesSelectionnees
+                  ..clear()
+                  ..addAll(l)),
               ),
               const SizedBox(height: 24),
 

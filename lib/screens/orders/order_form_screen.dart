@@ -8,6 +8,7 @@ import '../../providers/order_provider.dart';
 import '../../models/order_model.dart';
 import '../../models/shop_model.dart';
 import '../../providers/theme_provider.dart';
+import '../../constants/zones.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/moncash_widgets.dart';
 import '../../services/database_service.dart';
@@ -41,9 +42,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   final _telephoneCtrl = TextEditingController();
   final _confirmTelCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  // Zone de livraison choisie parmi `_zones` (chaîne vide = rien de
+  // Zone du client choisie dans le menu déroulant (chaîne vide = rien de
   // sélectionné, ce qui bloque la validation dans `_valider()`).
+  // `_autreZone` = le client a choisi "Autre zone" (absente de la liste).
   String _zone = '';
+  bool _autreZone = false;
+  static const String _valeurAutre = '__autre__';
   // true = le client vient chercher sa commande à la boutique : pas
   // d'adresse, pas de zone, pas de frais de livraison.
   bool _retrait = false;
@@ -55,15 +59,39 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   String? _moncashNumero;
   // Zones livrées par la boutique du panier et leur prix de livraison
   // (HTG). Vide tant que la boutique n'est pas chargée, ou si elle n'a
-  // configuré aucune zone : on retombe alors sur la liste fixe `_zones`.
+  // configuré aucune zone (anciennes boutiques : toute zone acceptée).
   Map<String, double> _fraisParZone = {};
 
-  List<String> get _zonesProposees =>
-      _fraisParZone.isEmpty ? _zones : _fraisParZone.keys.toList();
+  // Menu déroulant : toutes les zones de la liste + celles que la
+  // boutique a écrites elle-même, pour que le client trouve la sienne.
+  List<String> get _zonesProposees => [
+        ...Zones.toutes,
+        ..._fraisParZone.keys
+            .where((z) => !Zones.toutes.any((t) => Zones.memeZone(t, z))),
+      ];
+
+  // Nom de la zone tel que la boutique l'a enregistré (null = la boutique
+  // ne livre pas dans `zone`).
+  String? _zoneBoutique(String zone) {
+    for (final z in _fraisParZone.keys) {
+      if (Zones.memeZone(z, zone)) return z;
+    }
+    return null;
+  }
+
+  // true quand le client a choisi une zone où la boutique ne livre pas :
+  // message d'erreur sous le menu et commande bloquée.
+  bool get _zoneNonLivree =>
+      !_retrait &&
+      (_autreZone ||
+          (_zone.isNotEmpty &&
+              _fraisParZone.isNotEmpty &&
+              _zoneBoutique(_zone) == null));
 
   // Prix de livraison de la zone choisie. Le serveur recalcule le même
   // montant à la création de la commande (migration_frais_livraison.sql).
-  double get _fraisLivraison => _retrait ? 0 : _fraisParZone[_zone] ?? 0;
+  double get _fraisLivraison =>
+      _retrait ? 0 : _fraisParZone[_zoneBoutique(_zone) ?? ''] ?? 0;
   // Numéro de transaction MonCash saisi par le client.
   final _moncashRefCtrl = TextEditingController();
   // Bascule à `true` pendant l'appel réseau de création de commande, pour
@@ -75,13 +103,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // appui, nouvel essai après une erreur réseau) envoient la même clé :
   // le serveur ne crée jamais deux commandes pour elle.
   final String _cleCommande = DatabaseService.nouvelleCleIdempotence();
-
-  // Liste fixe des zones de livraison desservies (zone géographique des
-  // Cayes et environs, cohérent avec le périmètre du projet ITAC).
-  final List<String> _zones = [
-    'Cayes Centre', 'Cayes Nord', 'Cayes Sud',
-    'Torbeck', 'Saint-Jean', 'Camp-Perrin',
-  ];
 
   @override
   void initState() {
@@ -113,7 +134,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       setState(() {
         if (numero != null && numero.isNotEmpty) _moncashNumero = numero;
         _fraisParZone = {for (final z in zones) z.zone: z.frais};
-        if (_zone.isNotEmpty && !_zonesProposees.contains(_zone)) _zone = '';
       });
     } catch (_) {}
   }
@@ -158,9 +178,18 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // 2) La zone de livraison n'est pas un TextFormField mais une sélection
     // par "chips" (Wrap de GestureDetector plus bas) : on la valide donc
     // manuellement ici, hors du mécanisme de Form.
-    if (!_retrait && _zone.isEmpty) {
+    if (!_retrait && _zone.isEmpty && !_autreZone) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Sélectionnez une zone de livraison'),
+        backgroundColor: Color(0xFFE63946),
+      ));
+      return;
+    }
+    // 3) La boutique doit livrer dans la zone choisie (le serveur refuse
+    // aussi la commande, voir migration_frais_livraison.sql).
+    if (_zoneNonLivree) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Cette boutique ne livre pas dans votre zone'),
         backgroundColor: Color(0xFFE63946),
       ));
       return;
@@ -260,7 +289,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       statut: 'nouvelle',
       adresseLivraison:
           _retrait ? OrderModel.retraitBoutique : _adresseCtrl.text.trim(),
-      zone: _retrait ? OrderModel.retraitBoutique : _zone,
+      zone: _retrait
+          ? OrderModel.retraitBoutique
+          : _zoneBoutique(_zone) ?? _zone,
       telephoneClient: _telephoneCtrl.text.trim(),
       noteVendeur: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
       createdAt: DateTime.now(),
@@ -448,47 +479,59 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       const SizedBox(height: 14),
                       _label(Icons.map_outlined, 'Zone de livraison', isDark),
                       const SizedBox(height: 8),
-                      // "Chips" cliquables représentant chaque zone
-                      // possible ; la zone sélectionnée est mise en
-                      // surbrillance (fond bleu foncé). Ce n'est pas un
-                      // champ de Form classique, d'où la validation
-                      // manuelle faite dans `_valider()`.
-                      Wrap(
-                        spacing: 8, runSpacing: 8,
-                        children: _zonesProposees.map((z) {
-                          final sel = _zone == z;
-                          return GestureDetector(
-                            onTap: () => setState(() => _zone = z),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: sel
-                                    ? const Color(0xFF0D2B5E)
-                                    : AppColors.surface(isDark),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: sel
-                                      ? const Color(0xFF0D2B5E)
-                                      : AppColors.borderColor(isDark),
-                                ),
-                              ),
+                      // Menu déroulant des zones (prix affiché pour les
+                      // zones livrées par la boutique). "Autre zone" = la
+                      // zone du client n'est pas dans la liste. Validé à
+                      // la main dans `_valider()`.
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        initialValue: _autreZone
+                            ? _valeurAutre
+                            : (_zone.isEmpty ? null : _zone),
+                        decoration: _deco('Choisissez votre zone', isDark),
+                        items: [
+                          ..._zonesProposees.map((z) {
+                            final b = _zoneBoutique(z);
+                            final f = b == null ? 0.0 : _fraisParZone[b]!;
+                            return DropdownMenuItem(
+                              value: z,
                               child: Text(
-                                  (_fraisParZone[z] ?? 0) > 0
-                                      ? '$z · ${_fraisParZone[z]!.toStringAsFixed(0)} HTG'
+                                  b != null && f > 0
+                                      ? '$z · ${f.toStringAsFixed(0)} HTG'
                                       : z,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: sel
-                                          ? Colors.white
-                                          : AppColors.textSecondaryFor(isDark),
-                                      fontWeight: sel
-                                          ? FontWeight.bold
-                                          : FontWeight.normal)),
-                            ),
-                          );
-                        }).toList(),
+                                  style: const TextStyle(fontSize: 13)),
+                            );
+                          }),
+                          const DropdownMenuItem(
+                            value: _valeurAutre,
+                            child: Text('Autre zone',
+                                style: TextStyle(fontSize: 13)),
+                          ),
+                        ],
+                        onChanged: (z) => setState(() {
+                          _autreZone = z == _valeurAutre;
+                          _zone = _autreZone ? '' : (z ?? '');
+                        }),
                       ),
+                      // Erreur : la boutique ne livre pas dans cette zone.
+                      // On rappelle où elle livre et on propose le retrait.
+                      if (_zoneNonLivree) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFDEAEA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                              'Cette boutique ne livre pas dans votre zone. '
+                              '${_fraisParZone.isEmpty ? '' : 'Elle livre à : ${_fraisParZone.keys.join(', ')}. '}'
+                              'Vous pouvez choisir « Je viens chercher ».',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFFE63946))),
+                        ),
+                      ],
                       ],
                     ]),
                     const SizedBox(height: 12),
@@ -671,7 +714,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           ),
                         // Livraison : prix de la zone choisie (le serveur
                         // l'ajoute au total de la commande).
-                        if (_zone.isNotEmpty || _retrait)
+                        if ((_zone.isNotEmpty && !_zoneNonLivree) || _retrait)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Row(
