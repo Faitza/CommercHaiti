@@ -14,6 +14,7 @@ import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/app_drawer_widget.dart';
 import '../../widgets/notification_bell_widget.dart';
 import '../../constants/app_colors.dart';
+import '../../constants/categories.dart';
 import '../../widgets/bottom_nav_item.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/image_reseau_widget.dart';
@@ -50,6 +51,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   List<ProductModel> _topProduits = [];
   // Produits actuellement en promotion (prix_promo renseigné).
   List<ProductModel> _promoProduits = [];
+  // Produits de l'accueil classés par catégorie (une section par
+  // catégorie de Categories.toutes), et ceux dont la catégorie n'est
+  // pas dans cette liste (section « Autres »).
+  Map<String, List<ProductModel>> _produitsParCategorie = {};
+  List<ProductModel> _autresProduits = [];
   // Résultats de la recherche produit en cours (rempli par
   // _runSearch()).
   List<ProductModel> _searchProduits = [];
@@ -207,7 +213,42 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           .eq('disponible', true)
           .not('prix_promo', 'is', null)
           .limit(10);
+      // Requêtes 3 : les 10 produits les plus commandés de chaque
+      // catégorie, plus une requête pour les produits hors de la liste
+      // des catégories (anciens produits ou catégorie vide), toutes en
+      // parallèle.
+      final categories = Categories.toutes;
+      final listeIn =
+          '(${categories.map((c) => '"$c"').join(',')})';
+      final requetes = [
+        for (final c in categories)
+          Supabase.instance.client
+              .from('products')
+              .select()
+              .eq('disponible', true)
+              .gt('stock', 0)
+              .eq('categorie', c)
+              .order('total_commandes', ascending: false)
+              .limit(10),
+        Supabase.instance.client
+            .from('products')
+            .select()
+            .eq('disponible', true)
+            .gt('stock', 0)
+            .filter('categorie', 'not.in', listeIn)
+            .order('total_commandes', ascending: false)
+            .limit(10),
+      ];
+      final resultats = await Future.wait(requetes);
+      List<ProductModel> versProduits(List<Map<String, dynamic>> r) =>
+          r.map((m) => ProductModel.fromMap(m, m['id'])).toList();
+      if (!mounted) return;
       setState(() {
+        _produitsParCategorie = {
+          for (var i = 0; i < categories.length; i++)
+            categories[i]: versProduits(resultats[i]),
+        };
+        _autresProduits = versProduits(resultats.last);
         _topProduits = rows.map((r) => ProductModel.fromMap(r, r['id'])).toList();
         _promoProduits = promoRows
             .map((r) => ProductModel.fromMap(r, r['id']))
@@ -566,6 +607,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // Produits classés par catégorie : une section par
+                    // catégorie qui a des produits (titre + carrousel
+                    // horizontal + « Voir tout » vers le catalogue filtré
+                    // sur cette catégorie), puis « Autres » pour les
+                    // produits sans catégorie connue.
+                    if (!_isLoading && _erreur == null) ...[
+                      for (final c in Categories.toutes)
+                        if (_produitsParCategorie[c]?.isNotEmpty ?? false)
+                          ..._sectionCategorie(c, _produitsParCategorie[c]!,
+                              onVoirTout: () => context.push(
+                                  '/client/all-products',
+                                  extra: c)),
+                      if (_autresProduits.isNotEmpty)
+                        ..._sectionCategorie('Autres', _autresProduits,
+                            onVoirTout: () =>
+                                context.push('/client/all-products')),
+                    ],
+
                     // Boutiques ouvertes
                     // Liste verticale (non scrollable indépendamment,
                     // shrinkWrap + NeverScrollableScrollPhysics : elle
@@ -722,6 +781,28 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         ],
       ],
     );
+  }
+
+  /// Section « catégorie » de l'accueil : titre avec « Voir tout » et
+  /// carrousel horizontal des produits de cette catégorie.
+  List<Widget> _sectionCategorie(String titre, List<ProductModel> produits,
+      {required VoidCallback onVoirTout}) {
+    return [
+      _sectionTitle(titre, onTap: onVoirTout),
+      SizedBox(
+        height: 180,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          itemCount: produits.length,
+          itemBuilder: (_, i) => _ProduitCard(
+            product: produits[i],
+            onTap: () => context.push('/client/product', extra: produits[i]),
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+    ];
   }
 
   /// Titre de section réutilisé avec un lien optionnel "Voir tout" à
