@@ -10,7 +10,7 @@ import '../../widgets/product_card_widget.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
-import '../../widgets/image_reseau_widget.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Détail produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -377,12 +377,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: PageView.builder(
                         itemCount: nbPhotos,
                         onPageChanged: (i) => setState(() => _photoIndex = i),
-                        itemBuilder: (_, i) => prod.photos.isEmpty
-                            ? Container(color: const Color(0xFFEEF3FB),
-                                child: const Icon(Icons.image_outlined,
-                                    size: 60, color: Color(0xFF0D2B5E)))
-                            : ImageReseau(prod.photos[i], fit: BoxFit.cover,
-                                width: double.infinity),
+                        itemBuilder: (_, i) => ImageProduit(
+                            prod.photos.isEmpty ? null : prod.photos[i],
+                            width: double.infinity),
                       ),
                     ),
                     // Bouton retour flottant — jan maket la (pa gen barre navy)

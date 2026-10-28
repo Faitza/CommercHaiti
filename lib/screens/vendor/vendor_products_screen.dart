@@ -8,9 +8,9 @@ import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/whatsapp_share_product_widget.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Liste produits Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -298,12 +298,7 @@ class _ProductListTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: SizedBox(
                   width: 64, height: 64,
-                  child: product.vignette != null
-                      ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                      : Container(
-                          color: const Color(0xFFEEF3FB),
-                          child: const Icon(Icons.image_outlined,
-                              color: Color(0xFF0D2B5E))),
+                  child: ImageProduit(product.vignette),
                 ),
               ),
               const SizedBox(width: 12),
@@ -315,6 +310,18 @@ class _ProductListTile extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 2),
+                    // Encourage le vendeur à mettre une vraie photo.
+                    if (product.vignette == null ||
+                        product.vignette!.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 2),
+                        child: Text(
+                            'Ajoutez une photo : les clients achètent plus',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.amberText,
+                                fontWeight: FontWeight.w600)),
+                      ),
                     Text(
                         '${product.categorie.isEmpty ? "—" : product.categorie} · ${product.prix.toStringAsFixed(0)} HTG',
                         style: TextStyle(

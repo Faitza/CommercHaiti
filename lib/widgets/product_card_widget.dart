@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../providers/theme_provider.dart';
 import '../constants/app_colors.dart';
-import 'image_reseau_widget.dart';
+import 'image_produit_widget.dart';
 
 /// Carte produit réutilisable — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -67,13 +67,7 @@ class ProductCardWidget extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(12)),
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!,
-                            fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: Icon(Icons.image_outlined,
-                                color: AppColors.accentFor(isDark), size: 40)),
+                    child: ImageProduit(product.vignette),
                   ),
                 // Badge promo — affiché uniquement si le produit a une
                 // réduction active, en haut à gauche de la photo, avec le

@@ -16,11 +16,11 @@ import '../../widgets/notification_bell_widget.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/bottom_nav_item.dart';
 import '../../providers/cart_provider.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import 'recherche_photo_screen.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Foto ki parèt anba ble maren nan tèt akèy la.
 const String kAkeyFotoBanye = 'assets/images/banniere_accueil.jpg';
@@ -357,28 +357,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // Notifications (commandes, nouveaux produits des
                     // boutiques favorites) avec badge des non lues.
                     const NotificationBellWidget(),
-                    const SizedBox(width: 8),
-                    // Panier
-                    // context.go() remplace toute la pile de navigation
-                    // par l'écran Panier : depuis l'accueil, on
-                    // considère le panier comme une nouvelle "racine"
-                    // de navigation plutôt qu'un écran empilé — cela
-                    // évite d'accumuler Accueil -> Panier -> Accueil ->
-                    // Panier... dans la pile si l'utilisateur navigue
-                    // beaucoup entre les deux via la bottom nav / ce
-                    // bouton.
-                    GestureDetector(
-                      onTap: () => context.go('/cart'),
-                      child: Container(
-                        width: 34, height: 34,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.shopping_cart_outlined,
-                            color: Colors.white, size: 18),
-                      ),
-                    ),
+                    // Pas de bouton Panier ici : il est déjà dans la barre
+                    // du bas, avec le nombre d'articles.
                     const SizedBox(width: 8),
                     // Menu hamburger
                     // Ouvre le endDrawer défini plus haut via la
@@ -397,31 +377,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Ranje 2 — BF-013 : message de bienvenue personnalisé
-                // Deuxième rangée : message de bienvenue utilisant le
-                // prénom de l'utilisateur connecté (auth.prenom).
+                const SizedBox(height: 10),
+                // Ranje 2 — BF-013 : message de bienvenue personnalisé,
+                // sur une seule ligne courte pour alléger l'en-tête.
                 Row(
                   children: [
                     const Icon(Icons.waving_hand,
-                        color: Color(0xFFF5A623), size: 18),
+                        color: Color(0xFFF5A623), size: 16),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Bonjour ${auth.prenom},',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800)),
-                          const Text('Que voulez-vous aujourd\'hui ?',
-                              style: TextStyle(
-                                  color: Colors.white54, fontSize: 11)),
-                        ],
-                      ),
+                      child: Text('Bonjour ${auth.prenom}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -808,12 +779,7 @@ class _ProduitCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: SizedBox(
                     height: 100, width: double.infinity,
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: const Icon(Icons.image_outlined,
-                                color: Color(0xFF0D2B5E), size: 36)),
+                    child: ImageProduit(product.vignette),
                   ),
                 ),
                 // Badge pourcentage de réduction, affiché seulement si
@@ -944,12 +910,7 @@ class _ProduitLigne extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   child: SizedBox(
                     width: 60, height: 60,
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: const Icon(Icons.image_outlined,
-                                color: Color(0xFF0D2B5E), size: 26)),
+                    child: ImageProduit(product.vignette),
                   ),
                 ),
                 if (product.hasPromo)
