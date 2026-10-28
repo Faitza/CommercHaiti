@@ -22,6 +22,7 @@ import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import 'recherche_photo_screen.dart';
 import '../../widgets/image_produit_widget.dart';
+import '../../widgets/product_card_widget.dart';
 import '../../l10n/traduction.dart';
 
 /// Foto ki parèt anba ble maren nan tèt akèy la.
@@ -58,11 +59,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   List<ProductModel> _topProduits = [];
   // Produits actuellement en promotion (prix_promo renseigné).
   List<ProductModel> _promoProduits = [];
-  // Produits de l'accueil classés par catégorie (une section par
-  // catégorie de Categories.toutes), et ceux dont la catégorie n'est
-  // pas dans cette liste (section « Autres »).
-  Map<String, List<ProductModel>> _produitsParCategorie = {};
-  List<ProductModel> _autresProduits = [];
+  // Kategori chip ki chwazi anlè lis pwodui yo (null = « Toutes »).
+  // Catégorie choisie dans la rangée de chips (null = toutes).
+  String? _categorieChoisie;
+  // Chajman lis la sèlman lè kliyan an chanje chip.
+  bool _chargementPopulaires = false;
   // Résultats de la recherche produit en cours (rempli par
   // _runSearch()).
   List<ProductModel> _searchProduits = [];
@@ -192,24 +193,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     super.dispose();
   }
 
-  /// Charge les 10 produits les plus commandés (section "Produits
-  /// populaires") et les produits actuellement en promotion (section
-  /// "Promotions du jour"), via deux requêtes Supabase séparées.
+  /// Charge les produits populaires (filtrés sur la catégorie choisie)
+  /// et les produits actuellement en promotion (section "Promotions du
+  /// jour"), via deux requêtes Supabase séparées.
   Future<void> _loadData() async {
     try {
-      // Requête 1 : produits populaires.
-      // - .eq('disponible', true) : produits en vente uniquement.
-      // - .order('total_commandes', ascending: false) : du plus
-      //   commandé au moins commandé.
-      // - .limit(10) : les 10 premiers.
-      final rows = await Supabase.instance.client
-          .from('products')
-          .select()
-          .eq('disponible', true)
-          // Pas de produit en rupture dans la vitrine de l'accueil.
-          .gt('stock', 0)
-          .order('total_commandes', ascending: false)
-          .limit(10);
+      final rows = await _requetePopulaires(_categorieChoisie);
       // Requête 2 : produits en promotion.
       // - .not('prix_promo', 'is', null) : ne garde que les lignes où
       //   la colonne prix_promo N'EST PAS null, c'est-à-dire les
@@ -220,42 +209,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           .eq('disponible', true)
           .not('prix_promo', 'is', null)
           .limit(10);
-      // Requêtes 3 : les 10 produits les plus commandés de chaque
-      // catégorie, plus une requête pour les produits hors de la liste
-      // des catégories (anciens produits ou catégorie vide), toutes en
-      // parallèle.
-      final categories = Categories.toutes;
-      final listeIn =
-          '(${categories.map((c) => '"$c"').join(',')})';
-      final requetes = [
-        for (final c in categories)
-          Supabase.instance.client
-              .from('products')
-              .select()
-              .eq('disponible', true)
-              .gt('stock', 0)
-              .eq('categorie', c)
-              .order('total_commandes', ascending: false)
-              .limit(10),
-        Supabase.instance.client
-            .from('products')
-            .select()
-            .eq('disponible', true)
-            .gt('stock', 0)
-            .filter('categorie', 'not.in', listeIn)
-            .order('total_commandes', ascending: false)
-            .limit(10),
-      ];
-      final resultats = await Future.wait(requetes);
-      List<ProductModel> versProduits(List<Map<String, dynamic>> r) =>
-          r.map((m) => ProductModel.fromMap(m, m['id'])).toList();
       if (!mounted) return;
       setState(() {
-        _produitsParCategorie = {
-          for (var i = 0; i < categories.length; i++)
-            categories[i]: versProduits(resultats[i]),
-        };
-        _autresProduits = versProduits(resultats.last);
         _topProduits = rows.map((r) => ProductModel.fromMap(r, r['id'])).toList();
         _promoProduits = promoRows
             .map((r) => ProductModel.fromMap(r, r['id']))
@@ -272,6 +227,47 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _erreur = messageErreur(e,
+            parDefaut: traduire('Impossible de charger les produits.'));
+      });
+    }
+  }
+
+  /// Requête produits populaires : les 20 produits en vente les plus
+  /// commandés, limités à [categorie] si elle n'est pas null.
+  Future<List<Map<String, dynamic>>> _requetePopulaires(String? categorie) {
+    var q = Supabase.instance.client
+        .from('products')
+        .select()
+        .eq('disponible', true)
+        // Pas de produit en rupture dans la vitrine de l'accueil.
+        .gt('stock', 0);
+    if (categorie != null) q = q.eq('categorie', categorie);
+    return q.order('total_commandes', ascending: false).limit(20);
+  }
+
+  /// Lè kliyan an tape yon chip kategori : rechaje lis pwodui yo sèlman
+  /// (pwomo yo ak boutik yo pa chanje).
+  /// Au clic sur un chip : recharge uniquement la liste des produits.
+  Future<void> _choisirCategorie(String? categorie) async {
+    if (categorie == _categorieChoisie) return;
+    setState(() {
+      _categorieChoisie = categorie;
+      _chargementPopulaires = true;
+    });
+    try {
+      final rows = await _requetePopulaires(categorie);
+      // Si kliyan an te deja tape yon lòt chip, nou inyore repons sa a.
+      if (!mounted || categorie != _categorieChoisie) return;
+      setState(() {
+        _topProduits = rows.map((r) => ProductModel.fromMap(r, r['id'])).toList();
+        _chargementPopulaires = false;
+        _erreur = null;
+      });
+    } catch (e) {
+      if (!mounted || categorie != _categorieChoisie) return;
+      setState(() {
+        _chargementPopulaires = false;
         _erreur = messageErreur(e,
             parDefaut: traduire('Impossible de charger les produits.'));
       });
@@ -553,14 +549,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     ],
 
                     // Produits populaires
-                    // Carrousel horizontal des 10 produits les plus
-                    // commandés (chargés par _loadData()). "Voir tout"
-                    // ouvre le catalogue complet.
+                    // Ranje chip kategori ki ka glise (pou filtre), epi
+                    // pwodui yo sou 2 kolòn, menm jan ak Shein. "Voir
+                    // tout" ouvre le catalogue complet (filtré sur la
+                    // catégorie choisie s'il y en a une).
                     _sectionTitle(context.tr('Produits populaires'),
-                        onTap: () => context.push('/client/all-products')),
-                    // Lis vètikal (youn anba lòt) olye de karousèl
-                    // orizontal la : chak pwodui sou yon liy.
-                    if (_isLoading)
+                        onTap: () => context.push('/client/all-products',
+                            extra: _categorieChoisie)),
+                    SizedBox(
+                      height: 40,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        children: [
+                          _chipCategorie('Toutes', null),
+                          for (final c in Categories.toutes)
+                            _chipCategorie(c, c),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_isLoading || _chargementPopulaires)
                       const SizedBox(
                           height: 120,
                           child: Center(child: CircularProgressIndicator()))
@@ -579,42 +588,30 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           icone: Icons.shopping_bag_outlined,
                           compact: true)
                     else
-                      Padding(
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Column(
-                          children: [
-                            for (final p in _topProduits)
-                              _ProduitLigne(
-                                product: p,
-                                // Menm destinasyon ak anvan : lis
-                                // boutik ki vann pwodui sa a.
-                                onTap: () => context.push(
-                                  '/client/product-shops',
-                                  extra: p.nom,
-                                ),
-                              ),
-                          ],
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          // Menm kat ak katalòg la (all_products_screen).
+                          childAspectRatio: 0.72,
+                        ),
+                        itemCount: _topProduits.length,
+                        itemBuilder: (_, i) => ProductCardWidget(
+                          product: _topProduits[i],
+                          // Menm destinasyon ak anvan : lis boutik ki
+                          // vann pwodui sa a.
+                          onTap: () => context.push(
+                            '/client/product-shops',
+                            extra: _topProduits[i].nom,
+                          ),
                         ),
                       ),
                     const SizedBox(height: 16),
-
-                    // Produits classés par catégorie : une section par
-                    // catégorie qui a des produits (titre + carrousel
-                    // horizontal + « Voir tout » vers le catalogue filtré
-                    // sur cette catégorie), puis « Autres » pour les
-                    // produits sans catégorie connue.
-                    if (!_isLoading && _erreur == null) ...[
-                      for (final c in Categories.toutes)
-                        if (_produitsParCategorie[c]?.isNotEmpty ?? false)
-                          ..._sectionCategorie(context.tr(c), _produitsParCategorie[c]!,
-                              onVoirTout: () => context.push(
-                                  '/client/all-products',
-                                  extra: c)),
-                      if (_autresProduits.isNotEmpty)
-                        ..._sectionCategorie(context.tr('Autres'), _autresProduits,
-                            onVoirTout: () =>
-                                context.push('/client/all-products')),
-                    ],
 
                     // Boutiques ouvertes
                     // Liste verticale (non scrollable indépendamment,
@@ -774,26 +771,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     );
   }
 
-  /// Section « catégorie » de l'accueil : titre avec « Voir tout » et
-  /// carrousel horizontal des produits de cette catégorie.
-  List<Widget> _sectionCategorie(String titre, List<ProductModel> produits,
-      {required VoidCallback onVoirTout}) {
-    return [
-      _sectionTitle(titre, onTap: onVoirTout),
-      SizedBox(
-        height: 180,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          itemCount: produits.length,
-          itemBuilder: (_, i) => _ProduitCard(
-            product: produits[i],
-            onTap: () => context.push('/client/product', extra: produits[i]),
-          ),
+  /// Chip kategori anlè lis pwodui yo ([valeur] null = « Toutes »).
+  /// Même style que les chips du catalogue (all_products_screen).
+  Widget _chipCategorie(String label, String? valeur) {
+    final sel = _categorieChoisie == valeur;
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(context.tr(label)),
+        selected: sel,
+        onSelected: (_) => _choisirCategorie(valeur),
+        selectedColor: const Color(0xFFEEF3FB),
+        labelStyle: TextStyle(
+          color: sel ? AppColors.accentFor(isDark) : AppColors.textSecondaryFor(isDark),
+          fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
         ),
+        side: BorderSide(
+            color: sel ? AppColors.accentFor(isDark) : AppColors.borderColor(isDark)),
       ),
-      const SizedBox(height: 16),
-    ];
+    );
   }
 
   /// Titre de section réutilisé avec un lien optionnel "Voir tout" à
@@ -954,110 +952,6 @@ class _ProduitCard extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Liy pwodui pou lis "Produits populaires" : foto agoch, non, pri
-/// (ak pri bare si gen pwomo), badj rediksyon ak bouton kè favori.
-class _ProduitLigne extends StatelessWidget {
-  final ProductModel product;
-  final VoidCallback onTap;
-  const _ProduitLigne({required this.product, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.surface(isDark),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6, offset: const Offset(0, 2),
-          )],
-        ),
-        child: Row(
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 60, height: 60,
-                    child: ImageProduit(product.vignette),
-                  ),
-                ),
-                if (product.hasPromo)
-                  Positioned(
-                    top: 4, left: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE63946),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text('-${product.pourcentageReduction}%',
-                          style: const TextStyle(color: Colors.white,
-                              fontSize: 8, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(product.nom, maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: AppColors.textPrimaryFor(isDark),
-                          fontWeight: FontWeight.w600, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Row(children: [
-                    Text('${product.prixAffiche.toStringAsFixed(0)} HTG',
-                        style: TextStyle(
-                            color: AppColors.accentFor(isDark),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13)),
-                    if (product.hasPromo) ...[
-                      const SizedBox(width: 6),
-                      Text('${product.prix.toStringAsFixed(0)}',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondaryFor(isDark),
-                              decoration: TextDecoration.lineThrough)),
-                    ],
-                  ]),
-                ],
-              ),
-            ),
-            // Menm konpòtman ak bouton kè sou _ProduitCard (favori
-            // boutik la, product.shopId).
-            Consumer<FavoriteProvider>(
-              builder: (context, favProvider, _) {
-                final estFavori = favProvider.isFavorite(product.shopId);
-                return IconButton(
-                  onPressed: () => favProvider.toggleFavorite(product.shopId),
-                  icon: Icon(
-                      estFavori ? Icons.favorite : Icons.favorite_border,
-                      size: 20,
-                      color: estFavori
-                          ? const Color(0xFFE63946)
-                          : const Color(0xFF999999)),
-                );
-              },
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFFAAAAAA)),
           ],
         ),
       ),
