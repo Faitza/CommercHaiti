@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_colors.dart';
 import '../services/storage_service.dart';
+import '../l10n/traduction.dart';
 
 /// Section « Un problème avec cette commande ? » de l'écran de suivi.
 ///
@@ -52,7 +53,7 @@ class LitigeSectionWidget extends StatelessWidget {
                   size: 18,
                   color: resolu ? AppColors.green : AppColors.amber),
               const SizedBox(width: 8),
-              Text(resolu ? 'Problème traité' : 'Problème signalé',
+              Text(resolu ? context.tr('Problème traité') : context.tr('Problème signalé'),
                   style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary)),
@@ -65,9 +66,10 @@ class LitigeSectionWidget extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               resolu
-                  ? 'Décision : ${litigeResolution ?? '—'}'
-                  : "L'équipe CommercHaiti examine votre signalement et "
-                      'vous contactera.',
+                  ? context.tr('Décision : {decision}',
+                      {'decision': litigeResolution ?? '—'})
+                  : context.tr("L'équipe CommercHaiti examine votre signalement et "
+                      'vous contactera.'),
               style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
             ),
           ],
@@ -89,7 +91,7 @@ class LitigeSectionWidget extends StatelessWidget {
         ),
         icon: Icon(Icons.report_problem_outlined,
             color: AppColors.textPrimaryFor(isDark), size: 16),
-        label: Text('Signaler un problème',
+        label: Text(context.tr('Signaler un problème'),
             style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
         onPressed: () => showModalBottomSheet(
           context: context,
@@ -144,12 +146,12 @@ class _LitigeFormState extends State<_LitigeForm> {
 
   Future<void> _envoyer() async {
     if (_motif == null) {
-      setState(() => _erreur = 'Choisissez ce qui ne va pas');
+      setState(() => _erreur = traduire('Choisissez ce qui ne va pas'));
       return;
     }
     final details = _description.text.trim();
     if (_motif == 'Autre' && details.length < 5) {
-      setState(() => _erreur = 'Décrivez le problème');
+      setState(() => _erreur = traduire('Décrivez le problème'));
       return;
     }
     setState(() {
@@ -173,8 +175,8 @@ class _LitigeFormState extends State<_LitigeForm> {
       });
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Problème signalé. L'équipe CommercHaiti vous contactera."),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire("Problème signalé. L'équipe CommercHaiti vous contactera.")),
         backgroundColor: AppColors.green,
       ));
     } catch (e) {
@@ -182,10 +184,10 @@ class _LitigeFormState extends State<_LitigeForm> {
       setState(() {
         _envoi = false;
         _erreur = msg.contains('litige_deja_ouvert')
-            ? 'Un problème est déjà signalé pour cette commande.'
+            ? traduire('Un problème est déjà signalé pour cette commande.')
             : msg.contains('commande_pas_encore_acceptee')
-                ? "La commande n'est pas encore acceptée : vous pouvez l'annuler."
-                : "Envoi impossible. Vérifiez votre connexion et réessayez.";
+                ? traduire("La commande n'est pas encore acceptée : vous pouvez l'annuler.")
+                : traduire('Envoi impossible. Vérifiez votre connexion et réessayez.');
       });
     }
   }
@@ -201,13 +203,13 @@ class _LitigeFormState extends State<_LitigeForm> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Signaler un problème',
+            Text(context.tr('Signaler un problème'),
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimaryFor(isDark))),
             const SizedBox(height: 4),
-            Text("Votre signalement est envoyé à l'équipe CommercHaiti.",
+            Text(context.tr("Votre signalement est envoyé à l'équipe CommercHaiti."),
                 style: TextStyle(
                     fontSize: 12, color: AppColors.textSecondaryFor(isDark))),
             const SizedBox(height: 12),
@@ -221,7 +223,7 @@ class _LitigeFormState extends State<_LitigeForm> {
                   RadioListTile<String>(
                     value: m,
                     enabled: !_envoi,
-                    title: Text(m,
+                    title: Text(context.tr(m),
                         style: TextStyle(
                             fontSize: 14,
                             color: AppColors.textPrimaryFor(isDark))),
@@ -237,7 +239,7 @@ class _LitigeFormState extends State<_LitigeForm> {
               maxLines: 3,
               maxLength: 500,
               decoration: InputDecoration(
-                hintText: 'Détails (facultatif)',
+                hintText: context.tr('Détails (facultatif)'),
                 filled: true,
                 fillColor: AppColors.inputFill(isDark),
                 border: OutlineInputBorder(
@@ -253,7 +255,7 @@ class _LitigeFormState extends State<_LitigeForm> {
                 for (var i = 0; i < _photos.length; i++)
                   Chip(
                     avatar: const Icon(Icons.photo, size: 16),
-                    label: Text('Photo ${i + 1}'),
+                    label: Text(context.tr('Photo {n}', {'n': i + 1})),
                     onDeleted:
                         _envoi ? null : () => setState(() => _photos.removeAt(i)),
                   ),
@@ -261,7 +263,7 @@ class _LitigeFormState extends State<_LitigeForm> {
                   TextButton.icon(
                     onPressed: _envoi ? null : _ajouterPhoto,
                     icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                    label: const Text('Ajouter une photo'),
+                    label: Text(context.tr('Ajouter une photo')),
                   ),
               ],
             ),
@@ -285,7 +287,7 @@ class _LitigeFormState extends State<_LitigeForm> {
                         height: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('Envoyer'),
+                    : Text(context.tr('Envoyer')),
               ),
             ),
           ],

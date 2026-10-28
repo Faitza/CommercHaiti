@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 
@@ -67,27 +68,27 @@ class _VendorLivreursScreenState extends State<VendorLivreursScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(livreur == null ? 'Ajouter un livreur' : 'Modifier le livreur'),
+        title: Text(livreur == null ? ctx.tr('Ajouter un livreur') : ctx.tr('Modifier le livreur')),
         content: Form(
           key: formKey,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextFormField(
               controller: nomCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Nom'),
+              decoration: InputDecoration(labelText: ctx.tr('Nom')),
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Nom requis' : null,
+                  v == null || v.trim().isEmpty ? traduire('Nom requis') : null,
             ),
             TextFormField(
               controller: telCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Téléphone'),
+              decoration: InputDecoration(labelText: ctx.tr('Téléphone')),
               validator: (v) {
                 var chiffres = (v ?? '').replaceAll(RegExp(r'[^\d]'), '');
                 if (chiffres.length == 11 && chiffres.startsWith('509')) {
                   chiffres = chiffres.substring(3);
                 }
-                return chiffres.length == 8 ? null : 'Numéro invalide (8 chiffres)';
+                return chiffres.length == 8 ? null : traduire('Numéro invalide (8 chiffres)');
               },
             ),
           ]),
@@ -95,12 +96,12 @@ class _VendorLivreursScreenState extends State<VendorLivreursScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler')),
+              child: Text(ctx.tr('Annuler'))),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
             },
-            child: const Text('Enregistrer'),
+            child: Text(ctx.tr('Enregistrer')),
           ),
         ],
       ),
@@ -127,7 +128,7 @@ class _VendorLivreursScreenState extends State<VendorLivreursScreen> {
       }
       await _charger();
     } catch (e) {
-      _snack('Enregistrement impossible. Réessayez.');
+      _snack(traduire('Enregistrement impossible. Réessayez.'));
     }
   }
 
@@ -141,7 +142,7 @@ class _VendorLivreursScreenState extends State<VendorLivreursScreen> {
           .eq('id', livreur['id']);
       await _charger();
     } catch (e) {
-      _snack('Modification impossible. Réessayez.');
+      _snack(traduire('Modification impossible. Réessayez.'));
     }
   }
 
@@ -158,25 +159,25 @@ class _VendorLivreursScreenState extends State<VendorLivreursScreen> {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg(isDark),
-      appBar: AppBar(title: const Text('Mes livreurs')),
+      appBar: AppBar(title: Text(context.tr('Mes livreurs'))),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
         onPressed: () => _editer(),
         icon: const Icon(Icons.person_add_alt_1),
-        label: const Text('Ajouter'),
+        label: Text(context.tr('Ajouter')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _erreur != null
-              ? Center(child: Text(_erreur!))
+              ? Center(child: Text(context.tr(_erreur!)))
               : _livreurs.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
                         child: Text(
-                          'Ajoutez les personnes qui livrent vos commandes. '
-                          'Vous pourrez choisir un livreur pour chaque commande.',
+                          context.tr('Ajoutez les personnes qui livrent vos commandes. '
+                          'Vous pourrez choisir un livreur pour chaque commande.'),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               color: AppColors.textSecondaryFor(isDark)),
@@ -206,7 +207,7 @@ class _VendorLivreursScreenState extends State<VendorLivreursScreen> {
                                     color: AppColors.textPrimaryFor(isDark),
                                     fontWeight: FontWeight.w600)),
                             subtitle: Text(
-                                actif ? l['telephone'] ?? '' : '${l['telephone']} · en pause',
+                                actif ? l['telephone'] ?? '' : context.tr('{tel} · en pause', {'tel': l['telephone']}),
                                 style: TextStyle(
                                     color: AppColors.textSecondaryFor(isDark))),
                             trailing: Switch(

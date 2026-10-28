@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/push_service.dart';
 import '../services/reseau_service.dart';
+import '../l10n/traduction.dart';
 
 /// Provider authentification — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -54,7 +55,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isCustomer        => _currentUser?.role == 'customer';
   /// Prénom de l'utilisateur connecté, ou une valeur de repli générique
   /// si personne n'est connecté (évite un null lors de l'affichage).
-  String get prenom          => _currentUser?.prenom ?? 'Utilisateur';
+  String get prenom          => _currentUser?.prenom ?? traduire('Utilisateur');
   /// Identifiant réel (uuid) de la boutique du vendeur connecté, ou
   /// null si le vendeur n'a pas encore créé de boutique / n'est pas vendeur.
   String? get shopId         => _shopId;
@@ -347,20 +348,20 @@ class AuthProvider extends ChangeNotifier {
   String _parseError(dynamic e) {
     final msg = e.toString();
     if (msg.contains('compte_bloque'))
-      return 'Votre compte a été bloqué par l\'administration CommercHaiti';
+      return traduire('Votre compte a été bloqué par l\'administration CommercHaiti');
     if (msg.contains('Invalid login credentials'))
-      return 'Email ou mot de passe incorrect';
+      return traduire('Email ou mot de passe incorrect');
     if (msg.contains('Email not confirmed'))
-      return 'Confirmez votre email avant de vous connecter';
+      return traduire('Confirmez votre email avant de vous connecter');
     if (msg.contains('User already registered'))
-      return 'Un compte existe déjà avec cet email';
+      return traduire('Un compte existe déjà avec cet email');
     if (msg.contains('Password should be at least'))
-      return 'Mot de passe trop court — minimum 6 caractères';
+      return traduire('Mot de passe trop court — minimum 6 caractères');
     // Supabase Auth limite le nombre de tentatives (checklist
     // production, point 01) : message clair quand la limite est atteinte.
     if (msg.contains('rate limit') || msg.contains('over_request_rate_limit') ||
         msg.contains('429'))
-      return 'Trop de tentatives. Patientez quelques minutes puis réessayez.';
+      return traduire('Trop de tentatives. Patientez quelques minutes puis réessayez.');
     return messageErreur(e);
   }
 }

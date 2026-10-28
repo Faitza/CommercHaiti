@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -132,26 +133,26 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
       // l'utilisateur, pas une requête base de données ; les requêtes
       // Supabase, elles, doivent toujours utiliser `auth.shopId` (UUID).
       endDrawer: AppDrawerWidget(
-        headerTitle: _shop?.nom ?? 'Ma Boutique',
+        headerTitle: _shop?.nom ?? context.tr('Ma Boutique'),
         headerSubtitle: auth.currentUser?.shopCode ?? '',
         settingsRoute: '/settings',
         items: [
-          DrawerMenuItem(Icons.inventory_2_outlined, 'Mes produits',
+          DrawerMenuItem(Icons.inventory_2_outlined, context.tr('Mes produits'),
               onTap: () {
             Navigator.pop(context);
             context.push('/vendor/products');
           }),
-          DrawerMenuItem(Icons.bar_chart_outlined, 'Stats', onTap: () {
+          DrawerMenuItem(Icons.bar_chart_outlined, context.tr('Stats'), onTap: () {
             Navigator.pop(context);
             context.push('/vendor/stats');
           }),
-          DrawerMenuItem(Icons.delivery_dining_outlined, 'Mes livreurs',
+          DrawerMenuItem(Icons.delivery_dining_outlined, context.tr('Mes livreurs'),
               onTap: () {
             Navigator.pop(context);
             context.push('/vendor/livreurs');
           }),
-          const DrawerMenuItem(Icons.local_offer_outlined, 'Promotions'),
-          DrawerMenuItem(Icons.star_border, 'Avis', onTap: () {
+          DrawerMenuItem(Icons.local_offer_outlined, context.tr('Promotions')),
+          DrawerMenuItem(Icons.star_border, context.tr('Avis'), onTap: () {
             Navigator.pop(context);
             context.push('/vendor/reviews');
           }),
@@ -190,7 +191,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_shop?.nom ?? 'Ma Boutique',
+                          Text(_shop?.nom ?? context.tr('Ma Boutique'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -204,7 +205,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                     : const Color(0xFFE63946)),
                             const SizedBox(width: 4),
                             Text((_shop?.isOpen ?? true)
-                                    ? 'Boutique ouverte' : 'Boutique fermée',
+                                    ? context.tr('Boutique ouverte') : context.tr('Boutique fermée'),
                                 style: const TextStyle(
                                     color: Colors.white54, fontSize: 9)),
                           ]),
@@ -279,12 +280,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                 // (`orders.ordresVendeur`, reçue via le stream temps réel).
                 // Voir `_calculerCA` plus bas.
                 Row(children: [
-                  _caCard('CA Aujourd\'hui',
+                  _caCard(context.tr('CA Aujourd\'hui'),
                       '${_calculerCA(orders.ordresVendeur, jours: 1).toStringAsFixed(0)} HTG'),
                   const SizedBox(width: 10),
                   _caCardEnAttente(orders.enAttente.length),
                   const SizedBox(width: 10),
-                  _caCard('Ce mois',
+                  _caCard(context.tr('Ce mois'),
                       _formatCourt(_calculerCA(orders.ordresVendeur, jours: 30))),
                 ]),
               ],
@@ -314,11 +315,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // dont le vendeur doit encore accepter ou refuser la
                     // demande. Le badge affiche leur nombre.
                     _sectionTitle(
-                      'En attente du vendeur', isDark,
+                      context.tr('En attente du vendeur'), isDark,
                       badge: orders.enAttente.length,
                     ),
                     orders.enAttente.isEmpty
-                        ? _emptyCard('Aucune commande en attente', isDark)
+                        ? _emptyCard(context.tr('Aucune commande en attente'), isDark)
                         // Une carte par commande en attente, construite
                         // directement depuis la liste `orders.enAttente`
                         // (déjà filtrée par OrderProvider).
@@ -346,7 +347,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                            'Commande #${o.id.substring(0, 6).toUpperCase()}',
+                                            context.tr('Commande #{num}', {'num': o.id.substring(0, 6).toUpperCase()}),
                                             style: TextStyle(
                                                 color: AppColors.textPrimaryFor(isDark),
                                                 fontWeight: FontWeight.bold,
@@ -368,7 +369,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                           const SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
-                                                '${o.adresseLivraison}, ${o.zone}',
+                                                '${o.adresseLivraison}, ${context.tr(o.zone)}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
@@ -413,8 +414,8 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                             .updateStatut(o.id, 'acceptee'),
                                         icon: const Icon(Icons.check,
                                             size: 16, color: Color(0xFF1D9E75)),
-                                        label: const Text('Accepter',
-                                            style: TextStyle(
+                                        label: Text(context.tr('Accepter'),
+                                            style: const TextStyle(
                                                 color: Color(0xFF1D9E75),
                                                 fontWeight: FontWeight.bold)),
                                       ),
@@ -433,8 +434,8 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                             .updateStatut(o.id, 'annulee'),
                                         icon: const Icon(Icons.close,
                                             size: 16, color: Color(0xFFE63946)),
-                                        label: const Text('Refuser',
-                                            style: TextStyle(
+                                        label: Text(context.tr('Refuser'),
+                                            style: const TextStyle(
                                                 color: Color(0xFFE63946),
                                                 fontWeight: FontWeight.bold)),
                                       ),
@@ -449,10 +450,10 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // Section "Alertes stock bas" (BF-033) : produits dont
                     // le stock est descendu à 5 unités ou moins,
                     // pré-chargés dans `_stockBas` par `_loadStats`.
-                    _sectionTitle('Alertes stock ≤ 5', isDark,
+                    _sectionTitle(context.tr('Alertes stock ≤ 5'), isDark,
                         badge: _stockBas.length),
                     _stockBas.isEmpty
-                        ? _emptyCard('Tous les stocks sont OK', isDark)
+                        ? _emptyCard(context.tr('Tous les stocks sont OK'), isDark)
                         : Column(
                             children: _stockBas.map((p) => Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -469,13 +470,13 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('${p.nom} — ${p.stock} unités',
+                                      Text(context.tr('{nom} — {stock} unités', {'nom': p.nom, 'stock': p.stock}),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Color(0xFF7A5C00),
                                               fontSize: 13)),
-                                      const Text('Stock bas',
-                                          style: TextStyle(
+                                      Text(context.tr('Stock bas'),
+                                          style: const TextStyle(
                                               color: Color(0xFF7A5C00),
                                               fontSize: 11)),
                                     ],
@@ -495,8 +496,8 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   ),
                                   onPressed: () => context.push(
                                       '/vendor/edit-product', extra: p.id),
-                                  child: const Text('Modifier',
-                                      style: TextStyle(
+                                  child: Text(context.tr('Modifier'),
+                                      style: const TextStyle(
                                           fontSize: 12, color: Colors.white)),
                                 ),
                               ]),
@@ -507,9 +508,9 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // Section "Top 5 produits" (BF-031) : classement des 5
                     // produits ayant le plus de commandes, avec un badge
                     // numéroté (1 à 5) devant chaque nom.
-                    _sectionTitle('Top 5 produits', isDark),
+                    _sectionTitle(context.tr('Top 5 produits'), isDark),
                     _top5.isEmpty
-                        ? _emptyCard('Pas encore de données', isDark)
+                        ? _emptyCard(context.tr('Pas encore de données'), isDark)
                         : Column(
                             children: _top5.asMap().entries.map((e) => Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -540,7 +541,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                           color: AppColors.textPrimaryFor(isDark),
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13))),
-                                Text('${e.value.totalCommandes} cmd',
+                                Text(context.tr('{n} cmd', {'n': e.value.totalCommandes}),
                                     style: const TextStyle(
                                         color: Color(0xFF1D9E75),
                                         fontWeight: FontWeight.bold,
@@ -554,9 +555,9 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                     // commandés, avec un bouton "Promo rapide" menant à
                     // l'écran de modification du produit (pour y baisser
                     // le prix, par exemple).
-                    _sectionTitle('Flop 5 — à promouvoir', isDark),
+                    _sectionTitle(context.tr('Flop 5 — à promouvoir'), isDark),
                     _flop5.isEmpty
-                        ? _emptyCard('Pas encore de données', isDark)
+                        ? _emptyCard(context.tr('Pas encore de données'), isDark)
                         : Column(
                             children: _flop5.map((p) => Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -574,7 +575,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                           color: AppColors.textPrimaryFor(isDark),
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13)),
-                                      Text('${p.totalCommandes} commandes',
+                                      Text(context.tr('{n} commandes', {'n': p.totalCommandes}),
                                           style: TextStyle(
                                               color: AppColors.textSecondaryFor(isDark),
                                               fontSize: 11)),
@@ -584,8 +585,8 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                 TextButton(
                                   onPressed: () => context.push(
                                       '/vendor/edit-product', extra: p.id),
-                                  child: const Text('Promo rapide',
-                                      style: TextStyle(
+                                  child: Text(context.tr('Promo rapide'),
+                                      style: const TextStyle(
                                           fontSize: 12,
                                           color: Color(0xFFE63946))),
                                 ),
@@ -620,12 +621,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 BottomNavItem(icon: Icons.dashboard_outlined,
-                    label: 'Dashboard', active: true, onTap: () {}),
+                    label: context.tr('Dashboard'), active: true, onTap: () {}),
                 BottomNavItem(icon: Icons.inventory_2_outlined,
-                    label: 'Produits',
+                    label: context.tr('Produits'),
                     onTap: () => context.go('/vendor/products')),
                 BottomNavItem(icon: Icons.receipt_long_outlined,
-                    label: 'Commandes',
+                    label: context.tr('Commandes'),
                     onTap: () => context.go('/vendor/orders')),
               ],
             ),
@@ -668,12 +669,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-        Text('En attente', style: const TextStyle(
+        Text(context.tr('En attente'), style: const TextStyle(
             fontSize: 10, color: Colors.white70)),
         const SizedBox(height: 4),
         Text('$nb', style: const TextStyle(
             fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-        const Text('Commandes', style: TextStyle(
+        Text(context.tr('Commandes'), style: const TextStyle(
             fontSize: 9, color: Colors.white70)),
       ]),
     ),
@@ -725,10 +726,10 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         Expanded(
           child: Text(
             suspendue
-                ? 'Boutique suspendue par l\'administration : elle n\'est '
-                    'plus visible des clients. Contactez CommercHaiti.'
-                : 'Boutique en attente d\'approbation : elle sera visible '
-                    'des clients dès qu\'un administrateur l\'aura validée.',
+                ? context.tr('Boutique suspendue par l\'administration : elle n\'est '
+                    'plus visible des clients. Contactez CommercHaiti.')
+                : context.tr('Boutique en attente d\'approbation : elle sera visible '
+                    'des clients dès qu\'un administrateur l\'aura validée.'),
             style: const TextStyle(fontSize: 12),
           ),
         ),

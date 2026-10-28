@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/traduction.dart';
 
 /// Bouton WhatsApp — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -46,9 +47,9 @@ class WhatsAppButtonWidget extends StatelessWidget {
   }
 
   void _erreur(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé'),
-      backgroundColor: Color(0xFFE63946),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(traduire('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé')),
+      backgroundColor: const Color(0xFFE63946),
     ));
   }
 
@@ -60,7 +61,7 @@ class WhatsAppButtonWidget extends StatelessWidget {
       return IconButton(
         onPressed: () => _ouvrir(context),
         icon: const Icon(Icons.chat, color: Color(0xFF25D366)), // vert WhatsApp officiel
-        tooltip: 'Contacter via WhatsApp',
+        tooltip: context.tr('Contacter via WhatsApp'),
       );
     }
 
@@ -77,7 +78,7 @@ class WhatsAppButtonWidget extends StatelessWidget {
         ),
         icon: const Icon(Icons.chat, color: Colors.white, size: 18),
         label: Text(
-          label ?? 'Contacter via WhatsApp',
+          label ?? context.tr('Contacter via WhatsApp'),
           style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
         onPressed: () => _ouvrir(context),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 import '../../models/notification_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -42,10 +43,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   String _quand(DateTime d) {
     final diff = DateTime.now().difference(d);
-    if (diff.inMinutes < 1) return "À l'instant";
-    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
-    if (diff.inDays < 7) return 'Il y a ${diff.inDays} j';
+    if (diff.inMinutes < 1) return traduire("À l'instant");
+    if (diff.inMinutes < 60) return traduire('Il y a {n} min', {'n': diff.inMinutes});
+    if (diff.inHours < 24) return traduire('Il y a {n} h', {'n': diff.inHours});
+    if (diff.inDays < 7) return traduire('Il y a {n} j', {'n': diff.inDays});
     return '${d.day.toString().padLeft(2, '0')}/'
         '${d.month.toString().padLeft(2, '0')}/${d.year}';
   }
@@ -68,13 +69,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg(isDark),
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(context.tr('Notifications')),
         actions: [
           if (provider.nonLues > 0)
             TextButton(
               onPressed: provider.toutMarquerLu,
-              child: const Text('Tout marquer lu',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(context.tr('Tout marquer lu'),
+                  style: const TextStyle(color: Colors.white)),
             ),
         ],
       ),
@@ -88,7 +89,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Icon(Icons.notifications_none,
                         size: 56, color: AppColors.textSecondaryFor(isDark)),
                     const SizedBox(height: 12),
-                    Text('Aucune notification pour le moment',
+                    Text(context.tr('Aucune notification pour le moment'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             color: AppColors.textSecondaryFor(isDark))),

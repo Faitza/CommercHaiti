@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
 import '../../providers/order_provider.dart';
@@ -46,7 +47,7 @@ class VendorOrderDetailScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(messageErreur(e,
-              parDefaut: 'Le statut n\'a pas pu être modifié. Réessayez.')),
+              parDefaut: traduire('Le statut n\'a pas pu être modifié. Réessayez.'))),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -61,8 +62,8 @@ class VendorOrderDetailScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
-        title: Text(
-            'Commande #${order.id.substring(0, 6).toUpperCase()}'),
+        title: Text(context.tr('Commande #{num}',
+            {'num': order.id.substring(0, 6).toUpperCase()})),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -85,11 +86,11 @@ class VendorOrderDetailScreen extends StatelessWidget {
                   const Icon(Icons.check_circle,
                       color: Color(0xFF1D9E75), size: 40),
                   const SizedBox(height: 8),
-                  Text(_titreStatut(order.statut),
+                  Text(context.tr(_titreStatut(order.statut)),
                       style: const TextStyle(
                           fontSize: 17, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text('Le client a été notifié',
+                  Text(context.tr('Le client a été notifié'),
                       style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ]),
               ),
@@ -102,16 +103,16 @@ class VendorOrderDetailScreen extends StatelessWidget {
             // total de la commande, et éventuelle note laissée par le
             // client. Chaque ligne est affichée via le helper `_row`.
             _card(isDark: isDark, children: [
-              _row('Téléphone', order.telephoneClient, isDark: isDark),
-              _row('Adresse', order.adresseLivraison, isDark: isDark),
-              _row('Zone', order.zone, isDark: isDark),
+              _row(context.tr('Téléphone'), order.telephoneClient, isDark: isDark),
+              _row(context.tr('Adresse'), order.adresseLivraison, isDark: isDark),
+              _row(context.tr('Zone'), context.tr(order.zone), isDark: isDark),
               if (order.fraisLivraison > 0)
-                _row('Livraison',
+                _row(context.tr('Livraison'),
                     '${order.fraisLivraison.toStringAsFixed(0)} HTG',
                     isDark: isDark),
-              _row('Total', '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
+              _row(context.tr('Total'), '${order.total.toStringAsFixed(0)} HTG', isDark: isDark),
               if (order.noteVendeur != null)
-                _row('Note client', order.noteVendeur!, isDark: isDark),
+                _row(context.tr('Note client'), order.noteVendeur!, isDark: isDark),
             ]),
             const SizedBox(height: 16),
 
@@ -160,7 +161,7 @@ class VendorOrderDetailScreen extends StatelessWidget {
             // pré-remplie vers le numéro du client (voir
             // widgets/whatsapp_button_widget.dart) pour un contact direct.
             WhatsAppButtonWidget(telephone: order.telephoneClient,
-                label: 'Contacter le client via WhatsApp'),
+                label: context.tr('Contacter le client via WhatsApp')),
             const SizedBox(height: 12),
 
             // Reçu PDF — BF-030 : uniquement affiché quand la commande est
@@ -177,19 +178,19 @@ class VendorOrderDetailScreen extends StatelessWidget {
             // commande. Chaque bouton appelle `_boutonStatut` qui déclenche
             // `_changerStatut` avec le nouveau statut cible.
             if (order.statut == 'nouvelle') ...[
-              _boutonStatut(context, 'Accepter la commande', 'acceptee',
+              _boutonStatut(context, context.tr('Accepter la commande'), 'acceptee',
                   icon: Icons.check_circle_outline),
             ],
             if (order.statut == 'acceptee') ...[
-              _boutonStatut(context, 'Marquer en préparation', 'preparation',
+              _boutonStatut(context, context.tr('Marquer en préparation'), 'preparation',
                   icon: Icons.inventory_2_outlined),
             ],
             if (order.statut == 'preparation') ...[
-              _boutonStatut(context, 'Marquer en livraison', 'livraison',
+              _boutonStatut(context, context.tr('Marquer en livraison'), 'livraison',
                   icon: Icons.local_shipping_outlined),
             ],
             if (order.statut == 'livraison') ...[
-              _boutonStatut(context, 'Marquer comme livrée', 'livree',
+              _boutonStatut(context, context.tr('Marquer comme livrée'), 'livree',
                   icon: Icons.celebration_outlined),
             ],
             // Bouton "Annuler la commande" : uniquement disponible tant que
@@ -208,8 +209,8 @@ class VendorOrderDetailScreen extends StatelessWidget {
                   ),
                   onPressed: () => _changerStatut(context, 'annulee'),
                   icon: const Icon(Icons.close, size: 16, color: Color(0xFFE63946)),
-                  label: const Text('Annuler la commande',
-                      style: TextStyle(color: Color(0xFFE63946))),
+                  label: Text(context.tr('Annuler la commande'),
+                      style: const TextStyle(color: Color(0xFFE63946))),
                 ),
               ),
           ],

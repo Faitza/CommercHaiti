@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/shop_model.dart';
 import '../services/reseau_service.dart';
+import '../l10n/traduction.dart';
 
 /// Provider boutiques — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -66,7 +67,7 @@ class ShopProvider extends ChangeNotifier {
       _errorMessage = null;
     } catch (e) {
       _errorMessage =
-          messageErreur(e, parDefaut: 'Erreur chargement boutiques');
+          messageErreur(e, parDefaut: traduire('Erreur chargement boutiques'));
     } finally {
       // Toujours désactiver l'indicateur de chargement, que la requête
       // ait réussi ou échoué.
@@ -111,7 +112,7 @@ class ShopProvider extends ChangeNotifier {
         }, onError: (Object e) {
           _isLoading = false;
           _errorMessage = messageErreur(e,
-              parDefaut: 'Impossible de charger les boutiques.');
+              parDefaut: traduire('Impossible de charger les boutiques.'));
           // On libère l'abonnement en erreur : le prochain appel à
           // listenShops() (bouton Réessayer) en ouvrira un nouveau.
           _shopsSub?.cancel();

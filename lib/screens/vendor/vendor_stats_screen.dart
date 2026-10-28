@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
@@ -84,7 +85,7 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Statistiques'),
+        title: Text(context.tr('Statistiques')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -102,13 +103,13 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
                   children: [
                     // Section Top 5 : classement 1 à 5 avec le nombre de
                     // commandes de chaque produit affiché en suffixe.
-                    _sectionTitle('Top 5 produits les plus demandés', isDark: isDark),
+                    _sectionTitle(context.tr('Top 5 produits les plus demandés'), isDark: isDark),
                     _top5.isEmpty
-                        ? _emptyState('Pas encore de données', isDark: isDark)
+                        ? _emptyState(context.tr('Pas encore de données'), isDark: isDark)
                         : Column(
                             children: _top5.asMap().entries.map((e) =>
                               _produitRow(e.key + 1, e.value,
-                                  suffix: '${e.value.totalCommandes} cmd')).toList(),
+                                  suffix: context.tr('{n} cmd', {'n': e.value.totalCommandes}))).toList(),
                           ),
                     const SizedBox(height: 20),
 
@@ -116,20 +117,20 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
                     // bouton "Promo rapide" menant directement à l'écran
                     // de modification du produit (pour y baisser le prix
                     // par exemple).
-                    _sectionTitle('Flop 5 — Produits à promouvoir', isDark: isDark),
+                    _sectionTitle(context.tr('Flop 5 — Produits à promouvoir'), isDark: isDark),
                     _flop5.isEmpty
-                        ? _emptyState('Pas encore de données', isDark: isDark)
+                        ? _emptyState(context.tr('Pas encore de données'), isDark: isDark)
                         : Column(
                             children: _flop5.map((p) => Card(
                               child: ListTile(
                                 title: Text(p.nom),
-                                subtitle: Text('${p.totalCommandes} commandes'),
+                                subtitle: Text(context.tr('{n} commandes', {'n': p.totalCommandes})),
                                 trailing: TextButton(
                                   onPressed: () => context.push(
                                       '/vendor/edit-product',
                                       extra: p.id),
-                                  child: const Text('Promo rapide',
-                                      style: TextStyle(
+                                  child: Text(context.tr('Promo rapide'),
+                                      style: const TextStyle(
                                           color: Color(0xFFE63946))),
                                 ),
                               ),
@@ -140,21 +141,21 @@ class _VendorStatsScreenState extends State<VendorStatsScreen> {
                     // Section Alertes stock bas (BF-033) : produits dont
                     // le stock est ≤ 5, avec bouton direct vers l'écran de
                     // modification du produit pour réapprovisionner.
-                    _sectionTitle('Alertes stock bas (≤ 5 unités)', isDark: isDark),
+                    _sectionTitle(context.tr('Alertes stock bas (≤ 5 unités)'), isDark: isDark),
                     _stockBas.isEmpty
-                        ? _emptyState('Tous les stocks sont OK', isDark: isDark)
+                        ? _emptyState(context.tr('Tous les stocks sont OK'), isDark: isDark)
                         : Column(
                             children: _stockBas.map((p) => Card(
                               child: ListTile(
                                 title: Text(p.nom),
-                                subtitle: Text('Stock : ${p.stock}',
+                                subtitle: Text(context.tr('Stock : {stock}', {'stock': p.stock}),
                                     style: const TextStyle(
                                         color: Color(0xFFF5A623))),
                                 trailing: TextButton(
                                   onPressed: () => context.push(
                                       '/vendor/edit-product',
                                       extra: p.id),
-                                  child: const Text('Modifier'),
+                                  child: Text(context.tr('Modifier')),
                                 ),
                               ),
                             )).toList(),

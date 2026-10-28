@@ -7,6 +7,7 @@ import '../../models/product_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 
 /// Boutiques proposant un produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -107,12 +108,12 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(widget.productNom),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(24),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(24),
           child: Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text('Boutiques disponibles',
-                style: TextStyle(color: Colors.white70, fontSize: 12)),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(context.tr('Boutiques disponibles'),
+                style: const TextStyle(color: Colors.white70, fontSize: 12)),
           ),
         ),
       ),
@@ -122,7 +123,7 @@ class _ProductShopsScreenState extends State<ProductShopsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _results.isEmpty
               ? Center(
-                  child: Text('Aucune boutique ne propose ce produit',
+                  child: Text(context.tr('Aucune boutique ne propose ce produit'),
                       style: TextStyle(color: AppColors.textSecondaryFor(isDark))))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),

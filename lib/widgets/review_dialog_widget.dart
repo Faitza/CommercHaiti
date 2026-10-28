@@ -4,6 +4,7 @@ import '../models/review_model.dart';
 import '../services/database_service.dart';
 import '../providers/theme_provider.dart';
 import '../constants/app_colors.dart';
+import '../l10n/traduction.dart';
 
 /// Bottom sheet "Laisser un avis" — après une commande livrée.
 /// Path : lib/widgets/review_dialog_widget.dart
@@ -103,15 +104,15 @@ class _ReviewSheetState extends State<_ReviewSheet> {
       await _db.createReview(review);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Merci pour votre avis !'),
-          backgroundColor: Color(0xFF1D9E75),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Merci pour votre avis !')),
+          backgroundColor: const Color(0xFF1D9E75),
         ));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {erreur}', {'erreur': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -141,7 +142,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Laisser un avis',
+          Text(context.tr('Laisser un avis'),
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -177,7 +178,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             maxLines: 3,
             maxLength: 200,
             decoration: InputDecoration(
-              hintText: 'Commentaire (optionnel)…',
+              hintText: context.tr('Commentaire (optionnel)…'),
               filled: true,
               fillColor: AppColors.inputFill(isDark),
               border: OutlineInputBorder(
@@ -203,8 +204,8 @@ class _ReviewSheetState extends State<_ReviewSheet> {
                   ? const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2))
-                  : const Text('Envoyer',
-                      style: TextStyle(color: Colors.white)),
+                  : Text(context.tr('Envoyer'),
+                      style: const TextStyle(color: Colors.white)),
             ),
           ),
         ],

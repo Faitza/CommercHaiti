@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../constants/app_colors.dart';
 import '../models/order_model.dart';
+import '../l10n/traduction.dart';
 
 /// Lien WhatsApp vers un numéro haïtien, avec message prérempli. Ajoute
 /// l'indicatif 509 quand le numéro n'a que 8 chiffres (wa.me l'exige).
@@ -22,8 +23,8 @@ Future<void> ouvrirWhatsApp(BuildContext context, String telephone,
     if (ok) return;
   } catch (_) {}
   if (context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text("Impossible d'ouvrir WhatsApp — vérifiez qu'il est installé"),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(traduire("Impossible d'ouvrir WhatsApp — vérifiez qu'il est installé")),
       backgroundColor: AppColors.red,
     ));
   }
@@ -84,8 +85,8 @@ class _LivreurVendeurWidgetState extends State<LivreurVendeurWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Assignation impossible. Réessayez.'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Assignation impossible. Réessayez.')),
           backgroundColor: AppColors.red,
         ));
       }
@@ -101,12 +102,13 @@ class _LivreurVendeurWidgetState extends State<LivreurVendeurWidget> {
         .join('\n');
     final paiement = o.modePaiement == 'moncash'
         ? (o.paiementStatut == 'confirme'
-            ? 'Déjà payé (MonCash)'
-            : 'MonCash — à vérifier avec le vendeur')
-        : 'À encaisser : ${o.total.toStringAsFixed(0)} HTG';
-    return 'Livraison CommercHaiti #${o.id.substring(0, 6).toUpperCase()}\n'
-        'Adresse : ${o.adresseLivraison} (${o.zone})\n'
-        'Client : ${o.telephoneClient}\n'
+            ? traduire('Déjà payé (MonCash)')
+            : traduire('MonCash — à vérifier avec le vendeur'))
+        : traduire('À encaisser : {montant} HTG',
+            {'montant': o.total.toStringAsFixed(0)});
+    return '${traduire('Livraison CommercHaiti #{num}', {'num': o.id.substring(0, 6).toUpperCase()})}\n'
+        '${traduire('Adresse : {adresse} ({zone})', {'adresse': traduire(o.adresseLivraison), 'zone': traduire(o.zone)})}\n'
+        '${traduire('Client : {telephone}', {'telephone': o.telephoneClient})}\n'
         '${articles.isEmpty ? '' : '$articles\n'}'
         '$paiement';
   }
@@ -117,30 +119,31 @@ class _LivreurVendeurWidgetState extends State<LivreurVendeurWidget> {
     // la liste pour que le menu affiche bien la valeur actuelle.
     final options = [..._livreurs];
     if (_livreurId != null && !options.any((l) => l['id'] == _livreurId)) {
-      options.add({'id': _livreurId, 'nom': _nom ?? 'Livreur', 'telephone': _telephone});
+      options.add({'id': _livreurId, 'nom': _nom ?? context.tr('Livreur'), 'telephone': _telephone});
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(children: [
-          Icon(Icons.delivery_dining, size: 18, color: AppColors.navy),
-          SizedBox(width: 6),
-          Text('Livreur', style: TextStyle(fontWeight: FontWeight.w700)),
+        Row(children: [
+          const Icon(Icons.delivery_dining, size: 18, color: AppColors.navy),
+          const SizedBox(width: 6),
+          Text(context.tr('Livreur'),
+              style: const TextStyle(fontWeight: FontWeight.w700)),
         ]),
         const SizedBox(height: 8),
         if (options.isEmpty)
-          const Text('Ajoutez vos livreurs dans Paramètres → Mes livreurs.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary))
+          Text(context.tr('Ajoutez vos livreurs dans Paramètres → Mes livreurs.'),
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))
         else
           DropdownButtonFormField<String?>(
             initialValue: _livreurId,
             isExpanded: true,
             decoration: const InputDecoration(isDense: true),
-            hint: const Text('Choisir un livreur'),
+            hint: Text(context.tr('Choisir un livreur')),
             items: [
-              const DropdownMenuItem<String?>(
-                  value: null, child: Text('Aucun livreur')),
+              DropdownMenuItem<String?>(
+                  value: null, child: Text(context.tr('Aucun livreur'))),
               for (final l in options)
                 DropdownMenuItem<String?>(
                   value: l['id'] as String,
@@ -158,7 +161,7 @@ class _LivreurVendeurWidgetState extends State<LivreurVendeurWidget> {
                   foregroundColor: AppColors.whatsapp,
                   side: const BorderSide(color: AppColors.whatsapp)),
               icon: const Icon(Icons.send, size: 16),
-              label: const Text('Envoyer la commande au livreur (WhatsApp)'),
+              label: Text(context.tr('Envoyer la commande au livreur (WhatsApp)')),
               onPressed: () =>
                   ouvrirWhatsApp(context, _telephone!, message: _messageLivreur()),
             ),
@@ -196,7 +199,7 @@ class LivreurClientWidget extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Votre livreur',
+              Text(context.tr('Votre livreur'),
                   style: TextStyle(
                       fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
               Text('$nom · $telephone',
@@ -207,7 +210,7 @@ class LivreurClientWidget extends StatelessWidget {
           ),
         ),
         IconButton(
-          tooltip: 'Appeler',
+          tooltip: context.tr('Appeler'),
           icon: const Icon(Icons.call, color: AppColors.green),
           onPressed: () => launchUrl(Uri(scheme: 'tel', path: telephone)),
         ),

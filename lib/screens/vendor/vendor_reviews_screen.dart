@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
@@ -83,7 +84,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
         _isLoading = false;
         _chargementSuite = false;
         _erreur = messageErreur(e,
-            parDefaut: 'Impossible de charger les avis.');
+            parDefaut: traduire('Impossible de charger les avis.'));
       });
     }
   }
@@ -100,7 +101,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Avis clients'),
+        title: Text(context.tr('Avis clients')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -113,7 +114,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
               })
           : _avis.isEmpty
               ? Center(
-                  child: Text('Aucun avis pour l\'instant',
+                  child: Text(context.tr('Aucun avis pour l\'instant'),
                       style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 )
               : ListView.builder(

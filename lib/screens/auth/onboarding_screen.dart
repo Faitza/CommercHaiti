@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../l10n/traduction.dart';
 
 /// Onboarding Screen — Faitza COLAS
 /// Path : lib/screens/auth/onboarding_screen.dart
@@ -85,8 +86,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               top: 44, right: 16,
               child: TextButton(
                 onPressed: _terminer,
-                child: const Text('Passer',
-                    style: TextStyle(color: Colors.white54, fontSize: 13)),
+                child: Text(context.tr('Passer'),
+                    style: const TextStyle(color: Colors.white54, fontSize: 13)),
               ),
             ),
         ],
@@ -141,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Tit
-                    Text(slide.titre,
+                    Text(context.tr(slide.titre),
                         style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -149,7 +150,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: 1.25)),
                     const SizedBox(height: 10),
                     // Deskripsyon
-                    Text(slide.description,
+                    Text(context.tr(slide.description),
                         style: const TextStyle(
                             fontSize: 13,
                             color: Colors.white70,
@@ -201,7 +202,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             _terminer();
                           }
                         },
-                        child: Text('${slide.bouton} →',
+                        child: Text('${context.tr(slide.bouton)} →',
                             style: const TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
@@ -216,13 +217,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: GestureDetector(
                         onTap: () => context.go('/role-selection'),
                         child: RichText(
-                          text: const TextSpan(
-                            style: TextStyle(fontSize: 12, color: Colors.white54),
+                          text: TextSpan(
+                            style: const TextStyle(fontSize: 12, color: Colors.white54),
                             children: [
-                              TextSpan(text: 'Déjà un compte ? '),
+                              TextSpan(text: context.tr('Déjà un compte ? ')),
                               TextSpan(
-                                text: 'Se connecter',
-                                style: TextStyle(
+                                text: context.tr('Se connecter'),
+                                style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     decoration: TextDecoration.underline),

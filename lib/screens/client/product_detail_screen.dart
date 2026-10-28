@@ -11,6 +11,7 @@ import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/image_produit_widget.dart';
+import '../../l10n/traduction.dart';
 
 /// Détail produit — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -274,9 +275,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       taille: _tailleSelectionnee,
     );
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ajouté au panier !'),
-          backgroundColor: Color(0xFF1D9E75),
-          duration: Duration(seconds: 2)),
+      SnackBar(content: Text(traduire('Ajouté au panier !')),
+          backgroundColor: const Color(0xFF1D9E75),
+          duration: const Duration(seconds: 2)),
     );
   }
 
@@ -456,9 +457,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       Positioned.fill(
                         child: Container(
                           color: Colors.black.withOpacity(0.5),
-                          child: const Center(
-                            child: Text('Non disponible',
-                                style: TextStyle(color: Colors.white,
+                          child: Center(
+                            child: Text(context.tr('Non disponible'),
+                                style: const TextStyle(color: Colors.white,
                                     fontSize: 20, fontWeight: FontWeight.bold)),
                           ),
                         ),
@@ -542,7 +543,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   if (p.disponible && p.stockStatus == StockStatus.faible)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text('Plus que ${p.stock} en stock !',
+                      child: Text(context.tr('Plus que {n} en stock !', {'n': p.stock}),
                           style: TextStyle(
                               color: isDark
                                   ? AppColors.amber
@@ -559,7 +560,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // on retire le "#" puis on préfixe par "0xFF" (canal
                   // alpha opaque) avant de parser en int.
                   if (p.couleurs.isNotEmpty) ...[
-                    const Text('Couleur', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(context.tr('Couleur'), style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -590,7 +591,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // se met en surbrillance (fond bleu marine) une fois
                   // sélectionné.
                   if (p.tailles.isNotEmpty) ...[
-                    const Text('Taille', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(context.tr('Taille'), style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -624,7 +625,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // (bouton "+" désactivé au-delà, pour ne jamais
                   // dépasser le stock disponible).
                   Row(children: [
-                    const Text('Quantité', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(context.tr('Quantité'), style: const TextStyle(fontWeight: FontWeight.w600)),
                     const Spacer(),
                     IconButton(
                       onPressed: _quantite > 1
@@ -675,7 +676,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                    'Connectez-vous pour ajouter au panier',
+                                    context.tr('Connectez-vous pour ajouter au panier'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                         fontWeight: FontWeight.w600,
@@ -703,8 +704,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   // d'authentification vers cette fiche
                                   // produit avec un état incohérent).
                                   onPressed: () => context.go('/role-selection'),
-                                  child: const Text('S\'inscrire',
-                                      style: TextStyle(color: Colors.white)),
+                                  child: Text(context.tr('S\'inscrire'),
+                                      style: const TextStyle(color: Colors.white)),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -718,7 +719,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             BorderRadius.circular(10)),
                                   ),
                                   onPressed: () => context.go('/role-selection'),
-                                  child: Text('Connexion',
+                                  child: Text(context.tr('Connexion'),
                                       style: TextStyle(
                                           color: AppColors.accentFor(isDark),
                                           fontWeight: FontWeight.bold)),
@@ -742,8 +743,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         onPressed: null,
                         icon: const Icon(Icons.shopping_cart_outlined,
                             color: Colors.white),
-                        label: const Text('Non disponible pour l\'acheteur',
-                            style: TextStyle(color: Colors.white,
+                        label: Text(context.tr('Non disponible pour l\'acheteur'),
+                            style: const TextStyle(color: Colors.white,
                                 fontSize: 15, fontWeight: FontWeight.bold)),
                       ),
                     )
@@ -780,7 +781,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   color: _peutAjouter(p)
                                       ? AppColors.accentFor(isDark)
                                       : AppColors.borderColor(isDark)),
-                              label: Text('Panier',
+                              label: Text(context.tr('Panier'),
                                   style: TextStyle(
                                       color: _peutAjouter(p)
                                           ? AppColors.accentFor(isDark)
@@ -820,7 +821,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               // immédiatement combien il va payer avant
                               // de cliquer sur "Commander".
                               label: Text(
-                                  'Commander · ${(p.prixAffiche * _quantite).toStringAsFixed(0)} HTG',
+                                  context.tr('Commander · {total} HTG', {'total': (p.prixAffiche * _quantite).toStringAsFixed(0)}),
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -838,7 +839,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   if (auth.isLoggedIn && p.disponible && !_selectionComplete)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text('Sélectionnez couleur et taille avant d\'ajouter',
+                      child: Text(context.tr('Sélectionnez couleur et taille avant d\'ajouter'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.textSecondaryFor(isDark), fontSize: 12)),
                     ),
@@ -856,7 +857,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             if (_produitsSimilaires.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Vous aimerez aussi…',
+                child: Text(context.tr('Vous aimerez aussi…'),
                     style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,

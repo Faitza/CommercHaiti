@@ -14,6 +14,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../l10n/traduction.dart';
 
 /// Order Tracking Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_tracking_screen.dart
@@ -86,8 +87,8 @@ class OrderTrackingScreen extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Suivi commande',
-                        style: TextStyle(
+                    Text(context.tr('Suivi commande'),
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.bold)),
@@ -125,19 +126,19 @@ class OrderTrackingScreen extends StatelessWidget {
                 if (snapshot.hasError && !snapshot.hasData) {
                   return EtatErreurWidget(
                     message: messageErreur(snapshot.error!,
-                        parDefaut: 'Impossible de charger la commande.'),
+                        parDefaut: context.tr('Impossible de charger la commande.')),
                     onReessayer: () => relancer(() {}),
                   );
                 }
                 if (!snapshot.hasData) {
-                  return const ChargementWidget(
-                      message: 'Chargement de la commande…');
+                  return ChargementWidget(
+                      message: context.tr('Chargement de la commande…'));
                 }
                 if (snapshot.data!.isEmpty) {
-                  return const EtatVideWidget(
-                    message: 'Commande introuvable',
+                  return EtatVideWidget(
+                    message: context.tr('Commande introuvable'),
                     icone: Icons.search_off,
-                    detail: 'Elle a peut-être été supprimée.',
+                    detail: context.tr('Elle a peut-être été supprimée.'),
                   );
                 }
                 // Valeurs par défaut tant que le flux n'a pas encore livré
@@ -240,7 +241,7 @@ class OrderTrackingScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Détails livraison',
+                              Text(context.tr('Détails livraison'),
                                   style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -253,8 +254,8 @@ class OrderTrackingScreen extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                       zone.isNotEmpty
-                                          ? '$adresse — $zone'
-                                          : adresse,
+                                          ? '${context.tr(adresse)} — ${context.tr(zone)}'
+                                          : context.tr(adresse),
                                       style: const TextStyle(fontSize: 13)),
                                 ),
                               ]),
@@ -273,8 +274,8 @@ class OrderTrackingScreen extends StatelessWidget {
                                 const Icon(Icons.access_time,
                                     size: 15, color: Color(0xFF1D9E75)),
                                 const SizedBox(width: 8),
-                                const Text('Livraison estimée : 30-45 min',
-                                    style: TextStyle(fontSize: 13)),
+                                Text(context.tr('Livraison estimée : 30-45 min'),
+                                    style: const TextStyle(fontSize: 13)),
                               ]),
                             ],
                           ),
@@ -345,11 +346,11 @@ class OrderTrackingScreen extends StatelessWidget {
                                     // dernières étapes changent de nom.
                                     zone == OrderModel.retraitBoutique &&
                                             etape['statut'] == 'livraison'
-                                        ? 'Prête à récupérer'
+                                        ? context.tr('Prête à récupérer')
                                         : zone == OrderModel.retraitBoutique &&
                                                 etape['statut'] == 'livree'
-                                            ? 'Récupérée'
-                                            : etape['label'] as String,
+                                            ? context.tr('Récupérée')
+                                            : context.tr(etape['label'] as String),
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: estActuel
@@ -423,7 +424,7 @@ class OrderTrackingScreen extends StatelessWidget {
                       if (vendeurTelephone.isNotEmpty)
                         WhatsAppButtonWidget(
                           telephone: vendeurTelephone,
-                          label: 'Contacter le vendeur en urgence',
+                          label: context.tr('Contacter le vendeur en urgence'),
                         ),
                       const SizedBox(height: 10),
 
@@ -447,8 +448,8 @@ class OrderTrackingScreen extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.cancel_outlined,
                                 color: Color(0xFFE63946), size: 16),
-                            label: const Text('Annuler la commande',
-                                style: TextStyle(
+                            label: Text(context.tr('Annuler la commande'),
+                                style: const TextStyle(
                                     color: Color(0xFFE63946))),
                             onPressed: () =>
                                 _confirmerAnnulation(context),
@@ -470,7 +471,7 @@ class OrderTrackingScreen extends StatelessWidget {
                                 size: 14, color: AppColors.textSecondaryFor(isDark)),
                             const SizedBox(width: 8),
                             Text(
-                              'Annulation impossible — commande déjà acceptée',
+                              context.tr('Annulation impossible — commande déjà acceptée'),
                               style: TextStyle(
                                   fontSize: 11,
                                   color: AppColors.textSecondaryFor(isDark)),
@@ -506,13 +507,13 @@ class OrderTrackingScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Annuler la commande ?'),
-        content: const Text(
-            'Cette action est irréversible. Le vendeur sera informé.'),
+        title: Text(traduire('Annuler la commande ?')),
+        content: Text(
+            traduire('Cette action est irréversible. Le vendeur sera informé.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Non, garder'),
+            child: Text(traduire('Non, garder')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -535,8 +536,8 @@ class OrderTrackingScreen extends StatelessWidget {
               // commande qui vient d'être annulée).
               if (ok && context.mounted) context.go('/client/home');
             },
-            child: const Text('Oui, annuler',
-                style: TextStyle(color: Colors.white)),
+            child: Text(traduire('Oui, annuler'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

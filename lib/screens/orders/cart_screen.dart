@@ -6,6 +6,7 @@ import '../../models/cart_item_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/image_produit_widget.dart';
+import '../../l10n/traduction.dart';
 
 /// Cart Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/cart_screen.dart
@@ -55,12 +56,12 @@ class CartScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Mon Panier',
-                          style: TextStyle(
+                      Text(context.tr('Mon Panier'),
+                          style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold)),
-                      Text('${cart.totalArticles} article(s)',
+                      Text(context.tr('{n} article(s)', {'n': cart.totalArticles}),
                           style: const TextStyle(
                               color: Colors.white54, fontSize: 10)),
                     ],
@@ -97,13 +98,13 @@ class CartScreen extends StatelessWidget {
                               size: 40, color: Color(0xFF0D2B5E)),
                         ),
                         const SizedBox(height: 16),
-                        Text('Votre panier est vide',
+                        Text(context.tr('Votre panier est vide'),
                             style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimaryFor(isDark))),
                         const SizedBox(height: 8),
-                        Text('Ajoutez des produits pour commander',
+                        Text(context.tr('Ajoutez des produits pour commander'),
                             style: TextStyle(
                                 fontSize: 13, color: AppColors.textSecondaryFor(isDark))),
                         const SizedBox(height: 24),
@@ -115,7 +116,7 @@ class CartScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12)),
                           ),
                           icon: const Icon(Icons.store_outlined, size: 16),
-                          label: const Text('Voir les boutiques'),
+                          label: Text(context.tr('Voir les boutiques')),
                           // go() ici aussi : on repart proprement vers la
                           // liste des boutiques plutôt que d'empiler une
                           // route supplémentaire.
@@ -166,19 +167,19 @@ class CartScreen extends StatelessWidget {
                   // promo), Économies promo (si applicable), Livraison
                   // (gratuite — pas de frais de livraison dans ce projet),
                   // puis une séparation avant le Total final.
-                  _recapLigne('Sous-total',
+                  _recapLigne(context.tr('Sous-total'),
                       '${cart.totalNormal.toStringAsFixed(0)} HTG', isDark),
                   if (cart.hasPromo)
-                    _recapLigne('Économies promo',
+                    _recapLigne(context.tr('Économies promo'),
                         '-${cart.economies.toStringAsFixed(0)} HTG', isDark,
                         color: const Color(0xFF1D9E75)),
-                  _recapLigne('Livraison', 'Gratuite', isDark,
+                  _recapLigne(context.tr('Livraison'), context.tr('Gratuite'), isDark,
                       color: const Color(0xFF1D9E75)),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total',
+                      Text(context.tr('Total'),
                           style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -204,7 +205,7 @@ class CartScreen extends StatelessWidget {
                       ),
                       icon: const Icon(Icons.shopping_bag_outlined, size: 18),
                       label: Text(
-                          'Commander · ${cart.totalAvecPromo.toStringAsFixed(0)} HTG',
+                          context.tr('Commander · {total} HTG', {'total': cart.totalAvecPromo.toStringAsFixed(0)}),
                           style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.bold)),
                       // go() : on avance vers le formulaire de commande en
@@ -249,12 +250,12 @@ class CartScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Vider le panier ?'),
-        content: const Text('Tous les articles seront supprimés.'),
+        title: Text(traduire('Vider le panier ?')),
+        content: Text(traduire('Tous les articles seront supprimés.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(traduire('Annuler')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -263,7 +264,7 @@ class CartScreen extends StatelessWidget {
               cart.clear();
               Navigator.pop(context);
             },
-            child: const Text('Vider', style: TextStyle(color: Colors.white)),
+            child: Text(traduire('Vider'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -331,8 +332,8 @@ class _CartItemCard extends StatelessWidget {
                 if (item.couleur != null || item.taille != null)
                   Text(
                     [
-                      if (item.couleur != null) 'Couleur: ${item.couleur}',
-                      if (item.taille != null) 'Taille: ${item.taille}',
+                      if (item.couleur != null) context.tr('Couleur: {couleur}', {'couleur': item.couleur}),
+                      if (item.taille != null) context.tr('Taille: {taille}', {'taille': item.taille}),
                     ].join(' · '),
                     style: TextStyle(
                         fontSize: 10, color: AppColors.textSecondaryFor(isDark)),

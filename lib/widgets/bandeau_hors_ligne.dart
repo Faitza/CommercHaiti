@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/traduction.dart';
 import '../providers/connexion_provider.dart';
 
 /// Bandeau « Pas de connexion Internet » affiché en haut de TOUS les
@@ -27,14 +28,15 @@ class BandeauHorsLigne extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
-                      child: const Row(children: [
-                        Icon(Icons.wifi_off, color: Colors.white, size: 18),
-                        SizedBox(width: 10),
+                      child: Row(children: [
+                        const Icon(Icons.wifi_off, color: Colors.white, size: 18),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Pas de connexion Internet. Les informations '
-                            'affichées ne sont peut-être pas à jour.',
-                            style: TextStyle(
+                            context.tr(
+                                'Pas de connexion Internet. Les informations '
+                                'affichées ne sont peut-être pas à jour.'),
+                            style: const TextStyle(
                                 color: Colors.white, fontSize: 12),
                           ),
                         ),

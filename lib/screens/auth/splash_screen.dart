@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
+import '../../l10n/traduction.dart';
 
 /// Splash Screen — Faitza COLAS
 /// Path : lib/screens/auth/splash_screen.dart
@@ -193,15 +194,15 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 6),
                 // Sous-titre / slogan.
-                const Text('MARKETPLACE LOCALE',
-                    style: TextStyle(
+                Text(context.tr('MARKETPLACE LOCALE'),
+                    style: const TextStyle(
                         fontSize: 11,
                         color: Colors.white38,
                         letterSpacing: 3)),
                 const SizedBox(height: 60),
                 // Localisation de l'application.
-                const Text('Les Cayes - Haïti',
-                    style: TextStyle(fontSize: 12, color: Colors.white30)),
+                Text(context.tr('Les Cayes - Haïti'),
+                    style: const TextStyle(fontSize: 12, color: Colors.white30)),
                 const SizedBox(height: 16),
                 // Trois points de chargement ANIMÉS (effet de vague en
                 // boucle, façon indicateur de démarrage Facebook) — voir

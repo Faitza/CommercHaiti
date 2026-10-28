@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
@@ -75,8 +76,8 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => context.go('/vendor/dashboard'),
         ),
-        title: const Text('Commandes',
-            style: TextStyle(color: Colors.white)),
+        title: Text(context.tr('Commandes'),
+            style: const TextStyle(color: Colors.white)),
         // Barre d'onglets scrollable horizontalement (6 statuts, ne
         // tiennent pas tous à l'écran sur mobile) affichant le libellé de
         // chaque statut.
@@ -86,7 +87,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
           indicatorColor: const Color(0xFFE63946),
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
-          tabs: _statuts.map((s) => Tab(text: s['label'])).toList(),
+          tabs: _statuts.map((s) => Tab(text: context.tr(s['label']!))).toList(),
         ),
       ),
       body: TabBarView(
@@ -116,7 +117,8 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
           }
           if (filtered.isEmpty) {
             return Center(
-              child: Text('Aucune commande "${s['label']}"',
+              child: Text(context.tr('Aucune commande "{statut}"',
+                  {'statut': context.tr(s['label']!)}),
                   style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
             );
           }
@@ -157,9 +159,9 @@ class _OrderCard extends StatelessWidget {
         // On affiche seulement les 6 premiers caractères de l'UUID de la
         // commande (en majuscules) pour un identifiant court et lisible
         // par l'utilisateur, sans exposer l'UUID complet.
-        title: Text('Commande #${order.id.substring(0, 6).toUpperCase()}',
+        title: Text(context.tr('Commande #{num}', {'num': order.id.substring(0, 6).toUpperCase()}),
             style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${order.total.toStringAsFixed(0)} HTG · ${order.zone}'),
+        subtitle: Text('${order.total.toStringAsFixed(0)} HTG · ${context.tr(order.zone)}'),
         trailing: OrderStatusBadge(statut: order.statut),
         // Navigue vers l'écran de détail en transmettant l'objet commande
         // entier via `extra` (évite un rechargement réseau).

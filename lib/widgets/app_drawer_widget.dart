@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../constants/app_colors.dart';
+import '../l10n/traduction.dart';
 
 /// Représente une entrée du menu (icône + libellé + action au clic).
 /// `onTap` est optionnel : si non fourni, un comportement par défaut
@@ -56,17 +57,17 @@ class AppDrawerWidget extends StatelessWidget {
   Future<void> _deconnecter(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Se déconnecter ?'),
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Se déconnecter ?')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+              child: Text(ctx.tr('Annuler'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE63946)),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Déconnexion',
-                style: TextStyle(color: Colors.white)),
+            child: Text(ctx.tr('Déconnexion'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -129,8 +130,9 @@ class AppDrawerWidget extends StatelessWidget {
                           () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Bientôt disponible')),
+                              SnackBar(
+                                  content: Text(
+                                      traduire('Bientôt disponible'))),
                             );
                           },
                     ),
@@ -140,7 +142,7 @@ class AppDrawerWidget extends StatelessWidget {
                   ListTile(
                     leading: Icon(Icons.settings_outlined,
                         color: AppColors.accentFor(isDark)),
-                    title: Text('Paramètres',
+                    title: Text(context.tr('Paramètres'),
                         style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
                     onTap: () {
                       Navigator.pop(context);
@@ -152,7 +154,7 @@ class AppDrawerWidget extends StatelessWidget {
                   SwitchListTile(
                     secondary: Icon(Icons.dark_mode_outlined,
                         color: AppColors.accentFor(isDark)),
-                    title: Text('Mode sombre',
+                    title: Text(context.tr('Mode sombre'),
                         style: TextStyle(color: AppColors.textPrimaryFor(isDark))),
                     value: theme.isDarkMode,
                     activeColor: const Color(0xFF0D2B5E),
@@ -165,8 +167,8 @@ class AppDrawerWidget extends StatelessWidget {
             // ── Bouton déconnexion, toujours en bas, en rouge ──
             ListTile(
               leading: const Icon(Icons.logout, color: Color(0xFFE63946)),
-              title: const Text('Déconnexion',
-                  style: TextStyle(color: Color(0xFFE63946))),
+              title: Text(context.tr('Déconnexion'),
+                  style: const TextStyle(color: Color(0xFFE63946))),
               onTap: () => _deconnecter(context),
             ),
             const SizedBox(height: 8),

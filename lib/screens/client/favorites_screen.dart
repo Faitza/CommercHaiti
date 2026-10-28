@@ -5,6 +5,7 @@ import '../../providers/favorite_provider.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 
 /// Boutiques favorites — menu hamburger client (section 12.2/12.3)
 /// Path : lib/screens/client/favorites_screen.dart
@@ -43,7 +44,7 @@ class FavoritesScreen extends StatelessWidget {
           // toujours ouvert via push() depuis le menu hamburger.
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Mes favoris'),
+        title: Text(context.tr('Mes favoris')),
       ),
       // Affiche soit un état vide (aucun favori), soit la liste des
       // boutiques favorites.
@@ -55,7 +56,7 @@ class FavoritesScreen extends StatelessWidget {
                   Icon(Icons.favorite_border,
                       size: 60, color: AppColors.borderColor(isDark)),
                   const SizedBox(height: 12),
-                  Text('Aucune boutique favorite pour l\'instant',
+                  Text(context.tr('Aucune boutique favorite pour l\'instant'),
                       style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ],
               ),

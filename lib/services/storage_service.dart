@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import '../l10n/traduction.dart';
 import 'reseau_service.dart';
 
 /// Service Storage Supabase — Falexson MERCIVAL
@@ -65,7 +66,8 @@ class StorageService {
           .getPublicUrl(fileName);
     } catch (e) {
       derniereErreur = messageErreur(e,
-          parDefaut: 'Échec du téléversement de la photo — réessayez');
+          parDefaut: traduire(
+              'Échec du téléversement de la photo — réessayez'));
       return null;
     }
   }
@@ -102,7 +104,8 @@ class StorageService {
       return '$url?v=${DateTime.now().millisecondsSinceEpoch}';
     } catch (e) {
       derniereErreur = messageErreur(e,
-          parDefaut: 'Échec du téléversement de la photo — réessayez');
+          parDefaut: traduire(
+              'Échec du téléversement de la photo — réessayez'));
       return null;
     }
   }

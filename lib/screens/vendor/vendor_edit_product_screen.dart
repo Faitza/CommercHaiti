@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -151,7 +152,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_storage.derniereErreur ??
-            'Échec du téléversement de la photo — réessayez'),
+            traduire('Échec du téléversement de la photo — réessayez')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -194,7 +195,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur : ${e.toString()}'),
+          content: Text(traduire('Erreur : {erreur}', {'erreur': e.toString()})),
           backgroundColor: const Color(0xFFE63946),
         ));
       }
@@ -209,18 +210,18 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
   Future<void> _supprimer(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Supprimer ce produit ?'),
-        content: const Text('Cette action est irréversible.'),
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(dialogCtx.tr('Supprimer ce produit ?')),
+        content: Text(dialogCtx.tr('Cette action est irréversible.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+              child: Text(dialogCtx.tr('Annuler'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE63946)),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer',
-                style: TextStyle(color: Colors.white)),
+            child: Text(dialogCtx.tr('Supprimer'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -243,7 +244,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Modifier · ${_product?.nom ?? ""}',
+        title: Text(context.tr('Modifier · {nom}', {'nom': _product?.nom ?? ''}),
             overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
@@ -256,7 +257,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _product == null
-              ? const Center(child: Text('Produit introuvable'))
+              ? Center(child: Text(context.tr('Produit introuvable')))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Form(
@@ -323,7 +324,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                           _label('Informations', icon: Icons.info_outline),
                           _field(_nomCtrl, 'Ex: Robe fleurie',
                               validator: (v) =>
-                                  v == null || v.isEmpty ? 'Nom requis' : null),
+                                  v == null || v.isEmpty ? traduire('Nom requis') : null),
                           const SizedBox(height: 16),
 
                           Row(children: [
@@ -333,10 +334,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                 _label('Prix normal (HTG) *'),
                                 _field(_prixCtrl, '500',
                                     validator: (v) {
-                                      if (v == null || v.isEmpty) return 'Prix requis';
+                                      if (v == null || v.isEmpty) return traduire('Prix requis');
                                       if (double.tryParse(v) == null ||
                                           double.parse(v) <= 0) {
-                                        return 'Prix invalide';
+                                        return traduire('Prix invalide');
                                       }
                                       return null;
                                     },
@@ -353,9 +354,9 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                       if (v == null || v.isEmpty) return null;
                                       final promo = double.tryParse(v);
                                       final normal = double.tryParse(_prixCtrl.text);
-                                      if (promo == null || promo <= 0) return 'Invalide';
+                                      if (promo == null || promo <= 0) return traduire('Invalide');
                                       if (normal != null && promo >= normal) {
-                                        return 'Doit être < prix normal';
+                                        return traduire('Doit être < prix normal');
                                       }
                                       return null;
                                     },
@@ -368,7 +369,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                           _label('Stock actuel *'),
                           _field(_stockCtrl, '10',
                               validator: (v) =>
-                                  v == null || v.isEmpty ? 'Stock requis' : null,
+                                  v == null || v.isEmpty ? traduire('Stock requis') : null,
                               keyboardType: TextInputType.number,
                               onChanged: (_) => setState(() {})),
                           const SizedBox(height: 6),
@@ -387,10 +388,10 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                             ),
                           ),
                           if ((int.tryParse(_stockCtrl.text) ?? 0) <= 5)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: Text('⚠ Stock bas',
-                                  style: TextStyle(
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(context.tr('⚠ Stock bas'),
+                                  style: const TextStyle(
                                       color: Color(0xFFF5A623),
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold)),
@@ -479,8 +480,8 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Disponible à la vente',
-                                style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(context.tr('Disponible à la vente'),
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
                             Switch(
                               value: _disponible,
                               onChanged: (v) => setState(() => _disponible = v),
@@ -492,7 +493,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
-                                'Non disponible pour l\'acheteur — masqué avec overlay dans le catalogue.',
+                                context.tr('Non disponible pour l\'acheteur — masqué avec overlay dans le catalogue.'),
                                 style: TextStyle(
                                     fontSize: 12, color: AppColors.textSecondaryFor(isDark))),
                           ),
@@ -515,8 +516,8 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                         child: CircularProgressIndicator(
                                             color: Colors.white, strokeWidth: 2))
                                     : const Icon(Icons.check, color: Colors.white),
-                                label: const Text('Sauvegarder',
-                                    style: TextStyle(color: Colors.white,
+                                label: Text(context.tr('Sauvegarder'),
+                                    style: const TextStyle(color: Colors.white,
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold)),
                               ),
@@ -536,8 +537,8 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
                                 onPressed: () => _supprimer(context),
                                 icon: const Icon(Icons.delete_outline,
                                     color: Color(0xFFE63946), size: 18),
-                                label: const Text('Supprimer',
-                                    style: TextStyle(color: Color(0xFFE63946),
+                                label: Text(context.tr('Supprimer'),
+                                    style: const TextStyle(color: Color(0xFFE63946),
                                         fontWeight: FontWeight.bold)),
                               ),
                             ),
@@ -574,7 +575,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
             Icon(icon, size: 15, color: AppColors.accentFor(isDark)),
             const SizedBox(width: 6),
           ],
-          Text(t, style: TextStyle(fontSize: 14,
+          Text(context.tr(t), style: TextStyle(fontSize: 14,
               fontWeight: FontWeight.w600, color: AppColors.textPrimaryFor(isDark))),
         ]),
       );
@@ -591,7 +592,7 @@ class _VendorEditProductScreenState extends State<VendorEditProductScreen> {
         keyboardType: keyboardType,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: hint,
+          hintText: context.tr(hint),
           hintStyle: TextStyle(color: AppColors.textSecondaryFor(isDark)),
           filled: true,
           fillColor: AppColors.inputFill(isDark),

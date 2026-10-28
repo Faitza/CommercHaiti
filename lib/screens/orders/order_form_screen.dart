@@ -11,6 +11,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/moncash_widgets.dart';
 import '../../services/database_service.dart';
+import '../../l10n/traduction.dart';
 
 /// Order Form Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/orders/order_form_screen.dart
@@ -121,13 +122,13 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // Validateur du champ téléphone : format haïtien, 8 chiffres une fois
   // l'indicatif "+509" (s'il est saisi) et toute mise en forme retirés.
   String? _valTel(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Requis';
+    if (v == null || v.trim().isEmpty) return traduire('Requis');
     var chiffres = v.replaceAll(RegExp(r'[^\d]'), '');
     if (chiffres.length == 11 && chiffres.startsWith('509')) {
       chiffres = chiffres.substring(3);
     }
-    if (chiffres.length != 8) return 'Numéro invalide (8 chiffres attendus)';
-    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return 'Numéro invalide';
+    if (chiffres.length != 8) return traduire('Numéro invalide (8 chiffres attendus)');
+    if (!RegExp(r'^[2-9]').hasMatch(chiffres)) return traduire('Numéro invalide');
     return null;
   }
 
@@ -136,10 +137,10 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   // que le client a bien retapé le même numéro — une double saisie destinée
   // à réduire le risque d'erreur de livraison liée à une faute de frappe.
   String? _valConfirm(String? v) {
-    if (v == null || v.isEmpty) return 'Requis';
+    if (v == null || v.isEmpty) return traduire('Requis');
     final t1 = _telephoneCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
     final t2 = v.replaceAll(RegExp(r'[^\d]'), '');
-    if (t1 != t2) return 'Les numéros ne correspondent pas';
+    if (t1 != t2) return traduire('Les numéros ne correspondent pas');
     return null;
   }
 
@@ -159,9 +160,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     // par "chips" (Wrap de GestureDetector plus bas) : on la valide donc
     // manuellement ici, hors du mécanisme de Form.
     if (!_retrait && _zone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Sélectionnez une zone de livraison'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Sélectionnez une zone de livraison')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
@@ -236,9 +237,9 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       // informations vendeur incomplètes/incorrectes.
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Boutique introuvable — réessayez'),
-          backgroundColor: Color(0xFFE63946),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Boutique introuvable — réessayez')),
+          backgroundColor: const Color(0xFFE63946),
         ));
       }
       return;
@@ -336,7 +337,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       // Échec de la création (ex. stock insuffisant) : on affiche le
       // message d'erreur exposé par le provider.
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(orderProvider.errorMessage ?? 'Erreur commande'),
+        content: Text(orderProvider.errorMessage ?? traduire('Erreur commande')),
         backgroundColor: const Color(0xFFE63946),
       ));
     }
@@ -374,16 +375,16 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                   // est arrivé.
                   onPressed: () => context.go('/cart'),
                 ),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Détails de livraison',
-                        style: TextStyle(
+                    Text(context.tr('Détails de livraison'),
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.bold)),
-                    Text('Étape 2 sur 2',
-                        style: TextStyle(
+                    Text(context.tr('Étape 2 sur 2'),
+                        style: const TextStyle(
                             color: Colors.white54, fontSize: 10)),
                   ],
                 ),
@@ -407,15 +408,15 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       // Livraison ou « M ap vin chèche l » (retrait à la
                       // boutique : ni adresse, ni zone, ni frais).
                       SegmentedButton<bool>(
-                        segments: const [
+                        segments: [
                           ButtonSegment(
                               value: false,
-                              icon: Icon(Icons.local_shipping_outlined, size: 16),
-                              label: Text('Livraison')),
+                              icon: const Icon(Icons.local_shipping_outlined, size: 16),
+                              label: Text(context.tr('Livraison'))),
                           ButtonSegment(
                               value: true,
-                              icon: Icon(Icons.storefront_outlined, size: 16),
-                              label: Text('Je viens chercher')),
+                              icon: const Icon(Icons.storefront_outlined, size: 16),
+                              label: Text(context.tr('Je viens chercher'))),
                         ],
                         selected: {_retrait},
                         onSelectionChanged: (s) =>
@@ -425,28 +426,28 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       const SizedBox(height: 12),
                       if (_retrait)
                         Text(
-                            'Vous récupérez la commande à la boutique quand '
-                            'le vendeur vous prévient. Pas de frais de livraison.',
+                            context.tr('Vous récupérez la commande à la boutique quand '
+                            'le vendeur vous prévient. Pas de frais de livraison.'),
                             style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondaryFor(isDark)))
                       else ...[
-                      _label(Icons.location_on_outlined, 'Adresse de livraison', isDark),
+                      _label(Icons.location_on_outlined, context.tr('Adresse de livraison'), isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _adresseCtrl,
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Adresse requise';
-                          if (v.trim().length < 5) return 'Adresse trop courte';
+                          if (v == null || v.trim().isEmpty) return traduire('Adresse requise');
+                          if (v.trim().length < 5) return traduire('Adresse trop courte');
                           if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(v)) {
-                            return 'L\'adresse ne peut pas être uniquement des chiffres';
+                            return traduire('L\'adresse ne peut pas être uniquement des chiffres');
                           }
                           return null;
                         },
-                        decoration: _deco('Rue Borno, Les Cayes', isDark),
+                        decoration: _deco(context.tr('Rue Borno, Les Cayes'), isDark),
                       ),
                       const SizedBox(height: 14),
-                      _label(Icons.map_outlined, 'Zone de livraison', isDark),
+                      _label(Icons.map_outlined, context.tr('Zone de livraison'), isDark),
                       const SizedBox(height: 8),
                       // "Chips" cliquables représentant chaque zone
                       // possible ; la zone sélectionnée est mise en
@@ -498,7 +499,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // (saisie + confirmation) pour limiter le risque
                     // d'erreur de contact lors de la livraison.
                     _sectionCard(isDark, children: [
-                      _label(Icons.phone_outlined, 'Numéro de téléphone', isDark),
+                      _label(Icons.phone_outlined, context.tr('Numéro de téléphone'), isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _telephoneCtrl,
@@ -508,18 +509,18 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Pré-rempli depuis votre profil. Modifiable.',
+                        context.tr('Pré-rempli depuis votre profil. Modifiable.'),
                         style: TextStyle(
                             fontSize: 10, color: AppColors.textSecondaryFor(isDark)),
                       ),
                       const SizedBox(height: 12),
-                      _label(Icons.phone_outlined, 'Confirmer le numéro', isDark),
+                      _label(Icons.phone_outlined, context.tr('Confirmer le numéro'), isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _confirmTelCtrl,
                         validator: _valConfirm,
                         keyboardType: TextInputType.phone,
-                        decoration: _deco('Ressaisir le numéro', isDark),
+                        decoration: _deco(context.tr('Ressaisir le numéro'), isDark),
                       ),
                     ]),
                     const SizedBox(height: 12),
@@ -532,7 +533,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // numéro de transaction, que le vendeur confirme
                     // ensuite (pas d'API MonCash, voir migration_moncash.sql).
                     _sectionCard(isDark, children: [
-                      _label(Icons.payments_outlined, 'PAIEMENT', isDark),
+                      _label(Icons.payments_outlined, context.tr('PAIEMENT'), isDark),
                       const SizedBox(height: 4),
                       // Paiement à la livraison (valeur par défaut).
                       RadioListTile<String>(
@@ -543,11 +544,11 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                         activeColor: const Color(0xFF0D2B5E),
                         contentPadding: EdgeInsets.zero,
                         dense: true,
-                        title: Row(children: const [
-                          Icon(Icons.money, size: 16, color: Color(0xFF1D9E75)),
-                          SizedBox(width: 6),
-                          Text('Paiement à la livraison',
-                              style: TextStyle(fontSize: 14)),
+                        title: Row(children: [
+                          const Icon(Icons.money, size: 16, color: Color(0xFF1D9E75)),
+                          const SizedBox(width: 6),
+                          Text(context.tr('Paiement à la livraison'),
+                              style: const TextStyle(fontSize: 14)),
                         ]),
                       ),
                       // MonCash : désactivé (`onChanged: null`, texte
@@ -572,7 +573,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           Flexible(
                             child: Text(
                                 _moncashNumero == null
-                                    ? 'MonCash — non proposé par cette boutique'
+                                    ? context.tr('MonCash — non proposé par cette boutique')
                                     : 'MonCash',
                                 style: TextStyle(
                                     fontSize: 14,
@@ -595,7 +596,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                           controller: _moncashRefCtrl,
                           validator: validerReferenceMoncash,
                           decoration: _deco(
-                              'Numéro de transaction MonCash', isDark),
+                              context.tr('Numéro de transaction MonCash'), isDark),
                         ),
                       ],
                     ]),
@@ -606,13 +607,13 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     // pour transmettre une instruction spéciale au vendeur
                     // (ex. horaire de livraison préféré).
                     _sectionCard(isDark, children: [
-                      _label(Icons.note_outlined, 'Note pour le vendeur (optionnel)', isDark),
+                      _label(Icons.note_outlined, context.tr('Note pour le vendeur (optionnel)'), isDark),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _noteCtrl,
                         maxLines: 2,
                         maxLength: 200,
-                        decoration: _deco('Ex: Livrer après 17h...', isDark),
+                        decoration: _deco(context.tr('Ex: Livrer après 17h...'), isDark),
                       ),
                     ]),
                     const SizedBox(height: 12),
@@ -658,8 +659,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Économies',
-                                    style: TextStyle(
+                                Text(context.tr('Économies'),
+                                    style: const TextStyle(
                                         color: Color(0xFF1D9E75), fontSize: 13)),
                                 Text('-${cart.economies.toStringAsFixed(0)} HTG',
                                     style: const TextStyle(
@@ -677,14 +678,14 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Livraison',
-                                    style: TextStyle(fontSize: 13)),
+                                Text(context.tr('Livraison'),
+                                    style: const TextStyle(fontSize: 13)),
                                 Text(
                                     _retrait
-                                        ? 'Retrait en boutique'
+                                        ? context.tr('Retrait en boutique')
                                         : _fraisLivraison > 0
                                             ? '${_fraisLivraison.toStringAsFixed(0)} HTG'
-                                            : 'Gratuite',
+                                            : context.tr('Gratuite'),
                                     style: const TextStyle(fontSize: 13)),
                               ],
                             ),
@@ -692,8 +693,8 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(context.tr('Total'),
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text('${(cart.totalAvecPromo + _fraisLivraison).toStringAsFixed(0)} HTG',
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -726,7 +727,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                                     color: Colors.white, strokeWidth: 2))
                             : const Icon(Icons.check_circle_outline, size: 18),
                         label: Text(
-                          _isLoading ? 'Traitement…' : 'Confirmer la commande',
+                          _isLoading ? context.tr('Traitement…') : context.tr('Confirmer la commande'),
                           style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.bold),
                         ),
