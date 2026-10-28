@@ -34,6 +34,12 @@ class AuthProvider extends ChangeNotifier {
   /// n'est qu'un identifiant lisible. Résolu via shops.proprietaire_id.
   String? _shopId;
 
+  /// true seulement quand la base a CONFIRMÉ que ce vendeur n'a aucune
+  /// boutique (requête réussie, aucune ligne). Reste false en cas
+  /// d'erreur réseau, pour ne pas renvoyer un vendeur qui a déjà une
+  /// boutique vers l'écran de création (risque de doublon).
+  bool _sansBoutique = false;
+
   /// Expose l'utilisateur connecté.
   UserModel? get currentUser => _currentUser;
   /// Indique si une opération est en cours.
@@ -52,6 +58,10 @@ class AuthProvider extends ChangeNotifier {
   /// Identifiant réel (uuid) de la boutique du vendeur connecté, ou
   /// null si le vendeur n'a pas encore créé de boutique / n'est pas vendeur.
   String? get shopId         => _shopId;
+  /// Vendeur inscrit dont la création de boutique n'a pas abouti
+  /// (erreur à l'enregistrement, app fermée avant la fin…). Le routeur
+  /// le renvoie vers /create-shop au lieu d'un tableau de bord vide.
+  bool get sansBoutique      => _sansBoutique;
 
   /// À la création du provider, on démarre immédiatement l'écoute des
   /// changements de session Supabase.
@@ -94,6 +104,7 @@ class AuthProvider extends ChangeNotifier {
         // Déconnexion : on réinitialise tout l'état utilisateur.
         _currentUser = null;
         _shopId = null;
+        _sansBoutique = false;
         notifyListeners();
       }
     });
@@ -113,10 +124,12 @@ class AuthProvider extends ChangeNotifier {
           .eq('proprietaire_id', ownerId)
           .maybeSingle();
       _shopId = row?['id'] as String?;
+      _sansBoutique = _shopId == null;
     } catch (_) {
       // En cas d'erreur réseau/DB, on considère simplement qu'on ne
       // connaît pas encore l'id de la boutique plutôt que de planter.
       _shopId = null;
+      _sansBoutique = false;
     }
   }
 
@@ -285,6 +298,8 @@ class AuthProvider extends ChangeNotifier {
     await PushService.instance.retirerJeton();
     await _authService.signOut();
     _currentUser = null;
+    _shopId = null;
+    _sansBoutique = false;
     notifyListeners();
   }
 
