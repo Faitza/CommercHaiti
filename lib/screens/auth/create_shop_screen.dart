@@ -21,10 +21,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 // informations de sa boutique (nom, description, logo, zones de
 // livraison) avant d'accéder à son tableau de bord.
 class CreateShopScreen extends StatefulWidget {
-  // Code boutique généré côté inscription (ex: "MFL-2026-0000"), affiché
-  // en lecture seule ici et enregistré tel quel avec la boutique.
+  // Code boutique déjà attribué (anciens comptes, users.shop_code). Vide
+  // pour un nouveau vendeur : le code est alors généré ici à partir du
+  // nom de la boutique, saisi une seule fois sur cet écran.
   final String shopCode;
-  const CreateShopScreen({super.key, required this.shopCode});
+  const CreateShopScreen({super.key, this.shopCode = ''});
 
   @override
   State<CreateShopScreen> createState() => _CreateShopScreenState();
@@ -42,6 +43,24 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
   final _nomCtrl         = TextEditingController();
   final _descriptionCtrl = TextEditingController();
+
+  // Code boutique affiché et enregistré (voir initState).
+  String _code = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _code = widget.shopCode;
+    // Pas de code reçu : aperçu régénéré en direct à partir du nom saisi.
+    if (widget.shopCode.isEmpty) {
+      _nomCtrl.addListener(() {
+        final nom = _nomCtrl.text.trim();
+        setState(() => _code = nom.isEmpty
+            ? ''
+            : context.read<AuthProvider>().generateShopCode(nom));
+      });
+    }
+  }
 
   // URL du logo une fois uploadé (null tant qu'aucun logo n'a été choisi).
   String? _logoUrl;
@@ -157,7 +176,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       nom: _nomCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       logoUrl: _logoUrl,
-      shopCode: widget.shopCode,
+      shopCode: _code.isNotEmpty
+          ? _code
+          : auth.generateShopCode(_nomCtrl.text.trim()),
       // Convertit chaque zone sélectionnée en objet ZoneLivraison avec
       // des délais de livraison par défaut (20 à 45 minutes).
       zonesLivraison: _zonesSelectionnees.map((z) =>
@@ -171,6 +192,14 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
     try {
       await _db.createShop(shop);
+      // Nouveau vendeur : le code boutique est aussi gardé dans son profil
+      // (users.shop_code). Non bloquant : la boutique est déjà créée.
+      if (widget.shopCode.isEmpty) {
+        try {
+          await _db.updateUser(auth.currentUser!.id,
+              {'shop_code': shop.shopCode});
+        } catch (_) {}
+      }
       // Recharge l'ID de boutique dans AuthProvider maintenant qu'une
       // boutique existe pour ce vendeur.
       await auth.refreshShopId();
@@ -224,9 +253,15 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                   const Text('Votre code boutique',
                       style: TextStyle(color: Color(0xFF666666))),
                   const SizedBox(height: 4),
-                  Text(widget.shopCode, style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold,
-                      color: Color(0xFF0D2B5E), letterSpacing: 2)),
+                  Text(_code.isEmpty
+                          ? 'Tapez le nom de la boutique'
+                          : _code,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: _code.isEmpty ? 14 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0D2B5E),
+                          letterSpacing: _code.isEmpty ? 0 : 2)),
                   const SizedBox(height: 4),
                   const Text('Ce code identifie votre boutique sur les reçus',
                       style: TextStyle(fontSize: 11, color: Color(0xFF666666)),

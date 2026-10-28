@@ -256,10 +256,10 @@ class AppRouter {
             builder: (_, state) {
               final data = state.extra as Map<String, dynamic>?;
               return CreateShopScreen(
-                // Sans `extra` (vendeur renvoyé ici par le routeur), on
-                // reprend le code généré à l'inscription (users.shop_code).
+                // Code déjà attribué (anciens comptes : users.shop_code) ;
+                // sinon l'écran le génère à partir du nom de la boutique.
                 shopCode: data?['shopCode'] ??
-                    auth.currentUser?.shopCode ?? 'MFL-2026-0000',
+                    auth.currentUser?.shopCode ?? '',
               );
             },
           ),
