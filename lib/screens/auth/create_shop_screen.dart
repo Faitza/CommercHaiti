@@ -11,6 +11,7 @@ import '../../services/storage_service.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/categories_boutique_widget.dart';
 import '../../widgets/horaire_boutique_widget.dart';
+import '../../widgets/zones_livraison_selecteur.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Créer boutique — Faitza COLAS
@@ -22,10 +23,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 // informations de sa boutique (nom, description, logo, zones de
 // livraison) avant d'accéder à son tableau de bord.
 class CreateShopScreen extends StatefulWidget {
-  // Code boutique généré côté inscription (ex: "MFL-2026-0000"), affiché
-  // en lecture seule ici et enregistré tel quel avec la boutique.
+  // Code boutique déjà attribué (anciens comptes, users.shop_code). Vide
+  // pour un nouveau vendeur : le code est alors généré ici à partir du
+  // nom de la boutique, saisi une seule fois sur cet écran.
   final String shopCode;
-  const CreateShopScreen({super.key, required this.shopCode});
+  const CreateShopScreen({super.key, this.shopCode = ''});
 
   @override
   State<CreateShopScreen> createState() => _CreateShopScreenState();
@@ -44,6 +46,24 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   final _nomCtrl         = TextEditingController();
   final _descriptionCtrl = TextEditingController();
 
+  // Code boutique affiché et enregistré (voir initState).
+  String _code = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _code = widget.shopCode;
+    // Pas de code reçu : aperçu régénéré en direct à partir du nom saisi.
+    if (widget.shopCode.isEmpty) {
+      _nomCtrl.addListener(() {
+        final nom = _nomCtrl.text.trim();
+        setState(() => _code = nom.isEmpty
+            ? ''
+            : context.read<AuthProvider>().generateShopCode(nom));
+      });
+    }
+  }
+
   // URL du logo une fois uploadé (null tant qu'aucun logo n'a été choisi).
   String? _logoUrl;
   // Zones de livraison sélectionnées par le vendeur (au moins une requise).
@@ -57,13 +77,6 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
   // Indique un chargement en cours (upload logo ou création boutique) —
   // désactive le bouton de soumission et affiche un spinner.
   bool _isLoading = false;
-
-  // Liste fixe des zones de livraison proposées (spécifiques à la région
-  // des Cayes, contexte local de l'application).
-  final List<String> _zonesDisponibles = [
-    'Cayes Centre', 'Cayes Nord', 'Cayes Sud',
-    'Torbeck', 'Saint-Jean', 'Maniche', 'Camp-Perrin',
-  ];
 
   // Mode sombre courant, mis à jour à chaque build() et réutilisé par les
   // méthodes utilitaires (_label, _deco) qui construisent des widgets en
@@ -158,7 +171,9 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
       nom: _nomCtrl.text.trim(),
       description: _descriptionCtrl.text.trim(),
       logoUrl: _logoUrl,
-      shopCode: widget.shopCode,
+      shopCode: _code.isNotEmpty
+          ? _code
+          : auth.generateShopCode(_nomCtrl.text.trim()),
       // Convertit chaque zone sélectionnée en objet ZoneLivraison avec
       // des délais de livraison par défaut (20 à 45 minutes).
       zonesLivraison: _zonesSelectionnees.map((z) =>
@@ -172,6 +187,14 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
 
     try {
       await _db.createShop(shop);
+      // Nouveau vendeur : le code boutique est aussi gardé dans son profil
+      // (users.shop_code). Non bloquant : la boutique est déjà créée.
+      if (widget.shopCode.isEmpty) {
+        try {
+          await _db.updateUser(auth.currentUser!.id,
+              {'shop_code': shop.shopCode});
+        } catch (_) {}
+      }
       // Recharge l'ID de boutique dans AuthProvider maintenant qu'une
       // boutique existe pour ce vendeur.
       await auth.refreshShopId();
@@ -225,9 +248,15 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
                   Text(context.tr('Votre code boutique'),
                       style: const TextStyle(color: Color(0xFF666666))),
                   const SizedBox(height: 4),
-                  Text(widget.shopCode, style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold,
-                      color: Color(0xFF0D2B5E), letterSpacing: 2)),
+                  Text(_code.isEmpty
+                          ? context.tr('Tapez le nom de la boutique')
+                          : _code,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: _code.isEmpty ? 14 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0D2B5E),
+                          letterSpacing: _code.isEmpty ? 0 : 2)),
                   const SizedBox(height: 4),
                   Text(context.tr('Ce code identifie votre boutique sur les reçus'),
                       style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
@@ -326,34 +355,18 @@ class _CreateShopScreenState extends State<CreateShopScreen> {
               const SizedBox(height: 24),
 
               // Zones livraison
-              // Sélection multiple des zones de livraison via des
-              // FilterChip. Au clic, on ajoute ou on retire la zone de la
-              // liste `_zonesSelectionnees` (voir onSelected).
+              // Menu déroulant des zones de la liste + champ "Autre
+              // zone" pour en écrire une qui n'y est pas.
               _label('Zones de livraison *'),
-              Text(context.tr('Sélectionnez les zones où vous livrez'),
+              Text(context.tr('Choisissez les zones où vous livrez'),
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondaryFor(_isDark))),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8, runSpacing: 8,
-                children: _zonesDisponibles.map((zone) {
-                  final sel = _zonesSelectionnees.contains(zone);
-                  return FilterChip(
-                    label: Text(context.tr(zone)),
-                    selected: sel,
-                    onSelected: (v) => setState(() {
-                      if (v) _zonesSelectionnees.add(zone);
-                      else _zonesSelectionnees.remove(zone);
-                    }),
-                    selectedColor: const Color(0xFFEEF3FB),
-                    checkmarkColor: const Color(0xFF0D2B5E),
-                    labelStyle: TextStyle(
-                      color: sel ? const Color(0xFF0D2B5E) : AppColors.textSecondaryFor(_isDark),
-                    ),
-                    side: BorderSide(
-                      color: sel ? const Color(0xFF0D2B5E) : AppColors.borderColor(_isDark),
-                    ),
-                  );
-                }).toList(),
+              ZonesLivraisonSelecteur(
+                zones: _zonesSelectionnees,
+                isDark: _isDark,
+                onChanged: (l) => setState(() => _zonesSelectionnees
+                  ..clear()
+                  ..addAll(l)),
               ),
               const SizedBox(height: 24),
 

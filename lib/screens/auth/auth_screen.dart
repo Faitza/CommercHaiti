@@ -44,12 +44,6 @@ class _AuthScreenState extends State<AuthScreen>
   final _nomCtrl = TextEditingController();
   final _telephoneCtrl = TextEditingController();
   final _adresseCtrl = TextEditingController();
-  final _nomBoutiqueCtrl = TextEditingController();
-  final _descriptionCtrl = TextEditingController();
-
-  // Aperçu du code boutique généré en direct à partir du nom saisi
-  // (utile pour montrer au vendeur ce que sera son code avant validation).
-  String _shopCodePreview = '';
   // Bascule l'affichage en clair/masqué du mot de passe.
   bool _obscurePassword = true;
 
@@ -66,16 +60,6 @@ class _AuthScreenState extends State<AuthScreen>
     super.initState();
     // 2 onglets : Connexion (index 0) et Inscription (index 1).
     _tabController = TabController(length: 2, vsync: this);
-    // Écoute les changements du champ "nom de la boutique" pour régénérer
-    // en temps réel l'aperçu du code boutique (utile uniquement côté
-    // vendeur, mais le listener est inoffensif côté client car ce champ
-    // n'est alors jamais rempli).
-    _nomBoutiqueCtrl.addListener(() {
-      if (_nomBoutiqueCtrl.text.isNotEmpty) {
-        setState(() => _shopCodePreview =
-            context.read<AuthProvider>().generateShopCode(_nomBoutiqueCtrl.text));
-      }
-    });
   }
 
   // ── Fonctions de validation des champs (utilisées par les TextFormField
@@ -140,18 +124,6 @@ class _AuthScreenState extends State<AuthScreen>
     }
     return null;
   }
-  // Vérifie qu'une description est renseignée, suffisamment longue, et
-  // strictement textuelle (aucun chiffre autorisé).
-  String? _valDescription(String? v) {
-    if (v == null || v.trim().isEmpty) return traduire('Description requise');
-    final t = v.trim();
-    if (t.length < 10) return traduire('Minimum 10 caractères');
-    if (RegExp(r'\d').hasMatch(t)) {
-      return traduire('La description ne doit contenir aucun chiffre');
-    }
-    return null;
-  }
-
   // Tente une connexion via AuthProvider.signIn avec l'email/mot de passe
   // saisis. En cas de succès, redirige vers le tableau de bord vendeur ou
   // l'accueil client selon le rôle réel du compte (auth.isSeller vient du
@@ -190,8 +162,6 @@ class _AuthScreenState extends State<AuthScreen>
         telephone: _telephoneCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text,
-        nomBoutique: _nomBoutiqueCtrl.text.trim(),
-        description: _descriptionCtrl.text.trim(),
       );
     } else {
       ok = await auth.signUpClient(
@@ -205,7 +175,9 @@ class _AuthScreenState extends State<AuthScreen>
     if (!mounted) return;
     if (ok) {
       if (isVendeur) {
-        context.go('/create-shop', extra: {'shopCode': _shopCodePreview});
+        // Nom, description et le reste de la boutique sont saisis une
+        // seule fois, sur l'écran suivant.
+        context.go('/create-shop');
       } else {
         context.go('/client/home');
       }
@@ -348,8 +320,8 @@ class _AuthScreenState extends State<AuthScreen>
   // Construit le formulaire d'inscription. Les champs affichés diffèrent
   // selon le rôle :
   //  - Client : nom, téléphone, adresse, email, mot de passe.
-  //  - Vendeur : nom, téléphone, email, mot de passe, nom de boutique
-  //    (avec aperçu du code généré), description de la boutique.
+  //  - Vendeur : nom, téléphone, email, mot de passe. Les informations
+  //    de la boutique sont demandées une seule fois, sur /create-shop.
   Widget _buildInscription(AuthProvider auth) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -386,56 +358,6 @@ class _AuthScreenState extends State<AuthScreen>
           const SizedBox(height: 14),
           _label('Mot de passe'),
           _passwordField(),
-          // Champs spécifiques au vendeur : nom + code + description de
-          // la boutique.
-          if (isVendeur) ...[
-            const SizedBox(height: 14),
-            _label('Nom de la boutique'),
-            _field(_nomBoutiqueCtrl, 'Marché Frais Lakay',
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return traduire('Nom requis');
-                  final t = v.trim();
-                  if (t.length < 3) return traduire('Min 3 caractères');
-                  if (!RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(t)) {
-                    return traduire('Ne peut pas être uniquement des chiffres');
-                  }
-                  if (t.replaceAll(RegExp(r'[^0-9]'), '').length > 4) {
-                    return traduire('Maximum 4 chiffres dans le nom');
-                  }
-                  return null;
-                },
-                icon: Icons.store_outlined),
-            // Aperçu du code boutique — n'apparaît qu'une fois le nom
-            // saisi (voir le listener dans initState).
-            if (_shopCodePreview.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF3FB),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(children: [
-                  const Icon(Icons.tag, size: 16, color: Color(0xFF0D2B5E)),
-                  const SizedBox(width: 8),
-                  Text(context.tr('Code : {code}', {'code': _shopCodePreview}),
-                      style: const TextStyle(
-                          color: Color(0xFF0D2B5E),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13)),
-                ]),
-              ),
-            ],
-            const SizedBox(height: 14),
-            _label('Description de la boutique'),
-            TextFormField(
-              controller: _descriptionCtrl,
-              maxLines: 3,
-              validator: _valDescription,
-              decoration: _deco('Décrivez votre boutique...',
-                  Icons.description_outlined),
-            ),
-          ],
           const SizedBox(height: 24),
           _bouton('S\'inscrire', _inscription, auth.isLoading),
           const SizedBox(height: 12),
@@ -564,8 +486,6 @@ class _AuthScreenState extends State<AuthScreen>
     _nomCtrl.dispose();
     _telephoneCtrl.dispose();
     _adresseCtrl.dispose();
-    _nomBoutiqueCtrl.dispose();
-    _descriptionCtrl.dispose();
     super.dispose();
   }
 }

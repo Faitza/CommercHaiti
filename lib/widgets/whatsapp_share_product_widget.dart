@@ -14,8 +14,9 @@ import '../l10n/traduction.dart';
 /// Path : lib/widgets/whatsapp_share_product_widget.dart
 ///
 /// Bouton réutilisable qui ouvre WhatsApp avec un message pré-écrit
-/// présentant un produit : nom, prix, nom de la boutique, puis le lien de
-/// téléchargement de l'app en bas du message. Le vendeur choisit ensuite
+/// présentant un produit : nom, prix, nom de la boutique, le lien direct
+/// vers le produit (ouvre l'app sur le produit, ou propose de la
+/// télécharger), puis le lien de téléchargement de l'app en bas du message. Le vendeur choisit ensuite
 /// lui-même le contact ou le groupe destinataire dans WhatsApp.
 ///
 /// Si le produit a des photos, elles sont téléchargées puis partagées
@@ -40,6 +41,7 @@ class WhatsAppShareProductWidget extends StatefulWidget {
 
   /// Construit le texte du message WhatsApp. Si le produit est en promo,
   /// le prix promo est affiché, suivi du prix normal entre parenthèses.
+  /// Si le stock est à 0, le message annonce « RUPTURE DE STOCK ».
   /// Avec [emoji] = false, le message est en texte simple : via le lien
   /// wa.me, WhatsApp (surtout Web/Desktop) affiche souvent les emoji comme
   /// des losanges « � ». Le partage de photos (feuille de partage du
@@ -53,11 +55,17 @@ class WhatsAppShareProductWidget extends StatefulWidget {
           })
         : '${product.prix.toStringAsFixed(0)} HTG';
     String e(String symbole) => emoji ? '$symbole ' : '';
+    // Stock fini : on l'annonce clairement juste sous le nom, et on invite
+    // à voir les autres produits au lieu de « Commandez ».
+    final epuise = product.stock <= 0;
     return '${e('🛍️')}*${product.nom}*\n'
+        '${epuise ? '${e('⛔')}${traduire('*RUPTURE DE STOCK* : ce produit est épuisé')}\n' : ''}'
         '${e('💰')}${traduire('Prix : {prix}', {'prix': prix})}\n'
         '${e('🏪')}${traduire('Boutique : {nom}', {'nom': nomBoutique})}\n'
         '\n'
-        '${e('📲')}${traduire('Commandez sur CommercHaiti, téléchargez l\'app :')}\n'
+        '${e('👉')}${traduire('Voir le produit : {lien}', {'lien': AppLinks.lienProduit(product.id)})}\n'
+        '\n'
+        '${e('📲')}${traduire(epuise ? 'Découvrez nos autres produits sur CommercHaiti, téléchargez l\'app :' : 'Commandez sur CommercHaiti, téléchargez l\'app :')}\n'
         '${AppLinks.telechargementApp}';
   }
 

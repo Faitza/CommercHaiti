@@ -10,6 +10,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/categories_boutique_widget.dart';
 import '../../widgets/horaire_boutique_widget.dart';
+import '../../widgets/zones_livraison_selecteur.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modifier infos boutique — vendeur (menu Paramètres)
@@ -62,13 +63,6 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
   List<String> _jours = [];
   bool _isLoading = true;
   bool _isSaving = false;
-
-  // Liste fixe des zones de livraison proposées (zone géographique
-  // desservie par les livreurs de la plateforme).
-  final List<String> _zonesDisponibles = [
-    'Cayes Centre', 'Cayes Nord', 'Cayes Sud',
-    'Torbeck', 'Saint-Jean', 'Maniche', 'Camp-Perrin',
-  ];
 
   @override
   void initState() {
@@ -422,30 +416,17 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                           onJoursChanged: (l) => setState(() => _jours = l),
                         ),
                         const SizedBox(height: 16),
-                        // Sélection des zones de livraison via des
-                        // "chips" filtrables (FilterChip) : chaque tap
-                        // ajoute/retire la zone de `_zonesSelectionnees`.
+                        // Zones de livraison : menu déroulant de la liste
+                        // (Zones.toutes) + champ "Autre zone" à écrire.
                         Text(context.tr('Zones de livraison *'),
                             style: const TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8, runSpacing: 8,
-                          children: _zonesDisponibles.map((zone) {
-                            final sel = _zonesSelectionnees.contains(zone);
-                            return FilterChip(
-                              label: Text(context.tr(zone)),
-                              selected: sel,
-                              onSelected: (v) => setState(() {
-                                if (v) {
-                                  _zonesSelectionnees.add(zone);
-                                } else {
-                                  _zonesSelectionnees.remove(zone);
-                                }
-                              }),
-                              selectedColor: const Color(0xFFEEF3FB),
-                              checkmarkColor: const Color(0xFF0D2B5E),
-                            );
-                          }).toList(),
+                        ZonesLivraisonSelecteur(
+                          zones: _zonesSelectionnees,
+                          isDark: isDark,
+                          onChanged: (l) => setState(() => _zonesSelectionnees
+                            ..clear()
+                            ..addAll(l)),
                         ),
                         // Prix de livraison de chaque zone choisie : il
                         // s'ajoute au total de la commande du client.
@@ -456,8 +437,7 @@ class _VendorEditShopScreenState extends State<VendorEditShopScreen> {
                           const SizedBox(height: 4),
                           Text(context.tr('Laissez vide si la livraison est gratuite.'),
                               style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                          for (final zone in _zonesDisponibles
-                              .where(_zonesSelectionnees.contains))
+                          for (final zone in _zonesSelectionnees)
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Row(children: [

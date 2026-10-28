@@ -222,24 +222,20 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ── Inscription Vendeur ──
-  /// Crée un nouveau compte vendeur (role = 'seller'). Génère aussi un
-  /// code boutique unique à partir du nom de boutique fourni, stocké
-  /// dans le profil utilisateur (shop_code) — la boutique elle-même
-  /// (table shops) est créée séparément dans un écran ultérieur
-  /// (CreateShopScreen), d'où l'appel à refreshShopId() plus tard.
+  /// Crée un nouveau compte vendeur (role = 'seller'). Les informations
+  /// de la boutique (nom, description, code…) sont saisies une seule fois
+  /// dans CreateShopScreen, qui génère le code boutique et l'enregistre
+  /// aussi dans le profil (users.shop_code).
   Future<bool> signUpVendeur({
     required String nom,
     required String telephone,
     required String email,
     required String password,
-    required String nomBoutique,
-    required String description,
   }) async {
     if (_isLoading) return false; // checklist production, point 09
     _setLoading(true);
     _clearError();
     try {
-      final shopCode = generateShopCode(nomBoutique);
       _currentUser = await _authService.signUp(
         email: email,
         password: password,
@@ -247,7 +243,6 @@ class AuthProvider extends ChangeNotifier {
           'nom':       nom,
           'telephone': telephone,
           'role':      'seller',
-          'shop_code': shopCode,
         },
       );
       notifyListeners();

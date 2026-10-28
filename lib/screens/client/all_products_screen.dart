@@ -29,7 +29,11 @@ import '../../l10n/traduction.dart';
 /// données déjà chargées en mémoire) avec un filtre de catégorie qui,
 /// lui, déclenche une nouvelle requête Supabase.
 class AllProductsScreen extends StatefulWidget {
-  const AllProductsScreen({super.key});
+  /// Catégorie déjà filtrée à l'ouverture (lien « Voir tout » d'une
+  /// section catégorie de l'accueil). Null = toutes les catégories.
+  final String? categorieInitiale;
+
+  const AllProductsScreen({super.key, this.categorieInitiale});
 
   @override
   State<AllProductsScreen> createState() => _AllProductsScreenState();
@@ -63,6 +67,14 @@ class _AllProductsScreenState extends State<AllProductsScreen> {
   @override
   void initState() {
     super.initState();
+    // Ouvert depuis une section catégorie de l'accueil : le filtre est
+    // déjà posé, et son chip est affiché (avec « Toutes » pour l'enlever)
+    // en attendant que la liste complète soit recalculée sans filtre.
+    final initiale = widget.categorieInitiale;
+    if (initiale != null && initiale.isNotEmpty) {
+      _categorieSelectionnee = initiale;
+      _categories = [initiale];
+    }
     // Après le premier affichage : _charger() appelle setState(),
     // interdit pendant initState().
     WidgetsBinding.instance.addPostFrameCallback((_) => _charger());

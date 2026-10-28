@@ -334,6 +334,13 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                   ),
                 ),
 
+                // Zones de livraison : chaque zone desservie par la
+                // boutique, avec son délai et son prix (frais en HTG,
+                // 0 = gratuite). Données : shops.zones_livraison.
+                _sectionTitle(context.tr('Zones de livraison')),
+                _zonesLivraison(isDark),
+                const SizedBox(height: 16),
+
                 // Bouton WhatsApp
                 // Affiché seulement si on a réussi à récupérer un
                 // numéro de téléphone valide via la RPC plus haut.
@@ -545,6 +552,70 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Text(t, style: TextStyle(fontSize: 16,
           fontWeight: FontWeight.bold, color: AppColors.accentFor(isDark))),
+    );
+  }
+
+  /// Carte listant les zones de livraison de la boutique : nom de la
+  /// zone, délai estimé et prix ("Gratuite" si 0). Si la boutique n'a
+  /// encore déclaré aucune zone, un message l'indique.
+  Widget _zonesLivraison(bool isDark) {
+    final zones = widget.shop.zonesLivraison;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface(isDark),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: zones.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(context.tr('Aucune zone de livraison indiquée'),
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.textSecondaryFor(isDark))),
+            )
+          : Column(
+              children: [
+                for (var i = 0; i < zones.length; i++) ...[
+                  if (i > 0)
+                    Divider(height: 1, color: AppColors.textSecondaryFor(isDark)
+                        .withOpacity(0.15)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 18, color: Color(0xFF1D9E75)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(zones[i].zone,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimaryFor(isDark))),
+                            const SizedBox(height: 2),
+                            Text(zones[i].delaiAffiche,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondaryFor(isDark))),
+                          ],
+                        ),
+                      ),
+                      Text(
+                          zones[i].frais > 0
+                              ? '${zones[i].frais.toStringAsFixed(0)} HTG'
+                              : context.tr('Gratuite'),
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1D9E75))),
+                    ]),
+                  ),
+                ],
+              ],
+            ),
     );
   }
 

@@ -31,6 +31,7 @@ import '../screens/client/boutiques_screen.dart';
 import '../screens/client/boutique_detail_screen.dart';
 import '../screens/client/subcategory_screen.dart';
 import '../screens/client/product_detail_screen.dart';
+import '../screens/client/produit_lien_screen.dart';
 import '../screens/client/product_shops_screen.dart';
 import '../screens/client/favorites_screen.dart';
 import '../screens/client/edit_profile_screen.dart';
@@ -257,10 +258,10 @@ class AppRouter {
             builder: (_, state) {
               final data = state.extra as Map<String, dynamic>?;
               return CreateShopScreen(
-                // Sans `extra` (vendeur renvoyé ici par le routeur), on
-                // reprend le code généré à l'inscription (users.shop_code).
+                // Code déjà attribué (anciens comptes : users.shop_code) ;
+                // sinon l'écran le génère à partir du nom de la boutique.
                 shopCode: data?['shopCode'] ??
-                    auth.currentUser?.shopCode ?? 'MFL-2026-0000',
+                    auth.currentUser?.shopCode ?? '',
               );
             },
           ),
@@ -356,7 +357,10 @@ class AppRouter {
           ),
           GoRoute(
             path: '/client/all-products',
-            builder: (_, __) => const AllProductsScreen(),
+            // `extra` optionnel : catégorie à filtrer d'office (String).
+            builder: (_, state) => AllProductsScreen(
+              categorieInitiale: state.extra as String?,
+            ),
           ),
           GoRoute(
             path: '/client/edit-profile',
@@ -381,6 +385,15 @@ class AppRouter {
               final product = state.extra as ProductModel;
               return ProductDetailScreen(product: product);
             },
+          ),
+          // Lien produit partagé sur WhatsApp (https://…/p/<id> ou
+          // commerchaiti://app/p/<id>) : charge le produit puis ouvre son
+          // détail. Accessible sans compte (aucune règle de `redirect` ne
+          // vise /p).
+          GoRoute(
+            path: '/p/:id',
+            builder: (_, state) =>
+                ProduitLienScreen(productId: state.pathParameters['id']!),
           ),
           GoRoute(
             path: '/client/recherche-photo',
