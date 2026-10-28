@@ -17,11 +17,18 @@ import '../../constants/app_colors.dart';
 import '../../constants/categories.dart';
 import '../../widgets/bottom_nav_item.dart';
 import '../../providers/cart_provider.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import 'recherche_photo_screen.dart';
+import '../../widgets/image_produit_widget.dart';
+import '../../l10n/traduction.dart';
+
+/// Foto ki parèt anba ble maren nan tèt akèy la.
+const String kAkeyFotoBanye = 'assets/images/banniere_accueil.jpg';
+
+/// Opasite ble maren an sou foto a (1.0 = ble plen, foto a pa parèt).
+const double kAkeyOpasiteBle = 0.68;
 
 /// Client Home Screen — Claudimyr CASSIGNOL
 /// Path : lib/screens/client/client_home_screen.dart
@@ -172,7 +179,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       setState(() {
         _isSearching = false;
         _erreurRecherche = messageErreur(e,
-            parDefaut: 'La recherche a échoué. Réessayez.');
+            parDefaut: traduire('La recherche a échoué. Réessayez.'));
       });
     }
   }
@@ -266,7 +273,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       setState(() {
         _isLoading = false;
         _erreur = messageErreur(e,
-            parDefaut: 'Impossible de charger les produits.');
+            parDefaut: traduire('Impossible de charger les produits.'));
       });
     }
   }
@@ -288,11 +295,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       // contenant les raccourcis principaux de navigation du compte
       // client.
       endDrawer: AppDrawerWidget(
-        headerTitle: 'Bonjour ${auth.prenom}',
+        headerTitle: context.tr('Bonjour {nom}', {'nom': auth.prenom}),
         headerSubtitle: 'CommercHaiti · Les Cayes',
         settingsRoute: '/params',
         items: [
-          DrawerMenuItem(Icons.storefront_outlined, 'Boutiques',
+          DrawerMenuItem(Icons.storefront_outlined, context.tr('Boutiques'),
               onTap: () {
             // Ferme d'abord le tiroir (pop du Drawer, pas de l'écran),
             // puis empile l'écran Boutiques par-dessus l'accueil :
@@ -301,7 +308,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             Navigator.pop(context);
             context.push('/client/boutiques');
           }),
-          DrawerMenuItem(Icons.category_outlined, 'Catégories', onTap: () {
+          DrawerMenuItem(Icons.category_outlined, context.tr('Catégories'), onTap: () {
             // "Catégories" mène maintenant vers le catalogue complet
             // (/client/all-products), qui affiche justement les filtres
             // de catégorie en évidence — distinct de "Boutiques" (liste
@@ -309,16 +316,16 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             Navigator.pop(context);
             context.push('/client/all-products');
           }),
-          DrawerMenuItem(Icons.grid_view_outlined, 'Tous les produits',
+          DrawerMenuItem(Icons.grid_view_outlined, context.tr('Tous les produits'),
               onTap: () {
             Navigator.pop(context);
             context.push('/client/all-products');
           }),
-          DrawerMenuItem(Icons.favorite_border, 'Favoris', onTap: () {
+          DrawerMenuItem(Icons.favorite_border, context.tr('Favoris'), onTap: () {
             Navigator.pop(context);
             context.push('/client/favorites');
           }),
-          DrawerMenuItem(Icons.person_outline, 'Profil', onTap: () {
+          DrawerMenuItem(Icons.person_outline, context.tr('Profil'), onTap: () {
             Navigator.pop(context);
             context.push('/client/edit-profile');
           }),
@@ -330,8 +337,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           // Bandeau supérieur : logo/marque + localisation, bouton
           // panier, bouton menu hamburger, message de bienvenue
           // personnalisé et barre de recherche.
+          // Foto bannyè a anba koulè ble maren an : ble a kouche sou
+          // foto a ak yon opasite redwi (kAkeyOpasiteBle) pou foto a
+          // parèt anba l, menm jan ak Shein. Si foto a pa chaje, se
+          // koulè ble maren an sèl ki parèt.
           Container(
-            color: const Color(0xFF0D2B5E),
+            decoration: BoxDecoration(
+              color: AppColors.navy,
+              image: DecorationImage(
+                image: const AssetImage(kAkeyFotoBanye),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  AppColors.navy.withOpacity(kAkeyOpasiteBle),
+                  BlendMode.srcOver,
+                ),
+              ),
+            ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 8,
               bottom: 8, left: 16, right: 16,
@@ -378,28 +399,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // Notifications (commandes, nouveaux produits des
                     // boutiques favorites) avec badge des non lues.
                     const NotificationBellWidget(),
-                    const SizedBox(width: 8),
-                    // Panier
-                    // context.go() remplace toute la pile de navigation
-                    // par l'écran Panier : depuis l'accueil, on
-                    // considère le panier comme une nouvelle "racine"
-                    // de navigation plutôt qu'un écran empilé — cela
-                    // évite d'accumuler Accueil -> Panier -> Accueil ->
-                    // Panier... dans la pile si l'utilisateur navigue
-                    // beaucoup entre les deux via la bottom nav / ce
-                    // bouton.
-                    GestureDetector(
-                      onTap: () => context.go('/cart'),
-                      child: Container(
-                        width: 34, height: 34,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.shopping_cart_outlined,
-                            color: Colors.white, size: 18),
-                      ),
-                    ),
+                    // Pas de bouton Panier ici : il est déjà dans la barre
+                    // du bas, avec le nombre d'articles.
                     const SizedBox(width: 8),
                     // Menu hamburger
                     // Ouvre le endDrawer défini plus haut via la
@@ -418,31 +419,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Ranje 2 — BF-013 : message de bienvenue personnalisé
-                // Deuxième rangée : message de bienvenue utilisant le
-                // prénom de l'utilisateur connecté (auth.prenom).
+                const SizedBox(height: 10),
+                // Ranje 2 — BF-013 : message de bienvenue personnalisé,
+                // sur une seule ligne courte pour alléger l'en-tête.
                 Row(
                   children: [
                     const Icon(Icons.waving_hand,
-                        color: Color(0xFFF5A623), size: 18),
+                        color: Color(0xFFF5A623), size: 16),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Bonjour ${auth.prenom},',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800)),
-                          const Text('Que voulez-vous aujourd\'hui ?',
-                              style: TextStyle(
-                                  color: Colors.white54, fontSize: 11)),
-                        ],
-                      ),
+                      child: Text(context.tr('Bonjour {nom}', {'nom': auth.prenom}),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
@@ -467,11 +459,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           controller: _searchCtrl,
                           style: const TextStyle(
                               color: Colors.white, fontSize: 12),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             isDense: true,
                             border: InputBorder.none,
-                            hintText: 'Rechercher produits ou boutiques…',
-                            hintStyle: TextStyle(
+                            hintText: context.tr('Rechercher produits ou boutiques…'),
+                            hintStyle: const TextStyle(
                                 color: Colors.white54, fontSize: 12),
                           ),
                         ),
@@ -535,7 +527,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           const Icon(Icons.local_offer,
                               color: Colors.white, size: 20),
                           const SizedBox(width: 8),
-                          Text('Promotions du jour ! (${_promoProduits.length})',
+                          Text(context.tr('Promotions du jour ! ({n})', {'n': _promoProduits.length}),
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -564,47 +556,46 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // Carrousel horizontal des 10 produits les plus
                     // commandés (chargés par _loadData()). "Voir tout"
                     // ouvre le catalogue complet.
-                    _sectionTitle('Produits populaires',
+                    _sectionTitle(context.tr('Produits populaires'),
                         onTap: () => context.push('/client/all-products')),
-                    SizedBox(
-                      height: 180,
-                      child: _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          // Checklist production (points 06 et 07).
-                          : _erreur != null
-                          ? EtatErreurWidget(
-                              message: _erreur!,
-                              compact: true,
-                              onReessayer: () {
-                                setState(() => _isLoading = true);
-                                _loadData();
-                              })
-                          : _topProduits.isEmpty
-                          ? const EtatVideWidget(
-                              message: 'Aucun produit pour le moment',
-                              icone: Icons.shopping_bag_outlined,
-                              compact: true)
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              itemCount: _topProduits.length,
-                              itemBuilder: (_, i) => _ProduitCard(
-                                product: _topProduits[i],
-                                // Remarque : ici, contrairement aux
-                                // autres cartes produit de cet écran,
-                                // le clic ouvre '/client/product-shops'
-                                // (liste des boutiques qui vendent ce
-                                // produit, identifié par son NOM
-                                // seulement, via "extra:
-                                // _topProduits[i].nom") plutôt que la
-                                // fiche détail du produit lui-même.
+                    // Lis vètikal (youn anba lòt) olye de karousèl
+                    // orizontal la : chak pwodui sou yon liy.
+                    if (_isLoading)
+                      const SizedBox(
+                          height: 120,
+                          child: Center(child: CircularProgressIndicator()))
+                    // Checklist production (points 06 et 07).
+                    else if (_erreur != null)
+                      EtatErreurWidget(
+                          message: _erreur!,
+                          compact: true,
+                          onReessayer: () {
+                            setState(() => _isLoading = true);
+                            _loadData();
+                          })
+                    else if (_topProduits.isEmpty)
+                      EtatVideWidget(
+                          message: context.tr('Aucun produit pour le moment'),
+                          icone: Icons.shopping_bag_outlined,
+                          compact: true)
+                    else
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Column(
+                          children: [
+                            for (final p in _topProduits)
+                              _ProduitLigne(
+                                product: p,
+                                // Menm destinasyon ak anvan : lis
+                                // boutik ki vann pwodui sa a.
                                 onTap: () => context.push(
                                   '/client/product-shops',
-                                  extra: _topProduits[i].nom,
+                                  extra: p.nom,
                                 ),
                               ),
-                            ),
-                    ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 16),
 
                     // Produits classés par catégorie : une section par
@@ -615,12 +606,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     if (!_isLoading && _erreur == null) ...[
                       for (final c in Categories.toutes)
                         if (_produitsParCategorie[c]?.isNotEmpty ?? false)
-                          ..._sectionCategorie(c, _produitsParCategorie[c]!,
+                          ..._sectionCategorie(context.tr(c), _produitsParCategorie[c]!,
                               onVoirTout: () => context.push(
                                   '/client/all-products',
                                   extra: c)),
                       if (_autresProduits.isNotEmpty)
-                        ..._sectionCategorie('Autres', _autresProduits,
+                        ..._sectionCategorie(context.tr('Autres'), _autresProduits,
                             onVoirTout: () =>
                                 context.push('/client/all-products')),
                     ],
@@ -641,7 +632,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     // go()/push() entre les deux points d'entrée vers
                     // /client/boutiques est le genre de détail qui a
                     // déjà causé des bugs de navigation dans ce projet.
-                    _sectionTitle('Boutiques ouvertes',
+                    _sectionTitle(context.tr('Boutiques ouvertes'),
                         onTap: () => context.go('/client/boutiques')),
                     // Checklist production (points 05, 06, 07).
                     if (shopProv.isLoading && shops.isEmpty)
@@ -655,8 +646,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                             .listenShops(forcer: true),
                       )
                     else if (shops.isEmpty)
-                      const EtatVideWidget(
-                        message: 'Aucune boutique ouverte pour le moment',
+                      EtatVideWidget(
+                        message: context.tr('Aucune boutique ouverte pour le moment'),
                         icone: Icons.storefront_outlined,
                         compact: true,
                       )
@@ -705,12 +696,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                BottomNavItem(icon: Icons.home, label: 'Accueil', active: true,
+                BottomNavItem(icon: Icons.home, label: context.tr('Accueil'), active: true,
                     onTap: () {}),
-                BottomNavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                BottomNavItem(icon: Icons.shopping_cart_outlined, label: context.tr('Panier'),
                     badge: context.watch<CartProvider>().totalArticles,
                     onTap: () => context.go('/cart')),
-                BottomNavItem(icon: Icons.inventory_2_outlined, label: 'Commandes',
+                BottomNavItem(icon: Icons.inventory_2_outlined, label: context.tr('Commandes'),
                     onTap: () => context.go('/order-history')),
               ],
             ),
@@ -742,7 +733,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     }
     if (boutiquesTrouvees.isEmpty && _searchProduits.isEmpty) {
       return Center(
-        child: Text('Aucun résultat pour « ${_searchCtrl.text} »',
+        child: Text(context.tr('Aucun résultat pour « {q} »', {'q': _searchCtrl.text}),
             style: TextStyle(
                 color: AppColors.textSecondaryFor(
                     context.watch<ThemeProvider>().isDarkMode))),
@@ -752,7 +743,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 14),
       children: [
         if (_searchProduits.isNotEmpty) ...[
-          _sectionTitle('Produits (${_searchProduits.length})'),
+          _sectionTitle(context.tr('Produits ({n})', {'n': _searchProduits.length})),
           SizedBox(
             height: 180,
             child: ListView.builder(
@@ -769,7 +760,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           const SizedBox(height: 16),
         ],
         if (boutiquesTrouvees.isNotEmpty) ...[
-          _sectionTitle('Boutiques (${boutiquesTrouvees.length})'),
+          _sectionTitle(context.tr('Boutiques ({n})', {'n': boutiquesTrouvees.length})),
           ...boutiquesTrouvees.map((shop) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: _BoutiqueCard(
@@ -822,7 +813,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           if (onTap != null)
             GestureDetector(
               onTap: onTap,
-              child: Text('Voir tout',
+              child: Text(context.tr('Voir tout'),
                   style: TextStyle(
                       fontSize: 12, color: AppColors.accentFor(isDark))),
             ),
@@ -870,12 +861,7 @@ class _ProduitCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: SizedBox(
                     height: 100, width: double.infinity,
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: const Icon(Icons.image_outlined,
-                                color: Color(0xFF0D2B5E), size: 36)),
+                    child: ImageProduit(product.vignette),
                   ),
                 ),
                 // Badge pourcentage de réduction, affiché seulement si
@@ -975,6 +961,110 @@ class _ProduitCard extends StatelessWidget {
   }
 }
 
+/// Liy pwodui pou lis "Produits populaires" : foto agoch, non, pri
+/// (ak pri bare si gen pwomo), badj rediksyon ak bouton kè favori.
+class _ProduitLigne extends StatelessWidget {
+  final ProductModel product;
+  final VoidCallback onTap;
+  const _ProduitLigne({required this.product, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.surface(isDark),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6, offset: const Offset(0, 2),
+          )],
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 60, height: 60,
+                    child: ImageProduit(product.vignette),
+                  ),
+                ),
+                if (product.hasPromo)
+                  Positioned(
+                    top: 4, left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE63946),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text('-${product.pourcentageReduction}%',
+                          style: const TextStyle(color: Colors.white,
+                              fontSize: 8, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(product.nom, maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: AppColors.textPrimaryFor(isDark),
+                          fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Text('${product.prixAffiche.toStringAsFixed(0)} HTG',
+                        style: TextStyle(
+                            color: AppColors.accentFor(isDark),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
+                    if (product.hasPromo) ...[
+                      const SizedBox(width: 6),
+                      Text('${product.prix.toStringAsFixed(0)}',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondaryFor(isDark),
+                              decoration: TextDecoration.lineThrough)),
+                    ],
+                  ]),
+                ],
+              ),
+            ),
+            // Menm konpòtman ak bouton kè sou _ProduitCard (favori
+            // boutik la, product.shopId).
+            Consumer<FavoriteProvider>(
+              builder: (context, favProvider, _) {
+                final estFavori = favProvider.isFavorite(product.shopId);
+                return IconButton(
+                  onPressed: () => favProvider.toggleFavorite(product.shopId),
+                  icon: Icon(
+                      estFavori ? Icons.favorite : Icons.favorite_border,
+                      size: 20,
+                      color: estFavori
+                          ? const Color(0xFFE63946)
+                          : const Color(0xFF999999)),
+                );
+              },
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFAAAAAA)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Carte boutique compacte utilisée dans la liste "Boutiques ouvertes"
 /// et dans les résultats de recherche : logo, nom, note, badge
 /// Ouvert/Fermé.
@@ -1019,7 +1109,7 @@ class _BoutiqueCard extends StatelessWidget {
                   Row(children: [
                     const Icon(Icons.star, size: 11, color: Color(0xFFF5A623)),
                     const SizedBox(width: 2),
-                    Text('${shop.rating.toStringAsFixed(1)} · ${shop.totalAvis} avis',
+                    Text(context.tr('{note} · {n} avis', {'note': shop.rating.toStringAsFixed(1), 'n': shop.totalAvis}),
                         style: TextStyle(
                             fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                   ]),
@@ -1036,7 +1126,7 @@ class _BoutiqueCard extends StatelessWidget {
                     : const Color(0xFFFDEAEA),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(shop.isOpen ? 'Ouvert' : 'Fermé',
+              child: Text(shop.isOpen ? context.tr('Ouvert') : context.tr('Fermé'),
                   style: TextStyle(
                       color: shop.isOpen
                           ? const Color(0xFF1D9E75)

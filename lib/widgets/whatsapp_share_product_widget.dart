@@ -7,6 +7,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_links.dart';
 import '../models/product_model.dart';
 import '../services/database_service.dart';
+import '../l10n/traduction.dart';
 
 /// Bouton "Partager sur WhatsApp" (produit) — Faitza COLAS
 /// Branch : feature/whatsapp-share
@@ -48,22 +49,23 @@ class WhatsAppShareProductWidget extends StatefulWidget {
   static String construireMessage(ProductModel product, String nomBoutique,
       {bool emoji = true}) {
     final prix = product.hasPromo
-        ? '${product.prixPromo!.toStringAsFixed(0)} HTG '
-            '(au lieu de ${product.prix.toStringAsFixed(0)} HTG)'
+        ? traduire('{promo} HTG (au lieu de {prix} HTG)', {
+            'promo': product.prixPromo!.toStringAsFixed(0),
+            'prix': product.prix.toStringAsFixed(0),
+          })
         : '${product.prix.toStringAsFixed(0)} HTG';
     String e(String symbole) => emoji ? '$symbole ' : '';
     // Stock fini : on l'annonce clairement juste sous le nom, et on invite
     // à voir les autres produits au lieu de « Commandez ».
     final epuise = product.stock <= 0;
     return '${e('🛍️')}*${product.nom}*\n'
-        '${epuise ? '${e('⛔')}*RUPTURE DE STOCK* : ce produit est épuisé\n' : ''}'
-        '${e('💰')}Prix : $prix\n'
-        '${e('🏪')}Boutique : $nomBoutique\n'
+        '${epuise ? '${e('⛔')}${traduire('*RUPTURE DE STOCK* : ce produit est épuisé')}\n' : ''}'
+        '${e('💰')}${traduire('Prix : {prix}', {'prix': prix})}\n'
+        '${e('🏪')}${traduire('Boutique : {nom}', {'nom': nomBoutique})}\n'
         '\n'
-        '${e('👉')}Voir le produit : ${AppLinks.lienProduit(product.id)}\n'
+        '${e('👉')}${traduire('Voir le produit : {lien}', {'lien': AppLinks.lienProduit(product.id)})}\n'
         '\n'
-        '${e('📲')}${epuise ? 'Découvrez nos autres produits' : 'Commandez'} '
-        'sur CommercHaiti, téléchargez l\'app :\n'
+        '${e('📲')}${traduire(epuise ? 'Découvrez nos autres produits sur CommercHaiti, téléchargez l\'app :' : 'Commandez sur CommercHaiti, téléchargez l\'app :')}\n'
         '${AppLinks.telechargementApp}';
   }
 
@@ -142,8 +144,8 @@ class _WhatsAppShareProductWidgetState
   }
 
   void _erreur() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé'),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(traduire('Impossible d\'ouvrir WhatsApp — vérifiez qu\'il est installé')),
       backgroundColor: AppColors.red,
     ));
   }
@@ -165,9 +167,9 @@ class _WhatsAppShareProductWidgetState
                 child: CircularProgressIndicator(
                     strokeWidth: 2, color: Colors.white))
             : const Icon(Icons.share, color: Colors.white, size: 18),
-        label: const Text(
-          'Partager sur WhatsApp',
-          style: TextStyle(color: Colors.white, fontSize: 14),
+        label: Text(
+          context.tr('Partager sur WhatsApp'),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
         onPressed: _isLoading ? null : _partager,
       ),

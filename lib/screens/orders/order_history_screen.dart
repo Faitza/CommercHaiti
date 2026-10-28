@@ -11,6 +11,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../services/recommander_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../l10n/traduction.dart';
 
 /// Historique commandes — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
@@ -65,7 +66,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           // de navigation incohérent depuis l'accueil.
           onPressed: () => context.go('/client/home'),
         ),
-        title: const Text('Mes commandes'),
+        title: Text(context.tr('Mes commandes')),
       ),
       // Affiche un état vide illustré s'il n'y a aucune commande, sinon
       // une liste défilante de cartes.
@@ -73,7 +74,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       // éventuelle, avant l'état vide (qui s'affichait aussi pendant le
       // chargement et faisait croire qu'il n'y avait aucune commande).
       body: orderProv.chargementClient && orders.isEmpty
-          ? const ChargementWidget(message: 'Chargement de vos commandes…')
+          ? ChargementWidget(message: context.tr('Chargement de vos commandes…'))
           : orderProv.erreurClient != null && orders.isEmpty
           ? EtatErreurWidget(
               message: orderProv.erreurClient!,
@@ -93,7 +94,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   Icon(Icons.receipt_long_outlined,
                       size: 60, color: AppColors.borderColor(isDark)),
                   const SizedBox(height: 12),
-                  Text('Aucune commande pour l\'instant',
+                  Text(context.tr('Aucune commande pour l\'instant'),
                       style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                 ],
               ),
@@ -144,13 +145,13 @@ class _OrderCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Commande #${order.id.substring(0, 6).toUpperCase()}',
+                Text(context.tr('Commande #{num}', {'num': order.id.substring(0, 6).toUpperCase()}),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 OrderStatusBadge(statut: order.statut),
               ],
             ),
             const SizedBox(height: 8),
-            Text('${order.total.toStringAsFixed(0)} HTG · ${order.zone}',
+            Text('${order.total.toStringAsFixed(0)} HTG · ${context.tr(order.zone)}',
                 style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
             const SizedBox(height: 4),
             Text(order.createdAt.toString().substring(0, 10),
@@ -167,7 +168,7 @@ class _OrderCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: () => recommander(context, order),
                 icon: const Icon(Icons.replay, size: 16),
-                label: const Text('Recommander'),
+                label: Text(context.tr('Recommander')),
               ),
             ],
             if (order.statut == 'livree') ...[
@@ -184,7 +185,7 @@ class _OrderCard extends StatelessWidget {
                       orderId: order.id);
                 },
                 icon: const Icon(Icons.star_outline, size: 16),
-                label: const Text('Laisser un avis'),
+                label: Text(context.tr('Laisser un avis')),
               ),
               // Boutons pour générer/partager le reçu PDF de la commande.
               ReceiptButtonsWidget(orderId: order.id),

@@ -1,3 +1,4 @@
+import '../l10n/traduction.dart';
 /// Modèle commande — Claudimyr CASSIGNOL
 /// Branch : feature/cart-orders
 /// Path : lib/models/order_model.dart
@@ -57,8 +58,8 @@ class OrderModel {
 
   /// Libellé du mode de paiement pour les reçus.
   String get modePaiementLabel => modePaiement == 'moncash'
-      ? 'MonCash${moncashReference != null ? ' (réf. $moncashReference)' : ''}'
-      : 'Paiement à la livraison';
+      ? 'MonCash${moncashReference != null ? traduire(' (réf. {ref})', {'ref': moncashReference}) : ''}'
+      : traduire('Paiement à la livraison');
 
   /// Constructeur constant — tous les champs sont requis sauf noteVendeur
   /// et receiptUrl qui ne sont pas toujours renseignés.
@@ -103,12 +104,12 @@ class OrderModel {
   /// lisible par l'utilisateur final dans l'interface.
   String get statutLabel {
     switch (statut) {
-      case 'nouvelle':    return 'En attente du vendeur';
-      case 'acceptee':    return 'Acceptée';
-      case 'preparation': return 'En préparation';
-      case 'livraison':   return 'En livraison';
-      case 'livree':      return 'Livrée';
-      case 'annulee':     return 'Annulée';
+      case 'nouvelle':    return traduire('En attente du vendeur');
+      case 'acceptee':    return traduire('Acceptée');
+      case 'preparation': return traduire('En préparation');
+      case 'livraison':   return traduire('En livraison');
+      case 'livree':      return traduire('Livrée');
+      case 'annulee':     return traduire('Annulée');
       default:            return statut;
     }
   }

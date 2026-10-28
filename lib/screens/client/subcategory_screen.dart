@@ -8,6 +8,7 @@ import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../l10n/traduction.dart';
 
 /// Sous-catégories & produits — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -157,7 +158,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
       // d'un faux « aucun produit ».
       if (!mounted) return;
       final message =
-          messageErreur(e, parDefaut: 'Impossible de charger les produits.');
+          messageErreur(e, parDefaut: traduire('Impossible de charger les produits.'));
       setState(() {
         _isLoading = false;
         _chargementSuite = false;
@@ -187,7 +188,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
           // push()).
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(widget.categorie),
+        title: Text(context.tr(widget.categorie)),
       ),
       body: Column(
         children: [
@@ -219,7 +220,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                     message: _erreur!, onReessayer: _loadProduits)
                 : _produits.isEmpty
                     ? Center(
-                        child: Text('Aucun produit dans cette catégorie',
+                        child: Text(context.tr('Aucun produit dans cette catégorie'),
                             style: TextStyle(color: AppColors.textSecondaryFor(isDark))))
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
@@ -270,7 +271,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text(label),
+        label: Text(context.tr(label)),
         selected: sel,
         onSelected: (_) {
           setState(() => _sousCatSelectionnee = value);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/traduction.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -8,9 +9,9 @@ import '../../models/product_model.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/whatsapp_share_product_widget.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Liste produits Vendeur — Faitza COLAS
 /// Branch : feature/vendor-catalog
@@ -130,12 +131,12 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Mes produits',
-                                  style: TextStyle(
+                              Text(context.tr('Mes produits'),
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold)),
-                              Text('$nb produits',
+                              Text(context.tr('{nb} produits', {'nb': nb}),
                                   style: const TextStyle(
                                       color: Colors.white54, fontSize: 12)),
                             ],
@@ -170,11 +171,11 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                       child: TextField(
                         controller: _searchCtrl,
                         style: const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
                           border: InputBorder.none,
-                          hintText: 'Rechercher un produit…',
-                          hintStyle: TextStyle(color: Colors.white54, fontSize: 13),
+                          hintText: context.tr('Rechercher un produit…'),
+                          hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
                         ),
                       ),
                     ),
@@ -197,7 +198,7 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                 if (snapshot.hasError && !snapshot.hasData) {
                   return EtatErreurWidget(
                     message: messageErreur(snapshot.error!,
-                        parDefaut: 'Impossible de charger vos produits.'),
+                        parDefaut: traduire('Impossible de charger vos produits.')),
                     onReessayer: () => setState(() => _streamProduits = null),
                   );
                 }
@@ -211,7 +212,7 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                 // d'état vide invitant à utiliser le bouton "+".
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
-                    child: Text('Aucun produit — appuyez sur + pour en ajouter',
+                    child: Text(context.tr('Aucun produit — appuyez sur + pour en ajouter'),
                         style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
                   );
                 }
@@ -233,7 +234,7 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                 // Checklist production (point 06) : recherche sans résultat.
                 if (products.isEmpty) {
                   return EtatVideWidget(
-                    message: 'Aucun produit ne correspond à « $_query »',
+                    message: context.tr('Aucun produit ne correspond à « {recherche} »', {'recherche': _query}),
                     icone: Icons.search_off,
                   );
                 }
@@ -298,12 +299,7 @@ class _ProductListTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: SizedBox(
                   width: 64, height: 64,
-                  child: product.vignette != null
-                      ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                      : Container(
-                          color: const Color(0xFFEEF3FB),
-                          child: const Icon(Icons.image_outlined,
-                              color: Color(0xFF0D2B5E))),
+                  child: ImageProduit(product.vignette),
                 ),
               ),
               const SizedBox(width: 12),
@@ -315,25 +311,37 @@ class _ProductListTile extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 2),
+                    // Encourage le vendeur à mettre une vraie photo.
+                    if (product.vignette == null ||
+                        product.vignette!.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                            context.tr('Ajoutez une photo : les clients achètent plus'),
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.amberText,
+                                fontWeight: FontWeight.w600)),
+                      ),
                     Text(
-                        '${product.categorie.isEmpty ? "—" : product.categorie} · ${product.prix.toStringAsFixed(0)} HTG',
+                        '${product.categorie.isEmpty ? "—" : context.tr(product.categorie)} · ${product.prix.toStringAsFixed(0)} HTG',
                         style: TextStyle(
                             color: AppColors.textSecondaryFor(isDark), fontSize: 12)),
                     const SizedBox(height: 6),
                     Row(children: [
-                      Text('Stock : ${product.stock}',
+                      Text(context.tr('Stock : {stock}', {'stock': product.stock}),
                           style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 12, color: stockColor)),
                       const SizedBox(width: 6),
                       if (product.stock == 0)
-                        const Text('Épuisé',
-                            style: TextStyle(
+                        Text(context.tr('Épuisé'),
+                            style: const TextStyle(
                                 fontSize: 11, color: Color(0xFFE63946),
                                 fontWeight: FontWeight.bold))
                       else if (product.stock <= 5)
-                        const Text('Stock bas',
-                            style: TextStyle(
+                        Text(context.tr('Stock bas'),
+                            style: const TextStyle(
                                 fontSize: 11, color: Color(0xFFF5A623),
                                 fontWeight: FontWeight.bold)),
                     ]),
@@ -369,7 +377,7 @@ class _ProductListTile extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(product.disponible ? 'Dispo' : 'Indispo',
+              Text(product.disponible ? context.tr('Dispo') : context.tr('Indispo'),
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: product.disponible
@@ -400,8 +408,8 @@ class _ProductListTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                  'Masqué par l\'administration'
-                  '${product.motifModeration != null ? ' : ${product.motifModeration}' : ''}',
+                  context.tr('Masqué par l\'administration') +
+                  (product.motifModeration != null ? ' : ${product.motifModeration}' : ''),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 11, color: Color(0xFFE63946),
@@ -415,7 +423,7 @@ class _ProductListTile extends StatelessWidget {
                 color: AppColors.scaffoldBg(isDark),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text('Non disponible pour l\'acheteur',
+              child: Text(context.tr('Non disponible pour l\'acheteur'),
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
             ),
@@ -449,18 +457,18 @@ class _ProductListTile extends StatelessWidget {
   Future<void> _supprimer(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Supprimer ce produit ?'),
-        content: const Text('Cette action est irréversible.'),
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(dialogCtx.tr('Supprimer ce produit ?')),
+        content: Text(dialogCtx.tr('Cette action est irréversible.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+              child: Text(dialogCtx.tr('Annuler'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE63946)),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Supprimer',
-                style: TextStyle(color: Colors.white)),
+            child: Text(dialogCtx.tr('Supprimer'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../l10n/traduction.dart';
 
 /// Ouverture d'un produit depuis un lien partagé — Faitza COLAS
 /// Path : lib/screens/client/produit_lien_screen.dart
@@ -95,15 +96,15 @@ class _ProduitLienScreenState extends State<ProduitLienScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Ce produit est introuvable.\n'
-                      'Il a peut-être été retiré par la boutique.',
+                    Text(
+                      context.tr('Ce produit est introuvable.\n'
+                          'Il a peut-être été retiré par la boutique.'),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => context.go('/splash'),
-                      child: const Text('Aller à l\'accueil'),
+                      child: Text(context.tr('Aller à l\'accueil')),
                     ),
                   ],
                 ),

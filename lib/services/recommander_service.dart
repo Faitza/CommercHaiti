@@ -7,6 +7,7 @@ import '../constants/app_colors.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
+import '../l10n/traduction.dart';
 
 /// « Recommander » : remet dans le panier les articles d'une ancienne
 /// commande, avec les prix et le stock d'aujourd'hui, puis ouvre le
@@ -22,17 +23,17 @@ Future<void> recommander(BuildContext context, OrderModel order) async {
     final remplacer = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remplacer le panier ?'),
-        content: const Text(
-            'Votre panier contient déjà des articles. Ils seront remplacés '
-            'par ceux de cette commande.'),
+        title: Text(traduire('Remplacer le panier ?')),
+        content: Text(
+            traduire('Votre panier contient déjà des articles. Ils seront remplacés '
+            'par ceux de cette commande.')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler')),
+              child: Text(traduire('Annuler'))),
           ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remplacer')),
+              child: Text(traduire('Remplacer'))),
         ],
       ),
     );
@@ -48,8 +49,8 @@ Future<void> recommander(BuildContext context, OrderModel order) async {
     produits = rows.map((r) => ProductModel.fromMap(r, r['id'])).toList();
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Impossible de charger les produits. Réessayez.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Impossible de charger les produits. Réessayez.')),
         backgroundColor: AppColors.red,
       ));
     }
@@ -79,16 +80,17 @@ Future<void> recommander(BuildContext context, OrderModel order) async {
 
   if (!context.mounted) return;
   if (ajoutes == 0) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text("Ces produits ne sont plus disponibles."),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(traduire('Ces produits ne sont plus disponibles.')),
       backgroundColor: AppColors.red,
     ));
     return;
   }
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Text(ignores == 0
-        ? 'Articles ajoutés au panier'
-        : 'Articles ajoutés — $ignores ne sont plus disponibles'),
+        ? traduire('Articles ajoutés au panier')
+        : traduire('Articles ajoutés — {n} ne sont plus disponibles',
+            {'n': ignores})),
   ));
   context.push('/cart');
 }

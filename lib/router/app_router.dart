@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/traduction.dart';
 import '../providers/auth_provider.dart';
 
 // Auth screens
@@ -467,8 +468,8 @@ class AppRouter {
         // Écran affiché lorsqu'aucune route ne correspond au chemin
         // demandé (ex: faute de frappe dans une navigation, route
         // supprimée, etc.).
-        errorBuilder: (_, state) => const Scaffold(
-          body: Center(child: Text('Page introuvable')),
+        errorBuilder: (context, state) => Scaffold(
+          body: Center(child: Text(context.tr('Page introuvable'))),
         ),
       );
 }

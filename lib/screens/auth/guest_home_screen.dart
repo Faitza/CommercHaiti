@@ -5,15 +5,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/shop_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/traduction.dart';
 import '../../models/product_model.dart';
 import '../../models/shop_model.dart';
 import '../../widgets/shop_logo_widget.dart';
 import '../../widgets/bottom_nav_item.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
 import '../../services/recherche_photo_service.dart';
 import '../client/recherche_photo_screen.dart';
+import '../../widgets/image_produit_widget.dart';
 
 /// Accueil Visiteur — Faitza COLAS
 /// Branch : feature/auth-roles
@@ -43,7 +44,7 @@ class GuestHomeScreen extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Padding(
+      builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -59,7 +60,7 @@ class GuestHomeScreen extends StatefulWidget {
               ),
             ),
             Text(
-              'Créez un compte pour commander',
+              ctx.tr('Créez un compte pour commander'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -68,7 +69,7 @@ class GuestHomeScreen extends StatefulWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Inscrivez-vous pour passer commande et suivre vos livraisons.',
+              ctx.tr('Inscrivez-vous pour passer commande et suivre vos livraisons.'),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondaryFor(isDark)),
             ),
@@ -88,8 +89,8 @@ class GuestHomeScreen extends StatefulWidget {
                   Navigator.pop(context);
                   context.go('/role-selection');
                 },
-                child: const Text('S\'inscrire',
-                    style: TextStyle(color: Colors.white, fontSize: 15)),
+                child: Text(ctx.tr('S\'inscrire'),
+                    style: const TextStyle(color: Colors.white, fontSize: 15)),
               ),
             ),
             const SizedBox(height: 12),
@@ -109,7 +110,7 @@ class GuestHomeScreen extends StatefulWidget {
                   Navigator.pop(context);
                   context.go('/role-selection');
                 },
-                child: Text('Se connecter',
+                child: Text(ctx.tr('Se connecter'),
                     style: TextStyle(
                         color: AppColors.accentFor(isDark), fontSize: 15)),
               ),
@@ -120,7 +121,7 @@ class GuestHomeScreen extends StatefulWidget {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                'Continuer à naviguer',
+                ctx.tr('Continuer à naviguer'),
                 style: TextStyle(color: AppColors.textSecondaryFor(isDark)),
               ),
             ),
@@ -180,7 +181,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
         setState(() {
           _isLoading = false;
           _erreur = messageErreur(e,
-              parDefaut: 'Impossible de charger les produits.');
+              parDefaut: traduire('Impossible de charger les produits.'));
         });
       }
     }
@@ -221,45 +222,40 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                           color: Colors.white, size: 18),
                     ),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('CommercHaiti',
+                          const Text('CommercHaiti',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800)),
                           Row(children: [
-                            Icon(Icons.location_on,
+                            const Icon(Icons.location_on,
                                 size: 10, color: Colors.white54),
-                            SizedBox(width: 2),
-                            Text('Les Cayes · Mode visiteur',
-                                style: TextStyle(
+                            const SizedBox(width: 2),
+                            Text(context.tr('Les Cayes · Mode visiteur'),
+                                style: const TextStyle(
                                     color: Colors.white54, fontSize: 10)),
                           ]),
                         ],
                       ),
                     ),
-                    // Ces deux actions renvoient toutes les deux vers le
-                    // choix de rôle : c'est le point d'entrée commun pour
-                    // quitter le mode visiteur et créer/rejoindre un compte.
-                    TextButton(
+                    // Un seul bouton pour quitter le mode visiteur (le
+                    // menu faisait la même chose) : petit lien encadré.
+                    OutlinedButton(
                       onPressed: () => context.go('/role-selection'),
-                      child: const Text('Se connecter',
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.go('/role-selection'),
-                      child: Container(
-                        width: 34, height: 34,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.menu,
-                            color: Colors.white, size: 18),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white54),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        minimumSize: const Size(0, 32),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
+                      child: Text(context.tr('Se connecter'),
+                          style: const TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -281,11 +277,11 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                     child: Row(children: [
                       const Icon(Icons.search, color: Colors.white54, size: 16),
                       const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text('Rechercher produits ou boutiques…',
+                      Expanded(
+                        child: Text(context.tr('Rechercher produits ou boutiques…'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: Colors.white54, fontSize: 12)),
                       ),
                       // Recherche par photo, aussi sans compte (BF-010).
@@ -331,18 +327,18 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(children: [
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Bienvenue visiteur !',
-                                  style: TextStyle(
+                              Text(context.tr('Bienvenue visiteur !'),
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15)),
-                              SizedBox(height: 2),
-                              Text('Inscrivez-vous pour commander',
-                                  style: TextStyle(
+                              const SizedBox(height: 2),
+                              Text(context.tr('Inscrivez-vous pour commander'),
+                                  style: const TextStyle(
                                       color: Colors.white54, fontSize: 11)),
                             ],
                           ),
@@ -354,8 +350,8 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                                 borderRadius: BorderRadius.circular(10)),
                           ),
                           onPressed: () => context.go('/role-selection'),
-                          child: const Text('S\'inscrire',
-                              style: TextStyle(color: Colors.white)),
+                          child: Text(context.tr('S\'inscrire'),
+                              style: const TextStyle(color: Colors.white)),
                         ),
                       ]),
                     ),
@@ -380,8 +376,8 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                                 _chargerProduits();
                               })
                           : _topProduits.isEmpty
-                          ? const EtatVideWidget(
-                              message: 'Aucun produit pour le moment',
+                          ? EtatVideWidget(
+                              message: context.tr('Aucun produit pour le moment'),
                               icone: Icons.shopping_bag_outlined,
                               compact: true)
                           : ListView.builder(
@@ -414,8 +410,8 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
                             .listenShops(forcer: true),
                       )
                     else if (shops.isEmpty)
-                      const EtatVideWidget(
-                        message: 'Aucune boutique ouverte pour le moment',
+                      EtatVideWidget(
+                        message: context.tr('Aucune boutique ouverte pour le moment'),
                         icone: Icons.storefront_outlined,
                         compact: true,
                       )
@@ -455,11 +451,11 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                BottomNavItem(icon: Icons.home, label: 'Accueil', active: true,
+                BottomNavItem(icon: Icons.home, label: context.tr('Accueil'), active: true,
                     onTap: () {}),
-                BottomNavItem(icon: Icons.shopping_cart_outlined, label: 'Panier',
+                BottomNavItem(icon: Icons.shopping_cart_outlined, label: context.tr('Panier'),
                     onTap: () => GuestHomeScreen.showInscriptionSheet(context)),
-                BottomNavItem(icon: Icons.inventory_2_outlined, label: 'Commande',
+                BottomNavItem(icon: Icons.inventory_2_outlined, label: context.tr('Commande'),
                     onTap: () => GuestHomeScreen.showInscriptionSheet(context)),
               ],
             ),
@@ -476,13 +472,13 @@ class _GuestHomeScreenState extends State<GuestHomeScreen> {
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(t, style: TextStyle(
+        Text(context.tr(t), style: TextStyle(
             fontSize: 15, fontWeight: FontWeight.bold,
             color: AppColors.textPrimaryFor(isDark))),
         if (onTap != null)
           GestureDetector(
             onTap: onTap,
-            child: Text('Voir tout',
+            child: Text(context.tr('Voir tout'),
                 style: TextStyle(fontSize: 12, color: AppColors.accentFor(isDark))),
           ),
       ],
@@ -525,12 +521,7 @@ class _GuestProduitCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: SizedBox(
                     height: 100, width: double.infinity,
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: const Icon(Icons.image_outlined,
-                                color: Color(0xFF0D2B5E), size: 36)),
+                    child: ImageProduit(product.vignette),
                   ),
                 ),
                 // Icône favori (cœur) : pour un visiteur, tout clic ouvre
@@ -615,7 +606,7 @@ class _GuestBoutiqueCard extends StatelessWidget {
                   Row(children: [
                     const Icon(Icons.star_rounded, size: 11, color: Color(0xFFF5A623)),
                     const SizedBox(width: 2),
-                    Text('${shop.rating.toStringAsFixed(1)} · ${shop.totalAvis} avis',
+                    Text(context.tr('{note} · {nombre} avis', {'note': shop.rating.toStringAsFixed(1), 'nombre': shop.totalAvis}),
                         style: TextStyle(
                             fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                   ]),
@@ -631,7 +622,7 @@ class _GuestBoutiqueCard extends StatelessWidget {
                     : const Color(0xFFFDEAEA),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(shop.isOpen ? 'Ouvert' : 'Fermé',
+              child: Text(shop.isOpen ? context.tr('Ouvert') : context.tr('Fermé'),
                   style: TextStyle(
                       color: shop.isOpen
                           ? const Color(0xFF1D9E75)

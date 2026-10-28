@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/zones.dart';
+import '../l10n/traduction.dart';
 
 /// Choix des zones de livraison — vendeur
 /// Path : lib/widgets/zones_livraison_selecteur.dart
@@ -39,9 +40,9 @@ class _ZonesLivraisonSelecteurState extends State<ZonesLivraisonSelecteur> {
     final z = zone.trim();
     if (z.isEmpty) return;
     if (_dejaChoisie(z)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Cette zone est déjà dans la liste'),
-        backgroundColor: Color(0xFFE63946),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(traduire('Cette zone est déjà dans la liste')),
+        backgroundColor: const Color(0xFFE63946),
       ));
       return;
     }
@@ -68,8 +69,8 @@ class _ZonesLivraisonSelecteurState extends State<ZonesLivraisonSelecteur> {
         DropdownButtonFormField<String>(
           key: ValueKey(widget.zones.length),
           isExpanded: true,
-          decoration: const InputDecoration(
-              labelText: 'Choisir une zone', isDense: true),
+          decoration: InputDecoration(
+              labelText: context.tr('Choisir une zone'), isDense: true),
           items: restantes
               .map((z) => DropdownMenuItem(value: z, child: Text(z)))
               .toList(),
@@ -84,8 +85,9 @@ class _ZonesLivraisonSelecteurState extends State<ZonesLivraisonSelecteur> {
             child: TextField(
               controller: _autreCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                  labelText: 'Autre zone (si elle n\'est pas dans la liste)',
+              decoration: InputDecoration(
+                  labelText:
+                      context.tr('Autre zone (si elle n\'est pas dans la liste)'),
                   isDense: true),
               onSubmitted: (v) {
                 _ajouter(v);
@@ -99,7 +101,7 @@ class _ZonesLivraisonSelecteurState extends State<ZonesLivraisonSelecteur> {
               _ajouter(_autreCtrl.text);
               _autreCtrl.clear();
             },
-            child: const Text('Ajouter'),
+            child: Text(context.tr('Ajouter')),
           ),
         ]),
         if (widget.zones.isNotEmpty) ...[

@@ -12,6 +12,7 @@ import '../../services/recherche_photo_service.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
 import '../../widgets/product_card_widget.dart';
+import '../../l10n/traduction.dart';
 
 /// Recherche par photo — résultats (comme sur Shein)
 /// Path : lib/screens/client/recherche_photo_screen.dart
@@ -45,26 +46,26 @@ Future<void> ouvrirRecherchePhoto(BuildContext context,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text('Rechercher avec une photo',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(sheetContext.tr('Rechercher avec une photo'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-                'Trouvez des produits qui ressemblent à votre photo.',
-                style: TextStyle(
+                sheetContext.tr('Trouvez des produits qui ressemblent à votre photo.'),
+                style: const TextStyle(
                     fontSize: 12, color: AppColors.textSecondary)),
           ),
           ListTile(
             leading: const Icon(Icons.photo_camera_outlined),
-            title: const Text('Prendre une photo'),
+            title: Text(sheetContext.tr('Prendre une photo')),
             onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined),
-            title: const Text('Choisir dans la galerie'),
+            title: Text(sheetContext.tr('Choisir dans la galerie')),
             onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
           ),
           const SizedBox(height: 8),
@@ -119,14 +120,14 @@ class _RecherchePhotoScreenState extends State<RecherchePhotoScreen> {
     } on FormatException {
       if (!mounted) return;
       setState(() {
-        _erreur = 'Impossible de lire cette photo. Essayez-en une autre.';
+        _erreur = traduire('Impossible de lire cette photo. Essayez-en une autre.');
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _erreur = messageErreur(e,
-            parDefaut: 'La recherche a échoué. Réessayez.');
+            parDefaut: traduire('La recherche a échoué. Réessayez.'));
         _isLoading = false;
       });
     }
@@ -140,12 +141,12 @@ class _RecherchePhotoScreenState extends State<RecherchePhotoScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D2B5E),
         foregroundColor: Colors.white,
-        title: const Text('Recherche par photo',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        title: Text(context.tr('Recherche par photo'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         actions: [
           // Nouvelle photo : remplace cet écran par une nouvelle recherche.
           IconButton(
-            tooltip: 'Nouvelle photo',
+            tooltip: context.tr('Nouvelle photo'),
             icon: const Icon(Icons.photo_camera_outlined),
             onPressed: () => ouvrirRecherchePhoto(context, remplacer: true),
           ),
@@ -168,12 +169,14 @@ class _RecherchePhotoScreenState extends State<RecherchePhotoScreen> {
                 Expanded(
                   child: Text(
                     _isLoading
-                        ? 'Recherche de produits similaires…'
+                        ? context.tr('Recherche de produits similaires…')
                         : _erreur != null
                             ? ''
-                            : '${_resultats.length} produit'
-                                '${_resultats.length > 1 ? 's' : ''} '
-                                'similaire${_resultats.length > 1 ? 's' : ''}',
+                            : _resultats.length > 1
+                                ? context.tr('{n} produits similaires',
+                                    {'n': _resultats.length})
+                                : context.tr('{n} produit similaire',
+                                    {'n': _resultats.length}),
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -190,11 +193,11 @@ class _RecherchePhotoScreenState extends State<RecherchePhotoScreen> {
                     ? EtatErreurWidget(
                         message: _erreur!, onReessayer: _rechercher)
                     : _resultats.isEmpty
-                        ? const EtatVideWidget(
+                        ? EtatVideWidget(
                             icone: Icons.image_search,
-                            message: 'Aucun produit similaire trouvé',
-                            detail: 'Essayez une photo plus nette, avec le '
-                                'produit bien visible au centre.',
+                            message: context.tr('Aucun produit similaire trouvé'),
+                            detail: context.tr('Essayez une photo plus nette, avec le '
+                                'produit bien visible au centre.'),
                           )
                         : GridView.builder(
                             padding: const EdgeInsets.all(16),

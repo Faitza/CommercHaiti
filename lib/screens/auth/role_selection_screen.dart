@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
+import '../../l10n/langue_selecteur.dart';
+import '../../l10n/traduction.dart';
 
 /// Role Selection Screen — Faitza COLAS
 /// Path : lib/screens/auth/role_selection_screen.dart
@@ -52,6 +54,27 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             width: double.infinity,
             child: Column(
               children: [
+                // Choix de la langue dès le premier écran, avant même
+                // d'avoir un compte (fond blanc pour rester lisible sur
+                // le dégradé bleu).
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: Theme.of(context)
+                            .colorScheme
+                            .copyWith(primary: AppColors.navy),
+                      ),
+                      child: const LangueSelecteur(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 // Ikon bye bye
                 // Petite icône "main qui salue" dans un carré semi-transparent.
                 Container(
@@ -65,19 +88,19 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 ),
                 const SizedBox(height: 12),
                 // Titre de bienvenue.
-                const Text('Bienvenue sur\nCommercHaiti !',
+                Text(context.tr('Bienvenue sur\nCommercHaiti !'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         height: 1.2)),
                 const SizedBox(height: 8),
                 // Sous-titre expliquant l'objectif de cet écran.
-                const Text(
-                    "Comment souhaitez-vous utiliser l'application ?",
+                Text(
+                    context.tr("Comment souhaitez-vous utiliser l'application ?"),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontSize: 12, color: Colors.white54)),
               ],
             ),
@@ -99,13 +122,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   _RoleCard(
                     icon: Icons.shopping_bag_outlined,
                     iconColor: AppColors.accentFor(isDark),
-                    titre: 'Je suis Client',
-                    description: 'Parcourir les boutiques, commander des produits et suivre mes livraisons.',
-                    badge: 'ACHETEUR',
+                    titre: context.tr('Je suis Client'),
+                    description: context.tr('Parcourir les boutiques, commander des produits et suivre mes livraisons.'),
+                    badge: context.tr('ACHETEUR'),
                     badgeColor: AppColors.accentFor(isDark),
                     selected: _selectedRole == 'customer',
                     onTap: () => setState(() => _selectedRole = 'customer'),
-                    features: const ['Voir les boutiques', 'Passer des commandes', 'Suivi en temps réel'],
+                    features: [context.tr('Voir les boutiques'), context.tr('Passer des commandes'), context.tr('Suivi en temps réel')],
                   ),
                   const SizedBox(height: 14),
                   // Kat Vendeur
@@ -114,13 +137,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   _RoleCard(
                     icon: Icons.storefront_outlined,
                     iconColor: const Color(0xFF1D9E75),
-                    titre: 'Je suis Vendeur',
-                    description: 'Créer ma boutique, gérer mes produits et traiter les commandes clients.',
-                    badge: 'VENDEUR',
+                    titre: context.tr('Je suis Vendeur'),
+                    description: context.tr('Créer ma boutique, gérer mes produits et traiter les commandes clients.'),
+                    badge: context.tr('VENDEUR'),
                     badgeColor: const Color(0xFF1D9E75),
                     selected: _selectedRole == 'seller',
                     onTap: () => setState(() => _selectedRole = 'seller'),
-                    features: const ['Gérer ma boutique', 'Publier des produits', 'Traiter les commandes'],
+                    features: [context.tr('Gérer ma boutique'), context.tr('Publier des produits'), context.tr('Traiter les commandes')],
                   ),
                   const SizedBox(height: 16),
                   // Avertissement — choix définitif (maquette : bandeau ⚠️)
@@ -134,18 +157,18 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFF5C453)),
                     ),
-                    child: const Row(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.warning_amber_rounded,
+                        const Icon(Icons.warning_amber_rounded,
                             color: Color(0xFFB8860B), size: 20),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            "Ce choix est définitif. Un vendeur ne peut pas "
+                            context.tr("Ce choix est définitif. Un vendeur ne peut pas "
                             "passer commande et vice-versa. Créez deux "
-                            "comptes si nécessaire.",
-                            style: TextStyle(
+                            "comptes si nécessaire."),
+                            style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF7A5C00),
                                 height: 1.3),
@@ -180,8 +203,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           ? null
                           : () => context.go('/auth',
                               extra: {'role': _selectedRole}),
-                      child: const Text('Continuer',
-                          style: TextStyle(
+                      child: Text(context.tr('Continuer'),
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
@@ -192,7 +215,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   // voir BF-010 dans guest_home_screen.dart).
                   TextButton(
                     onPressed: () => context.go('/guest'),
-                    child: Text('Parcourir sans s\'inscrire',
+                    child: Text(context.tr('Parcourir sans s\'inscrire'),
                         style: TextStyle(
                             color: AppColors.textSecondaryFor(isDark), fontSize: 13)),
                   ),

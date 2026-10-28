@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../models/product_model.dart';
 import '../providers/theme_provider.dart';
 import '../constants/app_colors.dart';
-import 'image_reseau_widget.dart';
+import 'image_produit_widget.dart';
+import '../l10n/traduction.dart';
 
 /// Carte produit réutilisable — Falexson MERCIVAL
 /// Branch : feature/ui-settings
@@ -67,13 +68,7 @@ class ProductCardWidget extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(12)),
-                    child: product.vignette != null
-                        ? ImageReseau(product.vignette!,
-                            fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFEEF3FB),
-                            child: Icon(Icons.image_outlined,
-                                color: AppColors.accentFor(isDark), size: 40)),
+                    child: ImageProduit(product.vignette),
                   ),
                 // Badge promo — affiché uniquement si le produit a une
                 // réduction active, en haut à gauche de la photo, avec le
@@ -110,9 +105,9 @@ class ProductCardWidget extends StatelessWidget {
                           top: Radius.circular(12)),
                       child: Container(
                         color: Colors.black.withOpacity(0.45),
-                        child: const Center(
-                          child: Text('Non disponible',
-                              style: TextStyle(
+                        child: Center(
+                          child: Text(context.tr('Non disponible'),
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12)),
@@ -175,7 +170,7 @@ class ProductCardWidget extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        'Plus que ${product.stock} en stock !',
+                        context.tr('Plus que {n} en stock !', {'n': product.stock}),
                         style: TextStyle(
                             color: isDark
                                 ? AppColors.amber

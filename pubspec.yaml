@@ -16,6 +16,8 @@ dependencies:
   supabase_flutter: ^2.3.0
   http: ^1.2.0
   cached_network_image: ^3.4.0
+  # Bandeau « Pas de connexion Internet » (lib/providers/connexion_provider.dart).
+  connectivity_plus: ^6.1.0
   path_provider: ^2.0.0
   shared_preferences: ^2.0.0
   pdf: ^3.10.0

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/categories.dart';
+import '../l10n/traduction.dart';
 
 /// Choix des catégories vendues — Faitza COLAS
 /// Branch : feature/categories
@@ -40,11 +41,11 @@ class CategoriesBoutiqueWidget extends StatelessWidget {
             dense: true,
             controlAffinity: ListTileControlAffinity.leading,
             activeColor: AppColors.navy,
-            title: Text(cat,
+            title: Text(context.tr(cat),
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryFor(isDark))),
-            subtitle: Text(Categories.de(cat).join(', '),
+            subtitle: Text(Categories.de(cat).map((s) => context.tr(s)).join(', '),
                 style: TextStyle(
                     fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
             onChanged: (v) {

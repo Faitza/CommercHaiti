@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/app_colors.dart';
+import '../l10n/traduction.dart';
 
 /// Paiement MonCash avec confirmation manuelle (voir
 /// supabase/migration_moncash.sql) : le client envoie l'argent au numéro
@@ -36,11 +37,11 @@ class MoncashInstructions extends StatelessWidget {
           Text.rich(TextSpan(
             style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
             children: [
-              const TextSpan(text: '1. Envoyez '),
+              TextSpan(text: context.tr('1. Envoyez ')),
               TextSpan(
                   text: montantHtg(total),
                   style: const TextStyle(fontWeight: FontWeight.w800)),
-              const TextSpan(text: ' avec MonCash au '),
+              TextSpan(text: context.tr(' avec MonCash au ')),
               TextSpan(
                   text: numero,
                   style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -48,9 +49,9 @@ class MoncashInstructions extends StatelessWidget {
             ],
           )),
           const SizedBox(height: 4),
-          const Text(
-            '2. Entrez ci-dessous le numéro de transaction reçu par SMS.',
-            style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+          Text(
+            context.tr('2. Entrez ci-dessous le numéro de transaction reçu par SMS.'),
+            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
           ),
         ],
       ),
@@ -60,7 +61,7 @@ class MoncashInstructions extends StatelessWidget {
 
 /// Validation du numéro de transaction saisi par le client.
 String? validerReferenceMoncash(String? v) {
-  if (v == null || v.trim().length < 4) return 'Numéro de transaction requis';
+  if (v == null || v.trim().length < 4) return traduire('Numéro de transaction requis');
   return null;
 }
 
@@ -161,7 +162,7 @@ class _MoncashSuiviWidgetState extends State<MoncashSuiviWidget> {
       if (mounted) {
         setState(() {
           _envoi = false;
-          _erreur = "Envoi impossible. Vérifiez votre connexion et réessayez.";
+          _erreur = traduire('Envoi impossible. Vérifiez votre connexion et réessayez.');
         });
       }
     }
@@ -206,7 +207,7 @@ class _MoncashSuiviWidgetState extends State<MoncashSuiviWidget> {
           controller: _refCtrl,
           enabled: !_envoi,
           decoration: InputDecoration(
-            hintText: 'Numéro de transaction MonCash',
+            hintText: context.tr('Numéro de transaction MonCash'),
             errorText: _erreur,
             filled: true,
             fillColor: AppColors.inputFill(widget.isDark),
@@ -227,7 +228,7 @@ class _MoncashSuiviWidgetState extends State<MoncashSuiviWidget> {
                     height: 18,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Text('Envoyer le numéro de transaction'),
+                : Text(context.tr('Envoyer le numéro de transaction')),
           ),
         ),
       ],
@@ -244,12 +245,14 @@ class _MoncashSuiviWidgetState extends State<MoncashSuiviWidget> {
       switch (widget.paiementStatut) {
         case 'confirme':
           return _etat(Icons.verified, AppColors.green, AppColors.lightGreen,
-              'Paiement MonCash confirmé', ref != null ? 'Réf. $ref' : null);
+              context.tr('Paiement MonCash confirmé'),
+              ref != null ? context.tr('Réf. {ref}', {'ref': ref}) : null);
         case 'refuse':
           return Column(children: [
             _etat(Icons.error_outline, AppColors.red, AppColors.lightRed,
-                "Le vendeur n'a pas reçu ce paiement",
-                'Réf. ${ref ?? '—'} — vérifiez le numéro de transaction.'),
+                context.tr("Le vendeur n'a pas reçu ce paiement"),
+                context.tr('Réf. {ref} — vérifiez le numéro de transaction.',
+                    {'ref': ref ?? '—'})),
             if (!terminee && _numero != null) ...[
               const SizedBox(height: 8),
               _formulaire(),
@@ -257,8 +260,9 @@ class _MoncashSuiviWidgetState extends State<MoncashSuiviWidget> {
           ]);
         case 'en_attente':
           return _etat(Icons.hourglass_top, AppColors.amber,
-              AppColors.lightAmber, 'Paiement MonCash envoyé',
-              'Réf. ${ref ?? '—'} — en attente de confirmation du vendeur.');
+              AppColors.lightAmber, context.tr('Paiement MonCash envoyé'),
+              context.tr('Réf. {ref} — en attente de confirmation du vendeur.',
+                  {'ref': ref ?? '—'}));
       }
     }
 
@@ -270,7 +274,7 @@ class _MoncashSuiviWidgetState extends State<MoncashSuiviWidget> {
         child: TextButton.icon(
           onPressed: () => setState(() => _formulaireOuvert = true),
           icon: const Icon(Icons.phone_android, color: _moncashRouge, size: 18),
-          label: const Text('Payer plutôt avec MonCash'),
+          label: Text(context.tr('Payer plutôt avec MonCash')),
         ),
       );
     }
@@ -312,8 +316,8 @@ class _MoncashVendeurWidgetState extends State<MoncashVendeurWidget> {
       if (mounted) setState(() => _statut = recu ? 'confirme' : 'refuse');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Enregistrement impossible, réessayez.'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(traduire('Enregistrement impossible, réessayez.')),
           backgroundColor: AppColors.red,
         ));
       }
@@ -325,17 +329,18 @@ class _MoncashVendeurWidgetState extends State<MoncashVendeurWidget> {
   @override
   Widget build(BuildContext context) {
     if (widget.modePaiement != 'moncash') {
-      return const Row(children: [
-        Icon(Icons.money, size: 16, color: AppColors.green),
-        SizedBox(width: 6),
-        Text('Paiement à la livraison', style: TextStyle(fontSize: 13)),
+      return Row(children: [
+        const Icon(Icons.money, size: 16, color: AppColors.green),
+        const SizedBox(width: 6),
+        Text(context.tr('Paiement à la livraison'),
+            style: const TextStyle(fontSize: 13)),
       ]);
     }
 
     final libelle = switch (_statut) {
-      'confirme' => 'Paiement reçu ✔',
-      'refuse' => 'Marqué « pas reçu » — le client doit corriger',
-      _ => 'À vérifier dans votre MonCash',
+      'confirme' => context.tr('Paiement reçu ✔'),
+      'refuse' => context.tr('Marqué « pas reçu » — le client doit corriger'),
+      _ => context.tr('À vérifier dans votre MonCash'),
     };
 
     return Column(
@@ -346,7 +351,10 @@ class _MoncashVendeurWidgetState extends State<MoncashVendeurWidget> {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-                'MonCash · ${montantHtg(widget.total)} · réf. ${widget.reference ?? '—'}',
+                context.tr('MonCash · {montant} · réf. {ref}', {
+                  'montant': montantHtg(widget.total),
+                  'ref': widget.reference ?? '—',
+                }),
                 style: const TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w600)),
           ),
@@ -363,7 +371,7 @@ class _MoncashVendeurWidgetState extends State<MoncashVendeurWidget> {
                     backgroundColor: AppColors.green,
                     foregroundColor: Colors.white),
                 onPressed: _envoi ? null : () => _repondre(true),
-                child: const Text('Paiement reçu'),
+                child: Text(context.tr('Paiement reçu')),
               ),
             ),
             const SizedBox(width: 8),
@@ -373,7 +381,7 @@ class _MoncashVendeurWidgetState extends State<MoncashVendeurWidget> {
                     foregroundColor: AppColors.red,
                     side: const BorderSide(color: AppColors.red)),
                 onPressed: _envoi ? null : () => _repondre(false),
-                child: const Text('Pas reçu'),
+                child: Text(context.tr('Pas reçu')),
               ),
             ),
           ]),

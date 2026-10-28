@@ -11,9 +11,10 @@ import '../../providers/favorite_provider.dart';
 import '../auth/guest_home_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../constants/app_colors.dart';
-import '../../widgets/image_reseau_widget.dart';
 import '../../services/reseau_service.dart';
 import '../../widgets/etat_widgets.dart';
+import '../../widgets/image_produit_widget.dart';
+import '../../l10n/traduction.dart';
 
 /// Détail boutique — Claudimyr CASSIGNOL
 /// Branch : feature/client-home
@@ -180,7 +181,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
       setState(() {
         _isLoading = false;
         _erreur = messageErreur(e,
-            parDefaut: 'Impossible de charger les produits de la boutique.');
+            parDefaut: traduire('Impossible de charger les produits de la boutique.'));
       });
     }
   }
@@ -240,7 +241,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                 color: Colors.white70, fontSize: 12)),
                         Text(
                             widget.shop.isOpen
-                                ? ' · Ouvert' : ' · Fermé',
+                                ? ' · ${context.tr('Ouvert')}' : ' · ${context.tr('Fermé')}',
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 12)),
                       ]),
@@ -322,7 +323,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                       : '30-45 min',
                                   style: TextStyle(
                                       fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
-                              Text(' · ${_produits.length} produits',
+                              Text(context.tr(' · {n} produits', {'n': _produits.length}),
                                   style: TextStyle(
                                       fontSize: 11, color: AppColors.textSecondaryFor(isDark))),
                             ]),
@@ -336,7 +337,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                 // Zones de livraison : chaque zone desservie par la
                 // boutique, avec son délai et son prix (frais en HTG,
                 // 0 = gratuite). Données : shops.zones_livraison.
-                _sectionTitle('Zones de livraison'),
+                _sectionTitle(context.tr('Zones de livraison')),
                 _zonesLivraison(isDark),
                 const SizedBox(height: 16),
 
@@ -351,7 +352,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: WhatsAppButtonWidget(
                       telephone: _telephoneVendeur,
-                      label: 'Contacter via WhatsApp',
+                      label: context.tr('Contacter via WhatsApp'),
                     ),
                   ),
                 const SizedBox(height: 16),
@@ -371,13 +372,13 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                     },
                   )
                 else if (_produits.isEmpty)
-                  const EtatVideWidget(
-                    message: 'Cette boutique n\'a pas encore de produit disponible',
+                  EtatVideWidget(
+                    message: context.tr('Cette boutique n\'a pas encore de produit disponible'),
                     icone: Icons.shopping_bag_outlined,
                   )
                 else ...[
                   if (_categories.isNotEmpty) ...[
-                    _sectionTitle('Catégories'),
+                    _sectionTitle(context.tr('Catégories')),
                     // Rangée horizontale de "cartes catégorie" : chacune
                     // affiche une icône (déduite du nom via
                     // _iconPourCategorie) et le nom de la catégorie.
@@ -427,7 +428,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                       size: 20),
                                 ),
                                 const SizedBox(height: 6),
-                                Text(_categories[i],
+                                Text(context.tr(_categories[i]),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.center,
@@ -452,7 +453,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                   // ceci fonctionne car itemCount limite bien le nombre
                   // d'appels du builder à 4 maximum).
                   if (_produits.isNotEmpty) ...[
-                    _sectionTitle('Produits populaires'),
+                    _sectionTitle(context.tr('Produits populaires')),
                     GridView.builder(
                       // shrinkWrap + NeverScrollableScrollPhysics :
                       // cette grille ne défile pas elle-même, elle
@@ -493,15 +494,8 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                                   child: ClipRRect(
                                     borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(12)),
-                                    child: p.vignette != null
-                                        ? ImageReseau(p.vignette!,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity)
-                                        : Container(
-                                            color: const Color(0xFFEEF3FB),
-                                            child: const Icon(
-                                                Icons.image_outlined,
-                                                color: Color(0xFF0D2B5E))),
+                                    child: ImageProduit(p.vignette,
+                                        width: double.infinity),
                                   ),
                                 ),
                                 Padding(
@@ -537,7 +531,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                   // (_AvisSection), qui gère lui-même son propre
                   // chargement Supabase indépendamment du reste de
                   // l'écran (voir plus bas).
-                  _sectionTitle('Avis clients'),
+                  _sectionTitle(context.tr('Avis clients')),
                   _AvisSection(shopId: widget.shop.id),
                 ],
                 const SizedBox(height: 80),
@@ -576,7 +570,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
       child: zones.isEmpty
           ? Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text('Aucune zone de livraison indiquée',
+              child: Text(context.tr('Aucune zone de livraison indiquée'),
                   style: TextStyle(
                       fontSize: 13, color: AppColors.textSecondaryFor(isDark))),
             )
@@ -612,7 +606,7 @@ class _BoutiqueDetailScreenState extends State<BoutiqueDetailScreen> {
                       Text(
                           zones[i].frais > 0
                               ? '${zones[i].frais.toStringAsFixed(0)} HTG'
-                              : 'Gratuite',
+                              : context.tr('Gratuite'),
                           style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -699,7 +693,7 @@ class _AvisSectionState extends State<_AvisSection> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
               color: AppColors.surface(isDark), borderRadius: BorderRadius.circular(12)),
-          child: Text('Aucun avis pour l\'instant',
+          child: Text(context.tr('Aucun avis pour l\'instant'),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondaryFor(isDark))),
         ),

@@ -15,6 +15,9 @@ import 'router/app_router.dart';
 import 'services/push_service.dart';
 import 'services/erreur_service.dart';
 import 'services/reseau_service.dart';
+import 'providers/connexion_provider.dart';
+import 'l10n/langue_provider.dart';
+import 'widgets/bandeau_hors_ligne.dart';
 
 /// Point d'entrée — Falexson MERCIVAL
 /// Branch : feature/supabase-core
@@ -87,6 +90,10 @@ class CommercHaitiApp extends StatelessWidget {
         // Notifications de l'utilisateur connecté (cloche + écran
         // Notifications), mises à jour en temps réel.
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        // Connexion Internet du téléphone (bandeau « hors ligne »).
+        ChangeNotifierProvider(create: (_) => ConnexionProvider()),
+        // Langue de l'app (Kreyòl par défaut / Français).
+        ChangeNotifierProvider(create: (_) => LangueProvider()),
       ],
       // Le vrai MaterialApp est isolé dans un widget enfant séparé (voir
       // ci-dessous) : c'est indispensable pour la bonne gestion du
@@ -250,6 +257,10 @@ class _CommercHaitiMaterialAppState extends State<_CommercHaitiMaterialApp> {
             // fois dans le `late final` ci-dessus (voir l'explication
             // détaillée au-dessus de la classe).
             routerConfig: _router,
+            // Bandeau « Pas de connexion Internet » au-dessus de tous les
+            // écrans quand le téléphone perd le réseau.
+            builder: (context, child) =>
+                BandeauHorsLigne(child: child ?? const SizedBox.shrink()),
           );
         });
   }
